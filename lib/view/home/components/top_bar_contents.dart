@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:spendify/controller/home_controller/home_controller.dart';
 
 import '../../../routes/app_pages.dart';
 
@@ -11,6 +12,7 @@ class TopBarContents extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final controller=Get.find<HomeController>();
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 24.0),
       child: SafeArea(
@@ -23,7 +25,7 @@ class TopBarContents extends StatelessWidget {
               style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
             InkWell(
-              onTap: () => Get.toNamed(Routes.PROFILE),
+              onTap: () => controller.signOut(),
               child: const CircleAvatar(
                 radius: 20.0,
                 backgroundImage: NetworkImage(

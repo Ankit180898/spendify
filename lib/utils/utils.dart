@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:spendify/model/categories_model.dart';
 
 enum RotationDirection { clockwise, counterclockwise }
 
@@ -42,7 +43,7 @@ TextStyle titleText(double size, Color color) => GoogleFonts.inter(
         fontWeight: FontWeight.bold,
       ),
     );
-    
+
 //24
 TextStyle normalText(double size, Color color) => GoogleFonts.epilogue(
       textStyle: TextStyle(
@@ -52,13 +53,13 @@ TextStyle normalText(double size, Color color) => GoogleFonts.epilogue(
           fontWeight: FontWeight.normal),
     );
 
-List<String> categories = [
-  'All',
-  'Articles',
-  'Packages',
-  'UI',
-  'Projects',
-  'YTChannel',
-  'News'
+List<CategoriesModel> categoryList = [
+  CategoriesModel(category: "Investments", image: "assets/investment.svg"),
+  CategoriesModel(category: "Health", image: "assets/health.svg"),
+  CategoriesModel(category: "Bills & Fees", image: "assets/bills.svg"),
+  CategoriesModel(category: "Food & Drinks", image: "assets/food.svg"),
+  CategoriesModel(category: "Car", image: "assets/car.svg"),
+  CategoriesModel(category: "Groceries", image: "assets/groceries.svg"),
+  CategoriesModel(category: "Gifts", image: "assets/gifts.svg"),
+  CategoriesModel(category: "Transport", image: "assets/transport.svg"),
 ];
-

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:spendify/routes/app_pages.dart';
+import 'package:spendify/view/wallet/transaction_graph.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart' as dotenv;
 
@@ -24,13 +25,15 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GetMaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'Spendify',
-      initialRoute: Routes.SPLASH,
-      getPages: AppPages.routes,
-     builder:(context,child){
-                  return MediaQuery(data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)), child: child!);
-                }
-    );
+        debugShowCheckedModeBanner: false,
+        title: 'Spendify',
+        initialRoute: Routes.SPLASH,
+        getPages: AppPages.routes,
+        builder: (context, child) {
+          return MediaQuery(
+              data: MediaQuery.of(context)
+                  .copyWith(textScaler: const TextScaler.linear(1.0)),
+              child: child!);
+        });
   }
 }

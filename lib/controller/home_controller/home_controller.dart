@@ -1,4 +1,3 @@
-
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:spendify/main.dart';
@@ -17,7 +16,6 @@ class HomeController extends GetxController {
     super.onInit();
     await getProfile();
   }
-  
 
   Future<void> getProfile() async {
     final prefs = await SharedPreferences.getInstance();
@@ -25,15 +23,22 @@ class HomeController extends GetxController {
     List<dynamic> res = await supabaseC
         .from("Users")
         .select()
-        .match({"uid": supabaseC.auth.currentUser!.id});
-    Map<String, dynamic> user = (res).first as Map<String, dynamic>;
-    // Save user's email and name in shared preferences
-    await prefs.setString('name', user['name']);
-    await prefs.setString('email', user['email']);
+        .match({"email": supabaseC.auth.currentUser!.email});
 
-    // Update reactive variables
-    userEmail.value = user['email'];
-    userName.value = user['name'];
+    if (res.isNotEmpty) {
+      Map<String, dynamic> user = res.first as Map<String, dynamic>;
+      // Save user's email and name in shared preferences
+      await prefs.setString('name', user['name']);
+      await prefs.setString('email', user['email']);
+
+      // Update reactive variables
+      userEmail.value = user['email'];
+      userName.value = user['name'];
+    } else {
+      // Handle case when no user is found
+      CustomToast.errorToast("Error", 'User not found');
+      // You may want to navigate the user to a specific screen or handle this case differently
+    }
   }
 
   Future<void> logOut() async {

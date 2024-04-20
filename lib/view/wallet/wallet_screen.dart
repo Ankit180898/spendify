@@ -7,12 +7,17 @@ class WalletScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: PreferredSize(
-        preferredSize: Size.fromHeight(displayHeight(context)*0.30),
+      appBar: PreferredSize(
+        preferredSize: Size.fromHeight(displayHeight(context) * 0.30),
         child: AppBar(
           title: const Text("Wallet"),
-          
+          centerTitle: true,
         ),
+      ),
+      body: Column(
+        children: [
+          
+        ],
       ),
     );
   }

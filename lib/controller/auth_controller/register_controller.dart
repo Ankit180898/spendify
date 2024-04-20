@@ -1,11 +1,9 @@
-
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:spendify/main.dart';
 import 'package:spendify/widgets/bottom_navigation.dart';
 import 'package:spendify/widgets/toast/custom_toast.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-
 
 class RegisterController extends GetxController {
   RxBool isLoading = false.obs;
@@ -49,14 +47,14 @@ class RegisterController extends GetxController {
           "name": nameC.text,
           "email": emailC.text,
           "created_at": DateTime.now().toIso8601String(),
-          "uid": res.user!.id,
-          "url": imageUrl
+          "balance": 12334,
         });
 
-        Get.off(const BottomNav());
+        Get.offAll(const BottomNav());
       } catch (e) {
         isLoading.value = false;
         CustomToast.errorToast("Error", e.toString());
+        debugPrint(e.toString());
       }
     } else {
       CustomToast.errorToast("ERROR", "Email, password and name are required");

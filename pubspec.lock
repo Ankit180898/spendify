@@ -182,6 +182,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.0.19"
+  flutter_speed_dial:
+    dependency: "direct main"
+    description:
+      name: flutter_speed_dial
+      sha256: "698a037274a66dbae8697c265440e6acb6ab6cae9ac5f95c749e7944d8f28d41"
+      url: "https://pub.dev"
+    source: hosted
+    version: "7.0.0"
   flutter_svg:
     dependency: "direct main"
     description:
@@ -216,14 +224,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "4.6.6"
-  get_storage:
-    dependency: "direct main"
-    description:
-      name: get_storage
-      sha256: "39db1fffe779d0c22b3a744376e86febe4ade43bf65e06eab5af707dc84185a2"
-      url: "https://pub.dev"
-    source: hosted
-    version: "2.1.1"
   google_fonts:
     dependency: "direct main"
     description:
@@ -637,14 +637,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.11.1"
-  staggered_grid_view_flutter:
-    dependency: "direct main"
-    description:
-      name: staggered_grid_view_flutter
-      sha256: d46b27d1b57344945edf9eadbd5ee03a667a6599fd87e79f9a2d5e717e6accf3
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.0.4"
   storage_client:
     dependency: transitive
     description:
@@ -685,6 +677,22 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.5.1"
+  syncfusion_flutter_charts:
+    dependency: "direct main"
+    description:
+      name: syncfusion_flutter_charts
+      sha256: f3327077c4816573895b15545ea85b12c6a6cab7f8c2cde1a7eec05c36bfb432
+      url: "https://pub.dev"
+    source: hosted
+    version: "25.1.40"
+  syncfusion_flutter_core:
+    dependency: transitive
+    description:
+      name: syncfusion_flutter_core
+      sha256: "8e19260d292ed77e1cbd4ee1baafb3c9486079cad856e7891478131d25076039"
+      url: "https://pub.dev"
+    source: hosted
+    version: "25.1.40"
   term_glyph:
     dependency: transitive
     description:

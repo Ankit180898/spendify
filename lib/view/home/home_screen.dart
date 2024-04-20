@@ -19,7 +19,7 @@ class HomeScreen extends StatelessWidget {
     final controller = Get.put(HomeController());
     debugPrint("email: ${controller.userEmail}");
     return Scaffold(
-      backgroundColor: AppColor.primaryExtraSoft,
+      backgroundColor: Colors.white,
       body: Obx(
         () => SingleChildScrollView(
           controller: hideBottomAppBarController,
