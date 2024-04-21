@@ -1,15 +1,11 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
-import 'package:flutter/widgets.dart';
-import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:spendify/config/app_color.dart';
 import 'package:spendify/utils/image_constants.dart';
 import 'package:spendify/utils/size_helpers.dart';
 import 'package:spendify/view/home/home_screen.dart';
-import 'package:spendify/view/wallet/transaction_graph.dart';
 import 'package:spendify/view/wallet/wallet_screen.dart';
-import 'package:spendify/widgets/custom_speed_dial.dart';
+import 'package:spendify/widgets/common_bottom_sheet.dart';
 
 var hideBottomAppBarController = ScrollController();
 
@@ -91,11 +87,11 @@ class _BottomNavState extends State<BottomNav>
           clipBehavior: Clip.none,
           physics: const NeverScrollableScrollPhysics(),
           controller: _tabController,
-          children: [
-            const HomeScreen(),
+          children: const [
+            HomeScreen(),
             // SearchScreen(),
 
-            TransactionBarGraph(),
+            WalletScreen(),
           ],
         ),
         floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
@@ -110,66 +106,51 @@ class _BottomNavState extends State<BottomNav>
                 visible: _isVisible,
                 child: Padding(
                   padding: const EdgeInsets.all(8.0),
-                  child: 
-                      Container(
-                        height: displayHeight(context) * 0.20,
-                        width: MediaQuery.of(context).size.width * 0.5,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(40),
-                          color: AppColor.secondaryExtraSoft,
-                        ),
-                        child: TabBar(
-                          automaticIndicatorColorAdjustment: false,
-                          dividerColor: Colors.transparent,
-                          controller: _tabController,
-                          tabs: const [
-                            Tab(icon: Icon(Icons.home_rounded, size: 30)),
-                            Tab(icon: Icon(Icons.wallet, size: 30)),
-                          ],
-                          unselectedLabelColor: Colors.black38,
-                          labelColor: Colors.white,
-                          indicatorColor: Colors.transparent,
-                        ),
-                      ),
-                     
-                  
+                  child: Container(
+                    height: displayHeight(context) * 0.20,
+                    width: MediaQuery.of(context).size.width * 0.5,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(40),
+                      color: AppColor.secondaryExtraSoft,
+                    ),
+                    child: TabBar(
+                      automaticIndicatorColorAdjustment: false,
+                      dividerColor: Colors.transparent,
+                      controller: _tabController,
+                      tabs: const [
+                        Tab(icon: Icon(Icons.home_rounded, size: 30)),
+                        Tab(icon: Icon(Icons.wallet, size: 30)),
+                      ],
+                      unselectedLabelColor: Colors.black38,
+                      labelColor: Colors.white,
+                      indicatorColor: Colors.transparent,
+                    ),
                   ),
                 ),
               ),
-               // Place the SpeedDial on top
-                  Visibility(
-                    visible: _isVisible,
-
-                    child: Positioned(
-                      bottom: displayHeight(context)*0.05, // Adjust as needed
-                      right: displayWidth(context)/2-50-70, // Adjust as needed
-                      child: CustomSpeedDial(
-                        
-                        
-  children: [
-    CustomSpeedDialChild(
-      icon: Icons.add,
-      backgroundColor: Colors.green,
-      onTap: () {
-        // Add your logic for income here
-      },
-    ),
-    CustomSpeedDialChild(
-      icon: Icons.remove,
-      backgroundColor: Colors.red,
-      onTap: () {
-        // Add your logic for expense here
-      },
-    ),
-  ],
-),
-
-                    ),
-                  ),
+            ),
+            // Place the SpeedDial on top
+            Visibility(
+              visible: _isVisible,
+              child: Positioned(
+                  bottom: displayHeight(context) * 0.05, // Adjust as needed
+                  right:
+                      displayWidth(context) / 2 - 50 - 70, // Adjust as needed
+                  child: FloatingActionButton(
+                    onPressed: () {
+                      showModalBottomSheet(
+                          isScrollControlled: true,
+                          context: context,
+                          builder: (context) => const BottomSheetExample());
+                    },
+                    backgroundColor: AppColor.secondary,
+                    shape: const CircleBorder(),
+                    child: ImageConstants(colors: Colors.white).plus,
+                  )),
+            ),
           ],
         ),
-        ),
-    
+      ),
     );
   }
 }

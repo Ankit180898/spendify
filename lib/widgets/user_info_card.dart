@@ -1,7 +1,9 @@
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:spendify/config/app_color.dart';
+import 'package:spendify/controller/home_controller/home_controller.dart';
 import 'package:spendify/utils/size_helpers.dart';
 import 'package:spendify/utils/utils.dart';
 import 'package:spendify/widgets/custom_button.dart';
@@ -16,6 +18,7 @@ class UserInfoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final controller=Get.find<HomeController>();
     return Padding(
         padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 24.0),
         child: Column(
@@ -26,47 +29,16 @@ class UserInfoCard extends StatelessWidget {
               style: TextStyle(color: AppColor.secondarySoft, fontSize: 14),
             ),
             verticalSpace(8),
-            Text(
-              r'''$9844.00''',
-              style: TextStyle(
-                  color: AppColor.secondary,
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold),
-            ),
-            verticalSpace(16),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Expanded(
-                      child: CustomButton(
-                    text: 'INCOME',
-                    onPressed: () {
-                    },
-                    bgcolor: AppColor.secondaryExtraSoft.withOpacity(0.5),
-                    height: displayHeight(context) * 0.06,
-                    width: displayWidth(context),
-                    textSize: 16,
-                    textColor: AppColor.secondary,
-                    borderRadius: 40,
-                  )),
-                  horizontalSpace(16),
-                  Expanded(
-                      child: CustomButton(
-                    text: 'EXPENSE',
-                    onPressed: () {
-                    },
-                    bgcolor: AppColor.secondaryExtraSoft.withOpacity(0.5),
-                    height: displayHeight(context) * 0.06,
-                    width: displayWidth(context),
-                    textSize: 16,
-                    textColor: AppColor.secondary,
-                    borderRadius: 40,
-                  )),
-                ],
+            Obx(()=>
+               Text("${controller.totalBalance}"
+                ,
+                style: TextStyle(
+                    color: AppColor.secondary,
+                    fontSize: 32,
+                    fontWeight: FontWeight.bold),
               ),
             ),
+           
           ],
         ));
   }

@@ -10,7 +10,7 @@ class CustomSpeedDial extends StatefulWidget {
   final double spacing;
 
 
-  CustomSpeedDial({
+  const CustomSpeedDial({super.key, 
     required this.children,
     this.buttonSize = 56.0,
     this.spacing = 16.0,
@@ -30,7 +30,7 @@ class _CustomSpeedDialState extends State<CustomSpeedDial>
   void initState() {
     super.initState();
     _animationController =
-        AnimationController(vsync: this, duration: Duration(milliseconds: 200));
+        AnimationController(vsync: this, duration: const Duration(milliseconds: 200));
     _rotateAnimation =
         Tween<double>(begin: 0, end: math.pi / 2).animate(_animationController);
   }
@@ -95,7 +95,7 @@ class CustomSpeedDialChild extends StatelessWidget {
   final Color backgroundColor;
   final VoidCallback onTap;
 
-  CustomSpeedDialChild({
+  const CustomSpeedDialChild({super.key, 
     required this.icon,
     required this.backgroundColor,
     required this.onTap,

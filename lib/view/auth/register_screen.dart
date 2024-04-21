@@ -1,7 +1,9 @@
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:iconsax/iconsax.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:spendify/config/app_color.dart';
 import 'package:spendify/controller/auth_controller/register_controller.dart';
 import 'package:spendify/utils/size_helpers.dart';
@@ -10,7 +12,6 @@ import 'package:spendify/widgets/custom_button.dart';
 
 import '../../routes/app_pages.dart';
 import '../../utils/image_constants.dart';
-import '../../widgets/avatar_picker.dart';
 
 class RegisterScreen extends StatelessWidget {
   const RegisterScreen({super.key});
@@ -18,6 +19,7 @@ class RegisterScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final controller = Get.put(RegisterController());
+
     return Scaffold(
       resizeToAvoidBottomInset: true,
       bottomNavigationBar: SizedBox(
@@ -71,35 +73,40 @@ class RegisterScreen extends StatelessWidget {
                   ),
                   verticalSpace(16),
                   Center(
-                    child: Stack(
-                      children: [
-                        SizedBox(
-                          height: displayHeight(context) * 0.20,
-                          width: displayHeight(context) * 0.20,
-                          child:  CircleAvatar(
-                            radius: 30.0,
-                            onBackgroundImageError: (exception, stackTrace) => const Icon(Iconsax.add),
-                            backgroundImage: const NetworkImage(
-                                'https://avatar.iran.liara.run/public/boy'),
-                            backgroundColor: Colors.transparent,
+                    child: Obx(
+                      () => Stack(
+                        children: [
+                          SizedBox(
+                            height: displayHeight(context) * 0.20,
+                            width: displayHeight(context) * 0.20,
+                            child: CircleAvatar(
+                              radius: 30.0,
+                              backgroundColor: Colors.transparent,
+                              backgroundImage: controller.file.value == null
+                                  ? Image.network(
+                                          'https://avatar.iran.liara.run/public/boy')
+                                      .image
+                                  : Image.file(
+                                          File(controller.file.value!.path))
+                                      .image,
+                            ),
                           ),
-                        ),
-                        Positioned(
-                            bottom: 0,
-                            right: 0,
-                            child: IconButton.filled(
-                              onPressed: () {
-                                showDialog(
-                                    context: context,
-                                    builder: (context) {
-                                      return const AvatarPickerDialog();
-                                    });
-                              },
-                              icon: ImageConstants(colors:AppColor.secondaryExtraSoft ).avatar,
-                              iconSize: 16,
-                              alignment: Alignment.center,
-                            ))
-                      ],
+                          Positioned(
+                              bottom: 0,
+                              right: 0,
+                              child: IconButton.filled(
+                                onPressed: () async {
+                                  await controller
+                                      .pickImage(ImageSource.gallery);
+                                },
+                                icon: ImageConstants(
+                                        colors: AppColor.secondaryExtraSoft)
+                                    .avatar,
+                                iconSize: 16,
+                                alignment: Alignment.center,
+                              ))
+                        ],
+                      ),
                     ),
                   ),
                   verticalSpace(16),
@@ -231,6 +238,9 @@ class RegisterScreen extends StatelessWidget {
                           : "...Loading",
                       onPressed: () {
                         if (controller.isLoading.isFalse) {
+// Call uploadImageAndSaveToSupabase when Register button is pressed
+                          controller.uploadImageAndSaveToSupabase();
+                          // Then proceed with user registration
                           controller.register();
                         }
                       },
