@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:spendify/config/app_color.dart';
@@ -16,23 +15,20 @@ class GetStartedScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppColor.primarySoft,
       body: Container(
-        decoration: BoxDecoration(
-          gradient: AppColor.primaryGradient
-        ),
+        decoration: BoxDecoration(gradient: AppColor.primaryGradient),
         child: Column(
           children: [
             Expanded(child: Image.asset("assets/wallet.gif")),
-              Padding(
+            Padding(
               padding: const EdgeInsets.all(24.0),
               child: Column(
                 children: [
                   const Text("Take Control of Your Expenses Today!",
-        
                       style:
                           TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-                          verticalSpace(8),
+                  verticalSpace(8),
                   const Text(
-                    "Discover a smarter way to keep track of your expense using CashMate.",
+                    "Discover a smarter way to keep track of your expense using Spendify.",
                     style: TextStyle(
                       fontSize: 16,
                       color: Colors.white,
@@ -46,7 +42,7 @@ class GetStartedScreen extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.all(24.0),
               child: CustomButton(
-                isCenter: false,
+                  isCenter: false,
                   text: "Get Started",
                   onPressed: () {
                     Get.offAllNamed(Routes.REGISTER);

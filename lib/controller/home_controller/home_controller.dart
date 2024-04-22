@@ -1,5 +1,5 @@
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:spendify/main.dart';
 import 'package:spendify/model/transaction_model.dart';
@@ -7,23 +7,31 @@ import 'package:spendify/widgets/toast/custom_toast.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../routes/app_pages.dart';
-import '../../widgets/transaction_graph.dart';
 
 class HomeController extends GetxController {
   var userEmail = ''.obs;
   var userName = ''.obs;
   var totalBalance = 0.obs;
+  var newBalance = 0.obs;
   var imageUrl = ''.obs;
   var transactions = <Map<String, dynamic>>[].obs;
-    var transactionsList = <TransactionModel>[].obs; // Adjust the type here
+  var transactionsList = <TransactionModel>[].obs; // Adjust the type here
+  final selectedType = 'income'.obs;
+  var incomeTransactions = <Map<String, dynamic>>[].obs;
 
   var isLoading = false.obs;
-
+  var totalExpense = 0.obs;
+  var totalIncome = 0.obs;
   @override
   void onInit() async {
     super.onInit();
     await getProfile();
     await getTransactions();
+    await getBalance();
+    filterTransactions('income');
+    incomeTransactions.assignAll(transactions
+        .where((transaction) => transaction['type'] == 'income')
+        .toList());
   }
 
   Future<void> getProfile() async {
@@ -48,6 +56,7 @@ class HomeController extends GetxController {
       userEmail.value = userData['email'];
       userName.value = userData['name'];
       totalBalance.value = userData['balance'] ?? 0.0;
+      debugPrint(totalBalance.value.toString());
     } else {
       // Handle case when no user is found
       CustomToast.errorToast("Error", 'User not found');
@@ -71,20 +80,47 @@ class HomeController extends GetxController {
     }
   }
 
-  Future<void> getTransactions() async {
-    final prefs = await SharedPreferences.getInstance();
+  Future<void> getBalance() async {
+    final response = await supabaseC
+        .from("users")
+        .select('balance')
+        .eq('id', supabaseC.auth.currentUser!.id)
+        .single(); // Assuming there's only one row for the user's balance
 
+    // Extract balance value from response data
+    final balanceData = response;
+    final balance = balanceData['balance'];
+
+    // Update totalBalance with the fetched balance value
+    totalBalance.value = balance;
+  }
+
+  Future<void> getTransactions() async {
     isLoading.value = true;
     transactions.value = await supabaseC
         .from("transactions")
         .select()
         .eq('user_id', supabaseC.auth.currentUser!.id);
 
-        
     isLoading.value = false;
   }
 
-  
+  var filteredTransactions = <Map<String, dynamic>>[].obs;
 
-  
+  // Method to filter transactions based on type (expense or income)
+  void filterTransactions(String type) {
+    filteredTransactions.assignAll(transactions
+        .where((transaction) => transaction['type'] == type)
+        .toList());
+  }
+
+  // Function to calculate income data for the pie chart
+  Map<String, double> calculateIncomeData() {
+    Map<String, double> dataMap = {};
+    // Calculate total income
+    double totalIncome = incomeTransactions.fold(
+        0, (sum, transaction) => sum + transaction['amount']);
+    dataMap['Income'] = totalIncome;
+    return dataMap;
+  }
 }

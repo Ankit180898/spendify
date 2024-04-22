@@ -6,6 +6,11 @@ class AppColor {
     begin: Alignment.topRight,
     end: Alignment.bottomLeft,
   );
+  static LinearGradient secondaryGradient = LinearGradient(
+    colors: [secondary, secondary.withOpacity(0.5)],
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+  );
   static Color primary = const Color(0xFF8691FC);
   static Color primarySoft = const Color(0xFFCED3FE);
   static Color primaryExtraSoft = const Color(0xFFEFF3FC);

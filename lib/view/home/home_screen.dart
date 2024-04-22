@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:spendify/config/app_color.dart';
 import 'package:spendify/controller/home_controller/home_controller.dart';
+import 'package:spendify/controller/wallet_controller/wallet_controller.dart';
 import 'package:spendify/utils/size_helpers.dart';
 import 'package:spendify/utils/utils.dart';
-import 'package:spendify/view/home/components/income_expense_total.dart';
 import 'package:spendify/view/home/components/top_bar_contents.dart';
 import 'package:spendify/view/home/components/transaction_list.dart';
 import 'package:spendify/widgets/bottom_navigation.dart';
@@ -17,9 +16,11 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final controller = Get.put(HomeController());
+    final controller1 = Get.put(TransactionController());
     debugPrint("email: ${controller.userEmail}");
     return Scaffold(
-      backgroundColor: Colors.white54,
+      resizeToAvoidBottomInset: false,
+      backgroundColor: Colors.white60,
       body: Obx(
         () => SingleChildScrollView(
           controller: hideBottomAppBarController,
@@ -30,7 +31,7 @@ class HomeScreen extends StatelessWidget {
                   avatarUrl: "https://avatar.iran.liara.run/public/boy"),
               UserInfoCard(size: displayHeight(context) * 0.10),
               verticalSpace(32),
-              const IncomeExpenseTotal(),
+              // const IncomeExpenseTotal(),
               TransactionsGraph(),
               const SingleChildScrollView(child: TransactionsContent()),
             ],

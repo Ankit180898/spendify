@@ -72,44 +72,6 @@ class RegisterScreen extends StatelessWidget {
                     ),
                   ),
                   verticalSpace(16),
-                  Center(
-                    child: Obx(
-                      () => Stack(
-                        children: [
-                          SizedBox(
-                            height: displayHeight(context) * 0.20,
-                            width: displayHeight(context) * 0.20,
-                            child: CircleAvatar(
-                              radius: 30.0,
-                              backgroundColor: Colors.transparent,
-                              backgroundImage: controller.file.value == null
-                                  ? Image.network(
-                                          'https://avatar.iran.liara.run/public/boy')
-                                      .image
-                                  : Image.file(
-                                          File(controller.file.value!.path))
-                                      .image,
-                            ),
-                          ),
-                          Positioned(
-                              bottom: 0,
-                              right: 0,
-                              child: IconButton.filled(
-                                onPressed: () async {
-                                  await controller
-                                      .pickImage(ImageSource.gallery);
-                                },
-                                icon: ImageConstants(
-                                        colors: AppColor.secondaryExtraSoft)
-                                    .avatar,
-                                iconSize: 16,
-                                alignment: Alignment.center,
-                              ))
-                        ],
-                      ),
-                    ),
-                  ),
-                  verticalSpace(16),
                   Container(
                     width: MediaQuery.of(context).size.width,
                     padding: const EdgeInsets.only(left: 14, right: 14, top: 4),
@@ -238,8 +200,6 @@ class RegisterScreen extends StatelessWidget {
                           : "...Loading",
                       onPressed: () {
                         if (controller.isLoading.isFalse) {
-// Call uploadImageAndSaveToSupabase when Register button is pressed
-                          controller.uploadImageAndSaveToSupabase();
                           // Then proceed with user registration
                           controller.register();
                         }

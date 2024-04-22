@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:get/get.dart';
+import 'package:spendify/config/app_color.dart';
 import 'package:spendify/controller/splash/splash_controller.dart';
+import 'package:spendify/utils/utils.dart';
 
 class SplashScreen extends StatelessWidget {
   const SplashScreen({super.key});
@@ -8,8 +11,25 @@ class SplashScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final controller = Get.put(SplashController());
-    return const Scaffold(
-      body: Text("CashMate"),
+    return Scaffold(
+      backgroundColor: AppColor.secondary,
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Center(
+            child: Column(
+              children: [
+                Image.asset("assets/splash1.png"),
+                Text(
+                  "Spendify",
+                  style: titleText(24, AppColor.secondaryExtraSoft),
+                )
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

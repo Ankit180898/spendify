@@ -18,7 +18,7 @@ class BottomSheetExample extends StatefulWidget {
 }
 
 class _BottomSheetExampleState extends State<BottomSheetExample> {
-  final controller = Get.put(TransactionController());
+  final controller = Get.find<TransactionController>();
   @override
   Widget build(BuildContext context) {
     var transactions = Transactions.income.obs;

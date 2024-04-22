@@ -1,9 +1,8 @@
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:spendify/controller/home_controller/home_controller.dart';
 import 'package:spendify/main.dart';
-import 'package:spendify/model/transaction_model.dart';
 
 import '../../widgets/toast/custom_toast.dart';
 
@@ -15,6 +14,14 @@ class TransactionController extends GetxController {
   var isLoading = false.obs;
   var isSubmitted = false.obs;
   final homeC = Get.find<HomeController>();
+  var balance = 0.obs;
+
+  @override
+  void onInit() {
+    // TODO: implement onInit
+    super.onInit();
+  }
+
   @override
   void dispose() {
     super.dispose();
@@ -38,6 +45,7 @@ class TransactionController extends GetxController {
         'date': DateTime.now().toIso8601String(),
       });
       homeC.getTransactions();
+
       amountController.clear();
       titleController.clear();
       selectedCategory.value = '';
@@ -74,25 +82,20 @@ class TransactionController extends GetxController {
       isLoading.value = false;
       homeC.getTransactions();
 
-      if (response.error != null) {
-        isLoading.value = false;
-        amountController.clear();
-        titleController.clear();
-        Get.back();
+      // Check the type of transaction and update user balance accordingly
+      if (selectedType.value == 'income') {
+        await addIncomeToUser(currentUser.id, amount);
       } else {
-        // Check the type of transaction and update user balance accordingly
-        if (selectedType.value == 'income') {
-          await addIncomeToUser(currentUser.id, amount);
-        } else {
-          await deductExpenseFromUser(currentUser.id, amount);
-        }
-        isLoading.value = false;
-        amountController.clear();
-        titleController.clear();
-
-        // Transaction added successfully
-        print('Transaction added successfully');
+        await deductExpenseFromUser(currentUser.id, amount);
       }
+      isLoading.value = false;
+      amountController.clear();
+      titleController.clear();
+
+      Get.back();
+
+      // Transaction added successfully
+      print('Transaction added successfully');
     } else {
       CustomToast.errorToast(
           "ERROR", "Amount, title, and category are required");
@@ -100,28 +103,28 @@ class TransactionController extends GetxController {
   }
 
   Future<void> addIncomeToUser(String userId, double amount) async {
-    final response = await supabaseC.from('users').update(
-        {'balance': supabaseC.rpc('balance + $amount')}).eq('id', userId);
+    balance.value = homeC.totalBalance.value + amount.toInt();
+    final response = await supabaseC
+        .from('users')
+        .upsert({'balance': balance.value}).eq('id', userId);
 
-    if (response.error != null) {
-      // Handle error
-      print('Error updating user balance: ${response.error?.message}');
-    } else {
-      // User balance updated successfully
-      print('User balance updated successfully');
-    }
+    homeC.totalBalance = response;
+    await homeC.getBalance();
+    // User balance updated successfully
+    print('User balance updated successfully $response');
   }
 
   Future<void> deductExpenseFromUser(String userId, double amount) async {
-    final response = await supabaseC.from('users').update(
-        {'balance': supabaseC.rpc('balance - $amount')}).eq('id', userId);
+    balance.value = homeC.totalBalance.value - amount.toInt();
 
-    if (response.error != null) {
-      // Handle error
-      print('Error updating user balance: ${response.error?.message}');
-    } else {
-      // User balance updated successfully
-      print('User balance updated successfully');
-    }
+    final response = await supabaseC
+        .from('users')
+        .upsert({'balance': balance.value}).eq('id', userId);
+    homeC.totalBalance = response;
+
+    await homeC.getBalance();
+
+    // User balance updated successfully
+    print('User balance updated successfully');
   }
 }
