@@ -20,7 +20,7 @@
 
 ## Screenshots
 
- ![Screenshot_2024-04-23-22-53-50-285_com example spendify](https://github.com/Ankit180898/spendify/assets/48925155/af243136-e7a8-4aa8-bdc2-690ebf40bff7)
+ ![Screenshot_2024-04-23-22-53-50-285_com example spendify](https://github.com/Ankit180898/spendify/assets/48925155/af243136-e7a8-4aa8-bdc2-690ebf40bff7){ width=50% }
 
 
 ## Setup
