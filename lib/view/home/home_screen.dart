@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:spendify/config/app_color.dart';
 import 'package:spendify/controller/home_controller/home_controller.dart';
 import 'package:spendify/controller/wallet_controller/wallet_controller.dart';
 import 'package:spendify/utils/size_helpers.dart';
@@ -20,22 +21,17 @@ class HomeScreen extends StatelessWidget {
     debugPrint("email: ${controller.userEmail}");
     return Scaffold(
       resizeToAvoidBottomInset: false,
-      backgroundColor: Colors.white60,
-      body: Obx(
-        () => SingleChildScrollView(
-          controller: hideBottomAppBarController,
-          child: Column(
-            children: [
-              TopBarContents(
-                  username: controller.userName.toString(),
-                  avatarUrl: "https://avatar.iran.liara.run/public/boy"),
-              UserInfoCard(size: displayHeight(context) * 0.10),
-              verticalSpace(32),
-              // const IncomeExpenseTotal(),
-              TransactionsGraph(),
-              const SingleChildScrollView(child: TransactionsContent()),
-            ],
-          ),
+      backgroundColor: AppColor.secondary.withOpacity(0.6),
+      body: SingleChildScrollView(
+        controller: hideBottomAppBarController,
+        child: Column(
+          children: [
+            TopBarContents(),
+            UserInfoCard(size: displayHeight(context) * 0.10),
+            verticalSpace(32),
+            //  TransactionsGraph(),
+            const SingleChildScrollView(child: TransactionsContent()),
+          ],
         ),
       ),
     );

@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:spendify/controller/home_controller/home_controller.dart';
@@ -14,7 +13,6 @@ class TransactionController extends GetxController {
   var isLoading = false.obs;
   var isSubmitted = false.obs;
   final homeC = Get.find<HomeController>();
-  var balance = 0.obs;
 
   @override
   void onInit() {
@@ -44,6 +42,14 @@ class TransactionController extends GetxController {
         'category': selectedCategory.value,
         'date': DateTime.now().toIso8601String(),
       });
+      if (selectedType.value == 'income') {
+        updateBalance(amountController.text as double, 'income');
+        homeC.getBalance();
+      } else {
+        updateBalance(amountController.text as double, 'expense');
+
+        homeC.getBalance();
+      }
       homeC.getTransactions();
 
       amountController.clear();
@@ -63,6 +69,40 @@ class TransactionController extends GetxController {
     }
   }
 
+  Future<void> updateBalance(double amount, String type) async {
+    try {
+      // Fetch the current balance from the user's balance table
+      final response = await supabaseC
+          .from("users")
+          .select('balance')
+          .eq('user_id', supabaseC.auth.currentUser!.id)
+          .single();
+      final currentBalance = response['balance'];
+
+      // Calculate the new balance based on the transaction type (income or expense)
+      homeC.totalBalance =
+          type == 'income' ? currentBalance + amount : currentBalance - amount;
+
+      // Update the user's balance in the balance table
+      final updateResponse = await supabaseC
+          .from("users")
+          .update({'balance': homeC.totalBalance}).eq(
+              'user_id', supabaseC.auth.currentUser!.id);
+
+      // Check if the update was successful
+      if (updateResponse.error == null) {
+        // Update successful
+        debugPrint("User's balance updated successfully.");
+      } else {
+        // Update failed
+        debugPrint("Failed to update user's balance: ${updateResponse.error}");
+      }
+    } catch (error) {
+      // Handle errors
+      debugPrint("Error updating user's balance: $error");
+    }
+  }
+
   Future<void> addTransaction() async {
     final currentUser = supabaseC.auth.currentUser;
 
@@ -70,7 +110,6 @@ class TransactionController extends GetxController {
         titleController.text.isNotEmpty &&
         selectedCategory.isNotEmpty) {
       isLoading.value = true;
-      final double amount = double.parse(amountController.text);
       final response = await supabaseC.from('transactions').insert({
         'user_id': currentUser!.id,
         'amount': amountController.text,
@@ -79,16 +118,10 @@ class TransactionController extends GetxController {
         'category': selectedCategory.value,
         'date': DateTime.now().toIso8601String(),
       });
+      debugPrint(response);
       isLoading.value = false;
+      selectedCategory.value = '';
       homeC.getTransactions();
-
-      // Check the type of transaction and update user balance accordingly
-      if (selectedType.value == 'income') {
-        await addIncomeToUser(currentUser.id, amount);
-      } else {
-        await deductExpenseFromUser(currentUser.id, amount);
-      }
-      isLoading.value = false;
       amountController.clear();
       titleController.clear();
 
@@ -97,34 +130,11 @@ class TransactionController extends GetxController {
       // Transaction added successfully
       print('Transaction added successfully');
     } else {
+      amountController.clear();
+      titleController.clear();
+      selectedCategory.value = '';
       CustomToast.errorToast(
           "ERROR", "Amount, title, and category are required");
     }
-  }
-
-  Future<void> addIncomeToUser(String userId, double amount) async {
-    balance.value = homeC.totalBalance.value + amount.toInt();
-    final response = await supabaseC
-        .from('users')
-        .upsert({'balance': balance.value}).eq('id', userId);
-
-    homeC.totalBalance = response;
-    await homeC.getBalance();
-    // User balance updated successfully
-    print('User balance updated successfully $response');
-  }
-
-  Future<void> deductExpenseFromUser(String userId, double amount) async {
-    balance.value = homeC.totalBalance.value - amount.toInt();
-
-    final response = await supabaseC
-        .from('users')
-        .upsert({'balance': balance.value}).eq('id', userId);
-    homeC.totalBalance = response;
-
-    await homeC.getBalance();
-
-    // User balance updated successfully
-    print('User balance updated successfully');
   }
 }

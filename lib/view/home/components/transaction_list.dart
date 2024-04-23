@@ -24,7 +24,7 @@ class TransactionsContent extends StatelessWidget {
           child: Text(
             'TRANSACTIONS',
             style: TextStyle(
-                color: AppColor.secondarySoft,
+                color: AppColor.secondaryExtraSoft,
                 fontSize: 16,
                 fontWeight: FontWeight.w500),
           ),
@@ -40,16 +40,15 @@ class TransactionsContent extends StatelessWidget {
                       itemCount: controller.transactions.length,
                       itemBuilder: (context, index) {
                         var i = controller.transactions[index];
-                        var category=i['category'];
+                        var category = i['category'];
                         return Padding(
                           padding: const EdgeInsets.only(bottom: 8.0, top: 8.0),
                           child: ListTile(
                             leading: CircleAvatar(
-                              radius: 24,
-                              backgroundColor: AppColor.secondaryExtraSoft,
-                              child: getCategoryImage(category, categoryList)
-                              
-                            ),
+                                radius: 24,
+                                backgroundColor: AppColor.secondarySoft,
+                                child:
+                                    getCategoryImage(category, categoryList)),
                             title: Text(
                               '${i['description']}',
                               style: const TextStyle(fontSize: 16),
@@ -90,6 +89,7 @@ class TransactionsContent extends StatelessWidget {
         DateTime.parse(dateTimeString); // Parse the date time string
     return DateFormat("d").format(dateTime); // Format the date and time
   }
+
   // Function to get the category image based on the category name
   Widget getCategoryImage(String category, List<CategoriesModel> categoryList) {
     var matchingCategory = categoryList.firstWhere(
@@ -98,8 +98,7 @@ class TransactionsContent extends StatelessWidget {
     );
 
     if (matchingCategory.category.isNotEmpty) {
-        return SvgPicture.asset(matchingCategory.image);
-      
+      return SvgPicture.asset(matchingCategory.image);
     } else {
       return ImageConstants(colors: AppColor.secondaryExtraSoft).avatar;
     }

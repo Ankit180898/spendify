@@ -183,7 +183,7 @@ class _BottomSheetExampleState extends State<BottomSheetExample> {
                       text: controller.isLoading.isFalse ? "Add" : "...Loading",
                       onPressed: () {
                         if (controller.isLoading.isFalse) {
-                          controller.addResource();
+                          controller.addTransaction();
                         }
                       },
                       bgcolor: AppColor.secondary,

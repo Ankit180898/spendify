@@ -20,7 +20,6 @@ class WalletScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final controller = Get.find<HomeController>();
     final controller2 = Get.find<TransactionController>();
-    Map<String, double> dataMap = controller.calculateIncomeData();
 
     var transactions = Filtered.income.obs;
     var selectedFilter = 'income'.obs;
@@ -40,34 +39,11 @@ class WalletScreen extends StatelessWidget {
                 ),
                 Obx(
                   () => Text(
-                    "₹ ${controller.newBalance.value}",
+                    "₹ ${controller.totalBalance.value}",
                     style: TextStyle(
                         color: AppColor.secondary,
                         fontSize: 32,
                         fontWeight: FontWeight.bold),
-                  ),
-                ),
-                PieChart(
-                  dataMap: dataMap,
-                  centerText:
-                      selectedFilter.value == 'income' ? 'Income' : 'Expense',
-                  chartType: ChartType.ring,
-                  chartRadius: MediaQuery.of(context).size.width / 2.5,
-                  colorList: [
-                    Colors.green,
-                    Colors.red
-                  ], // Colors for income and expense
-                  legendOptions: LegendOptions(
-                    showLegends: true,
-                    legendPosition: LegendPosition.right,
-                    showLegendsInRow: true,
-                  ),
-                  chartValuesOptions: ChartValuesOptions(
-                    showChartValueBackground: true,
-                    showChartValues: true,
-                    showChartValuesInPercentage: true,
-                    showChartValuesOutside: false,
-                    decimalPlaces: 2,
                   ),
                 ),
                 verticalSpace(32),

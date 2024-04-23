@@ -12,6 +12,8 @@ import 'package:image_picker/image_picker.dart';
 class RegisterController extends GetxController {
   RxBool isLoading = false.obs;
   RxBool isHidden = true.obs;
+  var balanceKeypad = TextEditingController();
+
   var emailC = TextEditingController();
   var passwordC = TextEditingController();
   var nameC = TextEditingController();

@@ -12,12 +12,13 @@ class HomeController extends GetxController {
   var userEmail = ''.obs;
   var userName = ''.obs;
   var totalBalance = 0.obs;
-  var newBalance = 0.obs;
+  RxDouble newBalance = RxDouble(0.0);
   var imageUrl = ''.obs;
   var transactions = <Map<String, dynamic>>[].obs;
   var transactionsList = <TransactionModel>[].obs; // Adjust the type here
   final selectedType = 'income'.obs;
-  var incomeTransactions = <Map<String, dynamic>>[].obs;
+  var incomeTransactions = <Map<String, dynamic>>[];
+  var expenseTransactions = <Map<String, dynamic>>[];
 
   var isLoading = false.obs;
   var totalExpense = 0.obs;
@@ -28,10 +29,8 @@ class HomeController extends GetxController {
     await getProfile();
     await getTransactions();
     await getBalance();
+    // Filter transactions into income and expense
     filterTransactions('income');
-    incomeTransactions.assignAll(transactions
-        .where((transaction) => transaction['type'] == 'income')
-        .toList());
   }
 
   Future<void> getProfile() async {
@@ -102,6 +101,11 @@ class HomeController extends GetxController {
         .select()
         .eq('user_id', supabaseC.auth.currentUser!.id);
 
+
+    // Calculate income and expense
+    calculateIncomeData();
+    calculateExpensedata();
+
     isLoading.value = false;
   }
 
@@ -115,12 +119,34 @@ class HomeController extends GetxController {
   }
 
   // Function to calculate income data for the pie chart
-  Map<String, double> calculateIncomeData() {
-    Map<String, double> dataMap = {};
-    // Calculate total income
-    double totalIncome = incomeTransactions.fold(
-        0, (sum, transaction) => sum + transaction['amount']);
-    dataMap['Income'] = totalIncome;
-    return dataMap;
+void calculateIncomeData() {
+  // Filter transactions of type 'income'
+  incomeTransactions = transactions
+      .where((transaction) => transaction['type'] == 'income')
+      .toList();
+
+  // Calculate total income
+  totalIncome.value = incomeTransactions.fold(
+      0,
+      (int sum, transaction) =>
+          sum + int.parse(transaction['amount'].toString()));
+
+  print("totalIncome: $totalIncome");
+}
+
+
+  void calculateExpensedata() {
+    // Filter transactions of type 'income'
+   expenseTransactions = transactions
+      .where((transaction) => transaction['type'] == 'expense')
+      .toList();
+
+  // Calculate total income
+  totalExpense.value = expenseTransactions.fold(
+      0,
+      (int sum, transaction) =>
+          sum + int.parse(transaction['amount'].toString()));
+
+  print("totalIncome: $totalIncome");
   }
 }
