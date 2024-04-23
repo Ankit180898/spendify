@@ -19,10 +19,10 @@
   Deployment: Google Play Store, Apple App Store
 
 ## Screenshots
-<img src="https://github.com/Ankit180898/spendify/assets/48925155/617a4535-1f67-451c-9cf9-7700d092f737" width="150" height="350">
 
-<img src="https://github.com/Ankit180898/spendify/assets/48925155/593fdf98-7c0b-4abb-98ee-79c2667fe4b1" width="150" height="350">
+<img src="https://github.com/Ankit180898/spendify/assets/48925155/3dc972f5-e264-48a8-b565-2871a12a33da" width="150" height="350">
 
+<img src="https://github.com/Ankit180898/spendify/assets/48925155/1d35e673-95b9-41a0-88b8-e3a4ce0f2ed8" width="150" height="350">
 
 ## Setup
   1) Clone the repository:
