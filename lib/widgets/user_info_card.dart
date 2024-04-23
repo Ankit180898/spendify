@@ -24,37 +24,27 @@ class UserInfoCard extends StatelessWidget {
             width: displayWidth(context),
             height: displayHeight(context) / 4,
             decoration: BoxDecoration(
-              gradient: AppColor.secondaryGradient,
-              border: Border.all(
-                  color: AppColor.secondaryExtraSoft.withOpacity(0.15),
-                  width: 2),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.15),
-                  spreadRadius: 0,
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-              borderRadius: BorderRadius.circular(28),
+              borderRadius: BorderRadius.circular(15),
+              gradient: LinearGradient(
+                colors: [
+                  Colors.white70.withOpacity(0.2),
+                  AppColor.secondaryExtraSoft.withOpacity(0.2),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
             ),
             child: Column(
               children: [
                 verticalSpace(16),
                 Text(
                   "Balance",
-                  style: TextStyle(
-                      color: AppColor.secondaryExtraSoft, fontSize: 14),
+                  style: normalText(16, AppColor.secondaryExtraSoft),
                 ),
                 verticalSpace(8),
                 Obx(
-                  () => Text(
-                    "₹ ${controller.totalBalance.value.toString()}",
-                    style: TextStyle(
-                        color: AppColor.secondaryExtraSoft,
-                        fontSize: 32,
-                        fontWeight: FontWeight.bold),
-                  ),
+                  () => Text("₹${controller.totalBalance.value.toString()}",
+                      style: titleText(40, AppColor.secondaryExtraSoft)),
                 ),
                 verticalSpace(8),
                 Padding(
@@ -74,11 +64,9 @@ class UserInfoCard extends StatelessWidget {
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold),
                               ),
-                              Text(controller.totalIncome.value.toString(),
-                                  style: TextStyle(
-                                      color: AppColor.secondaryExtraSoft,
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.normal)),
+                              Text('+ ₹${controller.totalIncome.value}',
+                                  style: normalText(
+                                      16, AppColor.secondaryExtraSoft)),
                             ],
                           )
                         ],
@@ -86,7 +74,7 @@ class UserInfoCard extends StatelessWidget {
                       Spacer(),
                       Row(
                         children: [
-                          ImageConstants(colors: AppColor.error).expense,
+                          ImageConstants(colors: AppColor.success).income,
                           Column(
                             children: [
                               Text(
@@ -96,15 +84,13 @@ class UserInfoCard extends StatelessWidget {
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold),
                               ),
-                              Text(controller.totalExpense.value.toString(),
-                                  style: TextStyle(
-                                      color: AppColor.secondaryExtraSoft,
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.normal)),
+                              Text('+ ₹${controller.totalExpense.value}',
+                                  style: normalText(
+                                      16, AppColor.secondaryExtraSoft)),
                             ],
                           )
                         ],
-                      )
+                      ),
                     ],
                   ),
                 )

@@ -16,7 +16,6 @@ class HomeController extends GetxController {
   var imageUrl = ''.obs;
   var transactions = <Map<String, dynamic>>[].obs;
   var transactionsList = <TransactionModel>[].obs; // Adjust the type here
-  final selectedType = 'income'.obs;
   var incomeTransactions = <Map<String, dynamic>>[];
   var expenseTransactions = <Map<String, dynamic>>[];
 

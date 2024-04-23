@@ -20,20 +20,17 @@ class TransactionsContent extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.only(left: 24.0, right: 24.0, top: 24.0),
+          padding: const EdgeInsets.only(left: 24.0, right: 24.0, top: 16.0),
           child: Text(
-            'TRANSACTIONS',
-            style: TextStyle(
-                color: AppColor.secondaryExtraSoft,
-                fontSize: 16,
-                fontWeight: FontWeight.w500),
+            'Transactions',
+            style: titleText(18, AppColor.secondary),
           ),
         ),
         Obx(
           () => controller.isLoading.value == true
               ? const CircularProgressIndicator()
               : controller.transactions.isNotEmpty
-                  ? ListView.builder(
+                  ? ListView.separated(
                       padding: const EdgeInsets.all(0),
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
@@ -46,17 +43,16 @@ class TransactionsContent extends StatelessWidget {
                           child: ListTile(
                             leading: CircleAvatar(
                                 radius: 24,
-                                backgroundColor: AppColor.secondarySoft,
+                                backgroundColor: AppColor.primaryExtraSoft,
                                 child:
                                     getCategoryImage(category, categoryList)),
                             title: Text(
                               '${i['description']}',
-                              style: const TextStyle(fontSize: 16),
+                              style: mediumTextStyle(16, AppColor.secondary),
                             ),
                             subtitle: Text(
                               _formatDateTime('${i['date']}'),
-                              style: TextStyle(
-                                  fontSize: 14, color: AppColor.secondarySoft),
+                              style: normalText(14, AppColor.secondarySoft),
                             ),
                             trailing: Row(
                               mainAxisSize: MainAxisSize.min,
@@ -66,9 +62,22 @@ class TransactionsContent extends StatelessWidget {
                                         .expense
                                     : ImageConstants(colors: AppColor.success)
                                         .income,
-                                Text("${i['amount']}"),
+                                Text(
+                                  "${i['amount']}",
+                                  style:
+                                      mediumTextStyle(16, AppColor.secondary),
+                                ),
                               ],
                             ),
+                          ),
+                        );
+                      },
+                      separatorBuilder: (BuildContext context, int index) {
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                          child: Divider(
+                            thickness: 0.5,
+                            color: AppColor.secondaryExtraSoft,
                           ),
                         );
                       },
@@ -83,11 +92,11 @@ class TransactionsContent extends StatelessWidget {
     );
   }
 
-  // Function to parse and format date time string
+// Function to parse and format date time string
   String _formatDateTime(String dateTimeString) {
     final dateTime =
         DateTime.parse(dateTimeString); // Parse the date time string
-    return DateFormat("d").format(dateTime); // Format the date and time
+    return DateFormat("MMMM d, y").format(dateTime); // Format the date and time
   }
 
   // Function to get the category image based on the category name

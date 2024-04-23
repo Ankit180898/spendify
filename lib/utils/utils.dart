@@ -24,32 +24,27 @@ extension DurationExtension on int {
 }
 
 //30 medium
-TextStyle mediumTextStyle(double size, Color color) => GoogleFonts.epilogue(
+TextStyle mediumTextStyle(double size, Color color) => GoogleFonts.dmSans(
       textStyle: TextStyle(
         color: color,
-        height: 2,
         fontSize: size,
-        fontWeight: FontWeight.w700,
+        fontWeight: FontWeight.w600,
       ),
     );
 //72 when big
 // 48 when mobile size
-TextStyle titleText(double size, Color color) => GoogleFonts.inter(
+TextStyle titleText(double size, Color color) => GoogleFonts.dmSans(
       textStyle: TextStyle(
         color: color,
-        height: 1.2,
         fontSize: size,
-        fontWeight: FontWeight.bold,
+        fontWeight: FontWeight.w700,
       ),
     );
 
 //24
-TextStyle normalText(double size, Color color) => GoogleFonts.epilogue(
-      textStyle: TextStyle(
-          height: 1.5,
-          color: color,
-          fontSize: size,
-          fontWeight: FontWeight.normal),
+TextStyle normalText(double size, Color color) => GoogleFonts.dmSans(
+      textStyle:
+          TextStyle(color: color, fontSize: size, fontWeight: FontWeight.w400),
     );
 
 List<CategoriesModel> categoryList = [

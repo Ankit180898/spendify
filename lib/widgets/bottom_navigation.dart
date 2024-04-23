@@ -111,7 +111,10 @@ class _BottomNavState extends State<BottomNav>
                     width: MediaQuery.of(context).size.width * 0.5,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(40),
-                      color: AppColor.secondaryExtraSoft,
+                      gradient: SweepGradient(
+                          colors: [AppColor.primarySoft, Colors.white],
+                          endAngle: 20,
+                          startAngle: 10),
                     ),
                     child: TabBar(
                       automaticIndicatorColorAdjustment: false,
@@ -121,7 +124,7 @@ class _BottomNavState extends State<BottomNav>
                         Tab(icon: Icon(Icons.home_rounded, size: 30)),
                         Tab(icon: Icon(Icons.wallet, size: 30)),
                       ],
-                      unselectedLabelColor: Colors.black38,
+                      unselectedLabelColor: AppColor.secondarySoft,
                       labelColor: Colors.white,
                       indicatorColor: Colors.transparent,
                     ),

@@ -13,30 +13,32 @@ class TopBarContents extends StatelessWidget {
       () => Padding(
         padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 24.0),
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.start,
           children: [
-            RichText(
-              textAlign: TextAlign.start,
-              textScaleFactor: 1.5,
-              text: TextSpan(
-                text: 'Hello,\n',
-                style: normalText(16, AppColor.secondarySoft),
-                children: <TextSpan>[
-                  TextSpan(
-                      text: controller.userName.value,
-                      style: titleText(20, AppColor.secondaryExtraSoft)),
-                ],
-              ),
-            ),
             InkWell(
               onTap: () => controller.signOut(),
               child: const CircleAvatar(
-                radius: 30.0,
+                radius: 24.0,
                 backgroundImage: NetworkImage(
                     'https://avatar.iran.liara.run/public/boy',
                     scale: 10),
                 backgroundColor: Colors.transparent,
+              ),
+            ),
+            horizontalSpace(8.0),
+            RichText(
+              textScaler: const TextScaler.linear(1),
+              textAlign: TextAlign.start,
+              text: TextSpan(
+                text: 'Welcome Back,\n',
+                style: normalText(
+                    16, AppColor.secondaryExtraSoft.withOpacity(0.5)),
+                children: <TextSpan>[
+                  TextSpan(
+                      text: controller.userName.value,
+                      style: titleText(16, AppColor.secondaryExtraSoft)),
+                ],
               ),
             ),
           ],

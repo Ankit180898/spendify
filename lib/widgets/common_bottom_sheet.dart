@@ -33,7 +33,10 @@ class _BottomSheetExampleState extends State<BottomSheetExample> {
         ),
         padding: const EdgeInsets.all(24.0),
         decoration: BoxDecoration(
-          // gradient: AppColor.primaryGradient,
+          gradient: SweepGradient(
+              colors: [AppColor.primarySoft, Colors.white],
+              endAngle: 20,
+              startAngle: 10), // gradient: AppColor.primaryGradient,
           color: AppColor.secondaryExtraSoft,
           borderRadius: const BorderRadius.only(
             topLeft: Radius.circular(20.0),
@@ -183,7 +186,7 @@ class _BottomSheetExampleState extends State<BottomSheetExample> {
                       text: controller.isLoading.isFalse ? "Add" : "...Loading",
                       onPressed: () {
                         if (controller.isLoading.isFalse) {
-                          controller.addTransaction();
+                          controller.addResource();
                         }
                       },
                       bgcolor: AppColor.secondary,

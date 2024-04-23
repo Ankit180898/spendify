@@ -21,14 +21,26 @@ class HomeScreen extends StatelessWidget {
     debugPrint("email: ${controller.userEmail}");
     return Scaffold(
       resizeToAvoidBottomInset: false,
-      backgroundColor: AppColor.secondary.withOpacity(0.6),
+      backgroundColor: Colors.white,
       body: SingleChildScrollView(
         controller: hideBottomAppBarController,
         child: Column(
           children: [
-            TopBarContents(),
-            UserInfoCard(size: displayHeight(context) * 0.10),
-            verticalSpace(32),
+            Container(
+              decoration: BoxDecoration(
+                  gradient: AppColor.primaryGradient,
+                  borderRadius: const BorderRadius.only(
+                      bottomLeft: Radius.circular(28),
+                      bottomRight: Radius.circular(28))),
+              child: Column(
+                children: [
+                  TopBarContents(),
+                  UserInfoCard(size: displayHeight(context) * 0.10),
+                  verticalSpace(32),
+                ],
+              ),
+            ),
+            verticalSpace(16),
             //  TransactionsGraph(),
             const SingleChildScrollView(child: TransactionsContent()),
           ],
