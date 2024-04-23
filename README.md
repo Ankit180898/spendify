@@ -20,6 +20,7 @@
 
 ## Screenshots
 <img src="https://github.com/Ankit180898/spendify/assets/48925155/617a4535-1f67-451c-9cf9-7700d092f737" width="150" height="350">
+
 <img src="https://github.com/Ankit180898/spendify/assets/48925155/593fdf98-7c0b-4abb-98ee-79c2667fe4b1" width="150" height="350">
 
 
