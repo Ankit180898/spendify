@@ -20,7 +20,8 @@
 
 ## Screenshots
 
-<img src="[https://your-screenshot-url.png](https://github.com/Ankit180898/spendify/assets/48925155/af243136-e7a8-4aa8-bdc2-690ebf40bff7)" alt="Screenshot" width="400">
+![Screenshot](https://github.com/Ankit180898/spendify/assets/48925155/617a4535-1f67-451c-9cf9-7700d092f737){ width=50% }
+
 
 ## Setup
   1) Clone the repository:
