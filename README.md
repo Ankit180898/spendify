@@ -19,8 +19,7 @@
   Deployment: Google Play Store, Apple App Store
 
 ## Screenshots
-
-![Screenshot](https://github.com/Ankit180898/spendify/assets/48925155/617a4535-1f67-451c-9cf9-7700d092f737){ width=20% height=40%}
+<img src="[https://user-images.githubusercontent.com/16319829/81180309-2b51f000-8fee-11ea-8a78-ddfe8c3412a7.png](https://github.com/Ankit180898/spendify/assets/48925155/617a4535-1f67-451c-9cf9-7700d092f737)" width=50% height=50%>
 
 
 ## Setup
