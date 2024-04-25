@@ -6,6 +6,7 @@ import 'package:spendify/config/app_color.dart';
 import 'package:spendify/controller/home_controller/home_controller.dart';
 import 'package:spendify/model/categories_model.dart';
 import 'package:spendify/utils/image_constants.dart';
+import 'package:spendify/utils/size_helpers.dart';
 import 'package:spendify/utils/utils.dart';
 
 class TransactionsContent extends StatelessWidget {
@@ -30,59 +31,167 @@ class TransactionsContent extends StatelessWidget {
           () => controller.isLoading.value == true
               ? const CircularProgressIndicator()
               : controller.transactions.isNotEmpty
-                  ? ListView.separated(
-                      reverse: true,
-                      padding: const EdgeInsets.all(0),
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: controller.transactions.length,
-                      itemBuilder: (context, index) {
-                        var i = controller.transactions[index];
-                        var category = i['category'];
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 8.0, top: 8.0),
-                          child: ListTile(
-                            leading: CircleAvatar(
-                                radius: 24,
-                                backgroundColor: AppColor.primaryExtraSoft,
-                                child:
-                                    getCategoryImage(category, categoryList)),
-                            title: Text(
-                              '${i['description']}',
-                              style: mediumTextStyle(16, AppColor.secondary),
-                            ),
-                            subtitle: Text(
-                              _formatDateTime('${i['date']}'),
-                              style: normalText(14, AppColor.secondarySoft),
-                            ),
-                            trailing: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                i['type'] == 'expense'
-                                    ? ImageConstants(colors: AppColor.warning)
-                                        .expense
-                                    : ImageConstants(colors: AppColor.success)
-                                        .income,
-                                Text(
-                                  "${i['amount']}",
+                  ? controller.selectedChip.value.isEmpty
+                      ? ListView.separated(
+                          reverse: true,
+                          padding: const EdgeInsets.all(0),
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: controller.transactions.length,
+                          itemBuilder: (context, index) {
+                            var i = controller.transactions[index];
+                            var category = i['category'];
+                            return Padding(
+                              padding:
+                                  const EdgeInsets.only(bottom: 8.0, top: 8.0),
+                              child: ListTile(
+                                leading: CircleAvatar(
+                                    radius: 24,
+                                    backgroundColor: AppColor.primaryExtraSoft,
+                                    child: getCategoryImage(
+                                        category, categoryList)),
+                                title: Row(
+                                  children: [
+                                    Text(
+                                      '${i['description']}',
+                                      style: mediumTextStyle(
+                                          16, AppColor.secondary),
+                                    ),
+                                  ],
+                                ),
+                                subtitle: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      _formatDateTime('${i['date']}'),
+                                      style: normalText(
+                                          14, AppColor.secondarySoft),
+                                    ),
+                                    verticalSpace(5),
+                                    Container(
+                                      decoration: BoxDecoration(
+                                          color: AppColor.primarySoft,
+                                          borderRadius:
+                                              BorderRadius.circular(20)),
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(8.0),
+                                        child: Text('${i['category']}',
+                                            style: normalText(
+                                                14, AppColor.secondarySoft)),
+                                      ),
+                                    )
+                                  ],
+                                ),
+                                trailing: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    i['type'] == 'expense'
+                                        ? ImageConstants(
+                                                colors: AppColor.warning)
+                                            .expense
+                                        : ImageConstants(
+                                                colors: AppColor.success)
+                                            .income,
+                                    Text(
+                                      "${i['amount']}",
+                                      style: mediumTextStyle(
+                                          16, AppColor.secondary),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                          separatorBuilder: (BuildContext context, int index) {
+                            return Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 24.0),
+                              child: Divider(
+                                thickness: 0.5,
+                                color: AppColor.secondaryExtraSoft,
+                              ),
+                            );
+                          },
+                        )
+                      : ListView.separated(
+                          reverse: true,
+                          padding: const EdgeInsets.all(0),
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: controller
+                              .filteredTransactionsByCategoryList.length,
+                          itemBuilder: (context, index) {
+                            var i = controller
+                                .filteredTransactionsByCategoryList[index];
+                            var category = i['category'];
+                            return Padding(
+                              padding:
+                                  const EdgeInsets.only(bottom: 8.0, top: 8.0),
+                              child: ListTile(
+                                leading: CircleAvatar(
+                                    radius: 24,
+                                    backgroundColor: AppColor.primaryExtraSoft,
+                                    child: getCategoryImage(
+                                        category, categoryList)),
+                                title: Text(
+                                  '${i['description']}',
                                   style:
                                       mediumTextStyle(16, AppColor.secondary),
                                 ),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
-                      separatorBuilder: (BuildContext context, int index) {
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                          child: Divider(
-                            thickness: 0.5,
-                            color: AppColor.secondaryExtraSoft,
-                          ),
-                        );
-                      },
-                    )
+                                subtitle: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      _formatDateTime('${i['date']}'),
+                                      style: normalText(
+                                          14, AppColor.secondarySoft),
+                                    ),
+                                    verticalSpace(5),
+                                    Container(
+                                      decoration: BoxDecoration(
+                                          color: AppColor.primarySoft,
+                                          borderRadius:
+                                              BorderRadius.circular(20)),
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(8.0),
+                                        child: Text('${i['category']}',
+                                            style: normalText(
+                                                14, AppColor.secondarySoft)),
+                                      ),
+                                    )
+                                  ],
+                                ),
+                                trailing: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    i['type'] == 'expense'
+                                        ? ImageConstants(
+                                                colors: AppColor.warning)
+                                            .expense
+                                        : ImageConstants(
+                                                colors: AppColor.success)
+                                            .income,
+                                    Text(
+                                      "${i['amount']}",
+                                      style: mediumTextStyle(
+                                          16, AppColor.secondary),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                          separatorBuilder: (BuildContext context, int index) {
+                            return Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 24.0),
+                              child: Divider(
+                                thickness: 0.5,
+                                color: AppColor.secondaryExtraSoft,
+                              ),
+                            );
+                          },
+                        )
                   : const Center(
                       child: Padding(
                       padding: EdgeInsets.all(50.0),
