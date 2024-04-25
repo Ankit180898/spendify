@@ -24,6 +24,8 @@ class HomeController extends GetxController {
   var totalExpense = 0.obs;
   var totalIncome = 0.obs;
   var selectedFilter = 'day'.obs;
+
+  var selectedChip = ''.obs;
   List<Map<String, dynamic>> chartData = [];
 
   @override
@@ -120,6 +122,16 @@ class HomeController extends GetxController {
         .toList());
   }
 
+  var filteredTransactionsByCategoryList = <Map<String, dynamic>>[].obs;
+
+  // Method to filter transactions based on category
+  void filterTransactionsByCategory(String category) {
+    selectedChip.value = category;
+    filteredTransactionsByCategoryList.assignAll(transactions
+        .where((transaction) => transaction['category'] == category)
+        .toList());
+  }
+
   // Function to calculate income data for the pie chart
   void calculateIncomeData() {
     // Filter transactions of type 'income'
@@ -152,6 +164,4 @@ class HomeController extends GetxController {
 
     print("totalIncome: $totalIncome");
   }
-
-
 }

@@ -5,6 +5,7 @@ import 'package:spendify/controller/home_controller/home_controller.dart';
 import 'package:spendify/controller/wallet_controller/wallet_controller.dart';
 import 'package:spendify/utils/size_helpers.dart';
 import 'package:spendify/utils/utils.dart';
+import 'package:spendify/view/home/components/tabs_view.dart';
 import 'package:spendify/view/home/components/top_bar_contents.dart';
 import 'package:spendify/view/home/components/transaction_list.dart';
 import 'package:spendify/widgets/bottom_navigation.dart';
@@ -40,7 +41,20 @@ class HomeScreen extends StatelessWidget {
                 ],
               ),
             ),
+            Padding(
+              padding:
+                  const EdgeInsets.only(left: 24.0, right: 24.0, top: 16.0),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Categories',
+                  style: titleText(18, AppColor.secondary),
+                ),
+              ),
+            ),
+            const TabsView(),
             verticalSpace(16),
+
             //  TransactionsGraph(),
             const SingleChildScrollView(child: TransactionsContent()),
           ],
