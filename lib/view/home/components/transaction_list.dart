@@ -31,6 +31,7 @@ class TransactionsContent extends StatelessWidget {
               ? const CircularProgressIndicator()
               : controller.transactions.isNotEmpty
                   ? ListView.separated(
+                      reverse: true,
                       padding: const EdgeInsets.all(0),
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),

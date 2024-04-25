@@ -4,6 +4,7 @@ import 'package:spendify/config/app_color.dart';
 import 'package:spendify/utils/image_constants.dart';
 import 'package:spendify/utils/size_helpers.dart';
 import 'package:spendify/view/home/home_screen.dart';
+import 'package:spendify/view/wallet/new_wallet_screen.dart';
 import 'package:spendify/view/wallet/wallet_screen.dart';
 import 'package:spendify/widgets/common_bottom_sheet.dart';
 
@@ -68,7 +69,7 @@ class _BottomNavState extends State<BottomNav>
 
   final screens = [
     const HomeScreen(),
-    const WalletScreen(),
+     NewWalletScreen(),
   ];
 
   void _onItemTapped(int index) {
@@ -87,11 +88,11 @@ class _BottomNavState extends State<BottomNav>
           clipBehavior: Clip.none,
           physics: const NeverScrollableScrollPhysics(),
           controller: _tabController,
-          children: const [
-            HomeScreen(),
+          children:  [
+            const HomeScreen(),
             // SearchScreen(),
-
-            WalletScreen(),
+            //WalletScreen()
+            NewWalletScreen(),
           ],
         ),
         floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,

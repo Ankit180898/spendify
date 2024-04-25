@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
+import 'package:spendify/utils/utils.dart';
 
 class CustomButton extends StatelessWidget {
   final String text;
@@ -11,8 +12,9 @@ class CustomButton extends StatelessWidget {
   final double width;
   final double textSize;
   final bool isCenter;
+  Gradient? gradient;
 
-  const CustomButton({
+  CustomButton({
     super.key,
     required this.text,
     required this.onPressed,
@@ -21,8 +23,9 @@ class CustomButton extends StatelessWidget {
     required this.width,
     required this.textSize,
     required this.textColor,
-    this.isCenter=true,
+    this.isCenter = true,
     this.borderRadius = 8.0,
+    this.gradient,
   });
 
   @override
@@ -35,45 +38,41 @@ class CustomButton extends StatelessWidget {
         onTap: onPressed,
         child: Container(
           decoration: BoxDecoration(
-            color: bgcolor,
-            borderRadius: BorderRadius.circular(borderRadius),
-          ),
-          child:isCenter==true? Center(
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Text(
-                  text,
-                  style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: textColor),
-                ),
-              ),
-            ),
-          ):Align(
-            alignment: Alignment.centerLeft,
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Row(
-                children: [
-                  FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Text(
-                      text,
-                      style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: textColor),
+              color: bgcolor,
+              borderRadius: BorderRadius.circular(borderRadius),
+              gradient: gradient),
+          child: isCenter == true
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        text,
+                        style: mediumTextStyle(16, textColor),
+                      ),
                     ),
                   ),
-                  const Spacer(),
-                  Lottie.asset("assets/right_arrow.json",height: 24)
-                ],
-              ),
-            ),
-          ),
+                )
+              : Align(
+                  alignment: Alignment.centerLeft,
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Row(
+                      children: [
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            text,
+                            style: titleText(16, textColor),
+                          ),
+                        ),
+                        const Spacer(),
+                        Lottie.asset("assets/right_arrow.json", height: 24)
+                      ],
+                    ),
+                  ),
+                ),
         ),
       ),
     );

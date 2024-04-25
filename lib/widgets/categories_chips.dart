@@ -23,7 +23,7 @@ class CategoriesChips extends StatelessWidget {
       spacing: 8.0, // Adjust spacing between chips as needed
       children: categories.map((category) {
         return ChoiceChip(
-          selectedColor: AppColor.primaryExtraSoft,
+          selectedColor: AppColor.primary.withOpacity(0.6),
           backgroundColor: Colors.white,
           label: Row(
             mainAxisSize: MainAxisSize.min,
@@ -34,7 +34,10 @@ class CategoriesChips extends StatelessWidget {
                 height: 16, // Adjust icon size as needed
               ),
               horizontalSpace(4),
-              Text(category.category),
+              Text(
+                category.category,
+                style: normalText(16, AppColor.secondary),
+              ),
             ],
           ),
           selected: selectedCategory == category.category,

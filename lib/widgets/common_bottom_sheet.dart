@@ -27,7 +27,6 @@ class _BottomSheetExampleState extends State<BottomSheetExample> {
       child: Container(
         width: displayWidth(context),
         constraints: BoxConstraints(
-          maxHeight: MediaQuery.of(context).size.height * 0.75,
           minHeight: MediaQuery.of(context).size.height *
               0.3, // Set minimum height here
         ),
@@ -48,26 +47,40 @@ class _BottomSheetExampleState extends State<BottomSheetExample> {
             children: <Widget>[
               SegmentedButton<Transactions>(
                   style: ButtonStyle(
-                      side: MaterialStateProperty.all<BorderSide>(
-                          BorderSide(color: AppColor.secondarySoft)),
-                      shape: MaterialStateProperty.all<RoundedRectangleBorder>(
-                        const RoundedRectangleBorder(
-                          borderRadius: BorderRadius.all(Radius.circular(8)),
-                        ),
+                    backgroundColor: MaterialStateProperty.resolveWith<Color>(
+                      (Set<MaterialState> states) {
+                        if (states.contains(MaterialState.selected)) {
+                          return Colors.white;
+                        }
+                        return AppColor.primarySoft;
+                      },
+                    ),
+                    side: MaterialStateProperty.all<BorderSide>(
+                        BorderSide(color: AppColor.secondarySoft)),
+                    shape: MaterialStateProperty.all<RoundedRectangleBorder>(
+                      const RoundedRectangleBorder(
+                        borderRadius: BorderRadius.all(Radius.circular(8)),
                       ),
-                      backgroundColor:
-                          const MaterialStatePropertyAll(Colors.white)),
+                    ),
+                  ),
                   showSelectedIcon: false,
                   selectedIcon: null,
                   segments: <ButtonSegment<Transactions>>[
                     ButtonSegment<Transactions>(
+                      enabled: true,
                       value: Transactions.income,
-                      label: const Text('Income'),
+                      label: Text(
+                        'Income',
+                        style: normalText(16, AppColor.secondary),
+                      ),
                       icon: ImageConstants(colors: AppColor.secondary).income,
                     ),
                     ButtonSegment<Transactions>(
                       value: Transactions.expense,
-                      label: const Text('Expense'),
+                      label: Text(
+                        'Expense',
+                        style: normalText(16, AppColor.secondary),
+                      ),
                       icon: ImageConstants(colors: AppColor.secondary).expense,
                     ),
                   ],
@@ -90,12 +103,7 @@ class _BottomSheetExampleState extends State<BottomSheetExample> {
                       transactions.value == Transactions.income
                           ? 'Add Income'
                           : 'Add Expense',
-                      style: const TextStyle(
-                        fontSize: 24,
-                        color: Colors.white,
-                        fontFamily: 'poppins',
-                        fontWeight: FontWeight.w600,
-                      ),
+                      style: mediumTextStyle(24, Colors.white),
                     ),
                   ),
                   verticalSpace(8),
@@ -111,30 +119,21 @@ class _BottomSheetExampleState extends State<BottomSheetExample> {
                     ),
                     child: TextField(
                       controller: controller.amountController,
-                      style:
-                          const TextStyle(fontSize: 14, fontFamily: 'poppins'),
+                      style: normalText(16, AppColor.secondarySoft),
                       maxLines: 1,
                       decoration: InputDecoration(
                         label: Text(
                           "Amount",
-                          style: TextStyle(
-                            color: AppColor.secondarySoft,
-                            fontSize: 14,
-                          ),
+                          style: normalText(16, AppColor.secondarySoft),
                         ),
                         floatingLabelBehavior: FloatingLabelBehavior.always,
                         border: InputBorder.none,
                         prefix: Text(
                           '₹',
-                          style: TextStyle(color: AppColor.secondarySoft),
+                          style: normalText(16, AppColor.secondarySoft),
                         ),
                         hintText: "100",
-                        hintStyle: TextStyle(
-                          fontSize: 14,
-                          fontFamily: 'poppins',
-                          fontWeight: FontWeight.w500,
-                          color: AppColor.secondarySoft,
-                        ),
+                        hintStyle: normalText(16, AppColor.secondarySoft),
                       ),
                     ),
                   ),
@@ -157,20 +156,12 @@ class _BottomSheetExampleState extends State<BottomSheetExample> {
                       decoration: InputDecoration(
                         label: Text(
                           "Title",
-                          style: TextStyle(
-                            color: AppColor.secondarySoft,
-                            fontSize: 14,
-                          ),
+                          style: normalText(16, AppColor.secondarySoft),
                         ),
                         floatingLabelBehavior: FloatingLabelBehavior.always,
                         border: InputBorder.none,
                         hintText: "Food",
-                        hintStyle: TextStyle(
-                          fontSize: 14,
-                          fontFamily: 'poppins',
-                          fontWeight: FontWeight.w500,
-                          color: AppColor.secondarySoft,
-                        ),
+                        hintStyle: normalText(16, AppColor.secondarySoft),
                       ),
                     ),
                   ),

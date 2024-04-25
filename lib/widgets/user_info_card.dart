@@ -74,7 +74,7 @@ class UserInfoCard extends StatelessWidget {
                       Spacer(),
                       Row(
                         children: [
-                          ImageConstants(colors: AppColor.success).income,
+                          ImageConstants(colors: AppColor.warning).expense,
                           Column(
                             children: [
                               Text(
@@ -84,7 +84,7 @@ class UserInfoCard extends StatelessWidget {
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold),
                               ),
-                              Text('+ ₹${controller.totalExpense.value}',
+                              Text('- ₹${controller.totalExpense.value}',
                                   style: normalText(
                                       16, AppColor.secondaryExtraSoft)),
                             ],
