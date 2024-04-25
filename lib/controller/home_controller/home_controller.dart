@@ -127,6 +127,8 @@ class HomeController extends GetxController {
         .where((transaction) => transaction['type'] == 'income')
         .toList();
 
+    print("Income trans: $incomeTransactions");
+
     // Calculate total income
     totalIncome.value = incomeTransactions.fold(
         0,
@@ -141,7 +143,7 @@ class HomeController extends GetxController {
     expenseTransactions = transactions
         .where((transaction) => transaction['type'] == 'expense')
         .toList();
-
+    print("expense trans: $expenseTransactions");
     // Calculate total income
     totalExpense.value = expenseTransactions.fold(
         0,
@@ -151,64 +153,5 @@ class HomeController extends GetxController {
     print("totalIncome: $totalIncome");
   }
 
-  /// Function to update chart data based on the selected time range
-  void updateChartData(String timeRange) {
-    switch (timeRange) {
-      case 'day':
-        chartData.assignAll(getTransactionsForDay(selectedFilter.value)!);
-        break;
-      case 'week':
-        chartData.assignAll(getTransactionsForWeek(selectedFilter.value)!);
-        break;
-      case 'month':
-        chartData.assignAll(getTransactionsForMonth(selectedFilter.value)!);
-        break;
-    }
-  }
 
-// Function to get income transactions for the selected time range
-  List<Map<String, dynamic>>? getTransactionsForDay(String type) {
-    List<Map<String, dynamic>>? dayTransactions = [];
-    DateTime today = DateTime.now();
-    String todayStr = DateFormat('yyyy-MM-dd').format(today);
-    for (var transaction in incomeTransactions) {
-      DateTime transactionDate = DateTime.parse(transaction['date']);
-      String transactionDateStr =
-          DateFormat('yyyy-MM-dd').format(transactionDate);
-      if (transactionDateStr == todayStr) {
-        dayTransactions.add(transaction);
-      }
-    }
-    return dayTransactions;
-  }
-
-  List<Map<String, dynamic>>? getTransactionsForWeek(String type) {
-    List<Map<String, dynamic>>? weekTransactions = [];
-    DateTime today = DateTime.now();
-    DateTime firstDayOfWeek = today.subtract(Duration(days: today.weekday - 1));
-    for (var transaction in incomeTransactions) {
-      DateTime transactionDate = DateTime.parse(transaction['date']);
-      if (transactionDate
-              .isAfter(firstDayOfWeek.subtract(const Duration(days: 1))) &&
-          transactionDate
-              .isBefore(firstDayOfWeek.add(const Duration(days: 7)))) {
-        weekTransactions.add(transaction);
-      }
-    }
-    return weekTransactions;
-  }
-
-  List<Map<String, dynamic>>? getTransactionsForMonth(String type) {
-    List<Map<String, dynamic>>? monthTransactions = [];
-    DateTime today = DateTime.now();
-    String currentMonth = DateFormat('yyyy-MM').format(today);
-    for (var transaction in incomeTransactions) {
-      DateTime transactionDate = DateTime.parse(transaction['date']);
-      String transactionMonth = DateFormat('yyyy-MM').format(transactionDate);
-      if (transactionMonth == currentMonth) {
-        monthTransactions.add(transaction);
-      }
-    }
-    return monthTransactions;
-  }
 }
