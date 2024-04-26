@@ -76,8 +76,8 @@ class TransactionsContent extends StatelessWidget {
                                       child: Padding(
                                         padding: const EdgeInsets.all(8.0),
                                         child: Text('${i['category']}',
-                                            style: normalText(
-                                                14, AppColor.secondarySoft)),
+                                            style:
+                                                normalText(14, Colors.white)),
                                       ),
                                     )
                                   ],
@@ -155,8 +155,8 @@ class TransactionsContent extends StatelessWidget {
                                       child: Padding(
                                         padding: const EdgeInsets.all(8.0),
                                         child: Text('${i['category']}',
-                                            style: normalText(
-                                                14, AppColor.secondarySoft)),
+                                            style:
+                                                normalText(14, Colors.white)),
                                       ),
                                     )
                                   ],
@@ -217,7 +217,11 @@ class TransactionsContent extends StatelessWidget {
     );
 
     if (matchingCategory.category.isNotEmpty) {
-      return SvgPicture.asset(matchingCategory.image);
+      return SvgPicture.asset(
+        matchingCategory.image,
+        height: 20,
+        width: 20,
+      );
     } else {
       return ImageConstants(colors: AppColor.secondaryExtraSoft).avatar;
     }

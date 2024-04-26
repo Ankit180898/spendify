@@ -43,7 +43,7 @@ class HomeScreen extends StatelessWidget {
             ),
             Padding(
               padding:
-                  const EdgeInsets.only(left: 24.0, right: 24.0, top: 16.0),
+                  const EdgeInsets.only(left: 24.0, right: 24.0, top: 24.0),
               child: Align(
                 alignment: Alignment.centerLeft,
                 child: Text(
@@ -53,7 +53,6 @@ class HomeScreen extends StatelessWidget {
               ),
             ),
             const TabsView(),
-            verticalSpace(16),
 
             //  TransactionsGraph(),
             const SingleChildScrollView(child: TransactionsContent()),
