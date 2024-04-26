@@ -11,7 +11,7 @@ import 'package:spendify/utils/utils.dart';
 import 'package:spendify/widgets/bottom_navigation.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 
-enum Filtered { income, expense }
+enum Filtered { weekly, monthly }
 
 class NewWalletScreen extends StatelessWidget {
   @override
@@ -20,7 +20,7 @@ class NewWalletScreen extends StatelessWidget {
     final controller2 = Get.find<TransactionController>();
     var selectedFilter = 'income'.obs;
 
-    var transactions = Filtered.income.obs;
+    var transactions = Filtered.weekly.obs;
     return Scaffold(
       backgroundColor: Colors.white,
       body: SingleChildScrollView(
@@ -36,22 +36,33 @@ class NewWalletScreen extends StatelessWidget {
                         bottomLeft: Radius.circular(28),
                         bottomRight: Radius.circular(28))),
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 24.0),
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 32.0, horizontal: 24.0),
                       child: Text(
-                        "Expenses",
-                        style:
-                            TextStyle(fontSize: 24, color: AppColor.secondary),
+                        "Transactions",
+                        style: titleText(24, AppColor.secondaryExtraSoft),
                       ),
                     ),
-                    Center(
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 24.0, vertical: 16.0),
                       child: SegmentedButton<Filtered>(
                         style: ButtonStyle(
+                          backgroundColor:
+                              MaterialStateProperty.resolveWith<Color>(
+                            (Set<MaterialState> states) {
+                              if (states.contains(MaterialState.selected)) {
+                                return Colors.white;
+                              }
+                              return AppColor.primarySoft;
+                            },
+                          ),
                           enableFeedback: true,
                           side: MaterialStateProperty.all<BorderSide>(
-                            BorderSide(color: AppColor.secondarySoft),
-                          ),
+                              BorderSide(color: Colors.white)),
                           shape:
                               MaterialStateProperty.all<RoundedRectangleBorder>(
                             const RoundedRectangleBorder(
@@ -59,29 +70,29 @@ class NewWalletScreen extends StatelessWidget {
                                   BorderRadius.all(Radius.circular(8)),
                             ),
                           ),
-                          backgroundColor: MaterialStateProperty.all<Color>(
-                            Colors.white,
-                          ),
                         ),
-                        showSelectedIcon: false,
-                        selectedIcon: null,
+                        showSelectedIcon: true,
+                        selectedIcon: Icon(
+                          Icons.check,
+                          color: AppColor.secondary,
+                        ),
                         segments: const <ButtonSegment<Filtered>>[
                           ButtonSegment<Filtered>(
-                            value: Filtered.income,
-                            label: Text('Income'),
+                            value: Filtered.weekly,
+                            label: Text('Weekly'),
                           ),
                           ButtonSegment<Filtered>(
-                            value: Filtered.expense,
-                            label: Text('Expense'),
+                            value: Filtered.monthly,
+                            label: Text('Monthly'),
                           ),
                         ],
                         selected: <Filtered>{transactions.value},
                         onSelectionChanged: (Set<Filtered> newSelection) {
                           transactions.value = newSelection.first;
                           controller.selectedFilter.value =
-                              newSelection.first == Filtered.income
-                                  ? 'income'
-                                  : 'expense';
+                              newSelection.first == Filtered.weekly
+                                  ? 'weekly'
+                                  : 'monthly';
                           controller.filterTransactions(
                               controller.selectedFilter.value);
                         },
@@ -89,42 +100,55 @@ class NewWalletScreen extends StatelessWidget {
                     ),
                     verticalSpace(16),
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                      child: SfCartesianChart(
-                        primaryXAxis: CategoryAxis(
-                          labelStyle: normalText(16, AppColor.secondary),
-                          isInversed: true,
-                        ),
-                        primaryYAxis: NumericAxis(
-                          title: AxisTitle(
-                              text: 'Amount',
-                              textStyle:
-                                  mediumTextStyle(16, AppColor.secondary)),
-                        ),
-                        series: <CartesianSeries>[
-                          BarSeries<Map<String, dynamic>, String>(
-                            borderRadius: BorderRadius.only(
-                                topRight: Radius.circular(20),
-                                bottomRight: Radius.circular(20)),
-                            color: AppColor.primarySoft,
-                            enableTooltip: true,
-                            dataSource:
-                                controller.selectedFilter.value == 'expense'
-                                    ? controller.expenseTransactions
-                                    : controller.incomeTransactions,
-                            xValueMapper: (datum, _) => DateFormat('MMM')
-                                .format(DateTime.parse(datum['date'])),
-                            yValueMapper: (datum, _) => datum['amount'],
-                            name: 'Expense',
-                          ),
-                        ],
-                      ),
-                    ),
+                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                        child: SfCartesianChart(
+                            primaryXAxis: CategoryAxis(
+                              labelStyle: normalText(14, Colors.white),
+                              majorGridLines: const MajorGridLines(width: 0),
+                            ),
+                            primaryYAxis: NumericAxis(
+                                labelStyle: normalText(14, Colors.white),
+                                majorGridLines: const MajorGridLines(width: 0)),
+                            series: <CartesianSeries>[
+                              ColumnSeries<Map<String, dynamic>, String>(
+                                color: AppColor.primarySoft,
+                                enableTooltip: true,
+                                dataSource: controller.incomeTransactions,
+                                xValueMapper: (datum, _) => controller
+                                            .selectedFilter.value ==
+                                        'weekly'
+                                    ? DateFormat('EEE')
+                                        .format(DateTime.parse(datum['date']))
+                                    : DateFormat('MMM')
+                                        .format(DateTime.parse(datum['date'])),
+                                yValueMapper: (datum, _) => datum['amount'],
+                              ),
+                              ColumnSeries<Map<String, dynamic>, String>(
+                                color: AppColor.primary,
+                                dataSource: controller.expenseTransactions,
+                                xValueMapper: (datum, _) => controller
+                                            .selectedFilter.value ==
+                                        'weekly'
+                                    ? DateFormat('EEE')
+                                        .format(DateTime.parse(datum['date']))
+                                    : DateFormat('MMM')
+                                        .format(DateTime.parse(datum['date'])),
+                                yValueMapper: (datum, _) => datum['amount'],
+                              )
+                            ])),
                     verticalSpace(16),
                   ],
                 ),
               ),
               verticalSpace(16),
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 24.0, vertical: 16.0),
+                child: Text(
+                  'All Transactions',
+                  style: titleText(18, AppColor.secondary),
+                ),
+              ),
               ListView.builder(
                 padding: const EdgeInsets.all(0),
                 shrinkWrap: true,
@@ -190,3 +214,34 @@ class NewWalletScreen extends StatelessWidget {
     }
   }
 }
+
+
+// SfCartesianChart(
+//                         plotAreaBorderWidth: 0,
+//                         primaryXAxis: const CategoryAxis(
+//                             majorGridLines: MajorGridLines(width: 0)),
+//                         primaryYAxis: NumericAxis(
+//                           axisLine: AxisLine(width: 0),
+//                           title: AxisTitle(
+//                               text: 'Amount',
+//                               textStyle:
+//                                   mediumTextStyle(16, AppColor.secondary)),
+//                         ),
+//                         series: <CartesianSeries>[
+//                           ColumnSeries<Map<String, dynamic>, String>(
+//                             borderRadius: BorderRadius.only(
+//                                 topRight: Radius.circular(20),
+//                                 topLeft: Radius.circular(20)),
+//                             color: AppColor.primarySoft,
+//                             enableTooltip: true,
+//                             dataSource:
+//                                 controller.selectedFilter.value == 'expense'
+//                                     ? controller.expenseTransactions
+//                                     : controller.incomeTransactions,
+//                             xValueMapper: (datum, _) => DateFormat('MMM')
+//                                 .format(DateTime.parse(datum['date'])),
+//                             yValueMapper: (datum, _) => datum['amount'],
+//                             name: 'Expense',
+//                           ),
+//                         ],
+//                       ),

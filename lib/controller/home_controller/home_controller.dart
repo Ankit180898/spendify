@@ -23,11 +23,15 @@ class HomeController extends GetxController {
   var isLoading = false.obs;
   var totalExpense = 0.obs;
   var totalIncome = 0.obs;
-  var selectedFilter = 'day'.obs;
+  var selectedFilter = 'weekly'.obs;
 
   var selectedChip = ''.obs;
+  var isSelected = false.obs;
   List<Map<String, dynamic>> chartData = [];
 
+  // pagination variables
+  var currentPage = 1;
+  var itemsPerPage = 10;
   @override
   void onInit() async {
     super.onInit();
@@ -35,7 +39,7 @@ class HomeController extends GetxController {
     await getTransactions();
     await getBalance();
     // Filter transactions into income and expense
-    filterTransactions('income');
+    filterTransactions(selectedFilter.value);
   }
 
   Future<void> getProfile() async {
@@ -115,17 +119,36 @@ class HomeController extends GetxController {
 
   var filteredTransactions = <Map<String, dynamic>>[].obs;
 
-  // Method to filter transactions based on type (expense or income)
-  void filterTransactions(String type) {
-    filteredTransactions.assignAll(transactions
-        .where((transaction) => transaction['type'] == type)
-        .toList());
+  // Method to filter transactions based on date
+  void filterTransactions(String date) {
+    final now = DateTime.now();
+    switch (date) {
+      case 'weekly':
+        final startOfWeek = getMondayOfCurrentWeek();
+        filteredTransactions.assignAll(transactions
+            .where((transaction) =>
+                DateTime.parse(transaction['date']).isAfter(startOfWeek))
+            .toList());
+        break;
+      case 'monthly':
+        final startOfMonth = DateTime(now.year, now.month, 1);
+        filteredTransactions.assignAll(transactions
+            .where((transaction) =>
+                DateTime.parse(transaction['date']).isAfter(startOfMonth))
+            .toList());
+        break;
+      // Add more cases for other date filters
+      default:
+        filteredTransactions.assignAll(transactions); // No filter applied
+        break;
+    }
   }
 
   var filteredTransactionsByCategoryList = <Map<String, dynamic>>[].obs;
 
   // Method to filter transactions based on category
   void filterTransactionsByCategory(String category) {
+    isSelected.value = true;
     selectedChip.value = category;
     filteredTransactionsByCategoryList.assignAll(transactions
         .where((transaction) => transaction['category'] == category)
@@ -163,5 +186,18 @@ class HomeController extends GetxController {
             sum + int.parse(transaction['amount'].toString()));
 
     print("totalIncome: $totalIncome");
+  }
+
+  // Method to get the start of the current week (Monday)
+  static DateTime getMondayOfCurrentWeek() {
+    final now = DateTime.now();
+    final daysSinceMonday = (now.weekday + 6) % 7;
+    return now.subtract(Duration(days: daysSinceMonday));
+  }
+
+  // Method to format a DateTime object to a specific format
+  static String formatDate(DateTime dateTime, String format) {
+    final formatter = DateFormat(format);
+    return formatter.format(dateTime);
   }
 }

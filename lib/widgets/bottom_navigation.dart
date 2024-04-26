@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:iconsax/iconsax.dart';
 import 'package:spendify/config/app_color.dart';
 import 'package:spendify/utils/image_constants.dart';
 import 'package:spendify/utils/size_helpers.dart';
@@ -69,7 +70,7 @@ class _BottomNavState extends State<BottomNav>
 
   final screens = [
     const HomeScreen(),
-     NewWalletScreen(),
+    NewWalletScreen(),
   ];
 
   void _onItemTapped(int index) {
@@ -88,7 +89,7 @@ class _BottomNavState extends State<BottomNav>
           clipBehavior: Clip.none,
           physics: const NeverScrollableScrollPhysics(),
           controller: _tabController,
-          children:  [
+          children: [
             const HomeScreen(),
             // SearchScreen(),
             //WalletScreen()
@@ -111,6 +112,7 @@ class _BottomNavState extends State<BottomNav>
                     height: displayHeight(context) * 0.20,
                     width: MediaQuery.of(context).size.width * 0.5,
                     decoration: BoxDecoration(
+                      border: Border.all(color: Colors.white),
                       borderRadius: BorderRadius.circular(40),
                       gradient: SweepGradient(
                           colors: [AppColor.primarySoft, Colors.white],
@@ -122,8 +124,16 @@ class _BottomNavState extends State<BottomNav>
                       dividerColor: Colors.transparent,
                       controller: _tabController,
                       tabs: const [
-                        Tab(icon: Icon(Icons.home_rounded, size: 30)),
-                        Tab(icon: Icon(Icons.wallet, size: 30)),
+                        Tab(
+                            icon: Icon(
+                          Iconsax.home,
+                          size: 30,
+                        )),
+                        Tab(
+                            icon: Icon(
+                          Iconsax.wallet,
+                          size: 30,
+                        )),
                       ],
                       unselectedLabelColor: AppColor.secondarySoft,
                       labelColor: Colors.white,

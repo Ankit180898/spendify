@@ -56,14 +56,14 @@ class _BottomSheetExampleState extends State<BottomSheetExample> {
                       },
                     ),
                     side: MaterialStateProperty.all<BorderSide>(
-                        BorderSide(color: AppColor.secondarySoft)),
+                        BorderSide(color: Colors.white)),
                     shape: MaterialStateProperty.all<RoundedRectangleBorder>(
                       const RoundedRectangleBorder(
                         borderRadius: BorderRadius.all(Radius.circular(8)),
                       ),
                     ),
                   ),
-                  showSelectedIcon: false,
+                  showSelectedIcon: true,
                   selectedIcon: null,
                   segments: <ButtonSegment<Transactions>>[
                     ButtonSegment<Transactions>(

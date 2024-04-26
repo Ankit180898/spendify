@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:get/get.dart';
 import 'package:spendify/config/app_color.dart';
 import 'package:spendify/controller/home_controller/home_controller.dart';
@@ -16,7 +17,7 @@ class TabsView extends StatelessWidget {
 
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.all(24.0),
+      padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
       child: Row(
         children: categoryList.map((category) {
           return InkWell(
@@ -28,6 +29,10 @@ class TabsView extends StatelessWidget {
                 padding: const EdgeInsets.only(right: 8.0),
                 child: Chip(
                   side: BorderSide(color: AppColor.primarySoft),
+                  avatar: SvgPicture.asset(category.image,
+                      color: controller.selectedChip.value == category.category
+                          ? Colors.white
+                          : AppColor.secondary),
                   label: Text(category.category,
                       style: normalText(
                           18,
