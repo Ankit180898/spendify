@@ -3,6 +3,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:spendify/config/app_color.dart';
+import 'package:spendify/controller/home_controller/home_controller.dart';
 import 'package:spendify/model/categories_model.dart';
 import 'package:spendify/utils/image_constants.dart';
 import 'package:spendify/utils/utils.dart';
@@ -16,6 +17,7 @@ class TransactionListItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final controller = Get.find<HomeController>();
     var trans = transaction[index];
     var i = transaction[index]['category'];
     return Padding(
@@ -24,7 +26,7 @@ class TransactionListItem extends StatelessWidget {
         leading: CircleAvatar(
             radius: 24,
             backgroundColor: AppColor.primaryExtraSoft,
-            child: getCategoryImage(i, categoryList)),
+            child: controller.getCategoryImage(i, categoryList)),
         title: Row(
           children: [
             Text(
@@ -37,7 +39,7 @@ class TransactionListItem extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              _formatDateTime('${trans['date']}'),
+              controller.formatDateTime('${trans['date']}'),
               style: normalText(14, AppColor.secondarySoft),
             ),
             verticalSpace(5),
@@ -47,8 +49,7 @@ class TransactionListItem extends StatelessWidget {
                   borderRadius: BorderRadius.circular(20)),
               child: Padding(
                 padding: const EdgeInsets.all(8.0),
-                child: Text('$i',
-                    style: normalText(14, Colors.white)),
+                child: Text('$i', style: normalText(14, Colors.white)),
               ),
             )
           ],
@@ -67,22 +68,5 @@ class TransactionListItem extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  String _formatDateTime(String dateTimeString) {
-    final dateTime = DateTime.parse(dateTimeString);
-    return DateFormat("MMMM d, y").format(dateTime);
-  }
-
-  Widget getCategoryImage(String category, List<CategoriesModel> categoryList) {
-    var matchingCategory = categoryList.firstWhere(
-      (element) => element.category == category,
-      orElse: () => CategoriesModel(category: '', image: ''),
-    );
-    if (matchingCategory.category.isNotEmpty) {
-      return SvgPicture.asset(matchingCategory.image);
-    } else {
-      return ImageConstants(colors: AppColor.secondaryExtraSoft).avatar;
-    }
   }
 }

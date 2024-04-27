@@ -8,6 +8,7 @@ import 'package:spendify/main.dart';
 import 'package:spendify/model/categories_model.dart';
 import 'package:spendify/model/transaction_model.dart';
 import 'package:spendify/utils/image_constants.dart';
+import 'package:spendify/utils/size_helpers.dart';
 import 'package:spendify/widgets/toast/custom_toast.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -220,7 +221,11 @@ class HomeController extends GetxController {
     );
 
     if (matchingCategory.category.isNotEmpty) {
-      return SvgPicture.asset(matchingCategory.image);
+      return SvgPicture.asset(
+        matchingCategory.image,
+        height: 20,
+        width: 20,
+      );
     } else {
       return ImageConstants(colors: AppColor.secondaryExtraSoft).avatar;
     }
