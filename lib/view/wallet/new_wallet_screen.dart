@@ -4,7 +4,6 @@ import 'package:intl/intl.dart';
 import 'package:spendify/config/app_color.dart';
 import 'package:spendify/controller/home_controller/home_controller.dart';
 import 'package:spendify/controller/wallet_controller/wallet_controller.dart';
-import 'package:spendify/utils/image_constants.dart';
 import 'package:spendify/utils/size_helpers.dart';
 import 'package:spendify/utils/utils.dart';
 import 'package:spendify/view/wallet/transaction_list_item.dart';

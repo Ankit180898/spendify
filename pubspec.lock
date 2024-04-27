@@ -97,14 +97,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.0.8"
-  equatable:
-    dependency: transitive
-    description:
-      name: equatable
-      sha256: c2b87cb7756efdf69892005af546c56c0b5037f54d2a88269b4f347a505e3ca2
-      url: "https://pub.dev"
-    source: hosted
-    version: "2.0.5"
   fake_async:
     dependency: transitive
     description:
@@ -161,22 +153,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.9.3+1"
-  fixnum:
-    dependency: transitive
-    description:
-      name: fixnum
-      sha256: "25517a4deb0c03aa0f32fd12db525856438902d9c16536311e76cdc57b31d7d1"
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.1.0"
-  fl_chart:
-    dependency: "direct main"
-    description:
-      name: fl_chart
-      sha256: "2b7c1f5d867da9a054661641c8f499c55c47c39acccb97b3bc673f5fa9a39e74"
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.67.0"
   flutter:
     dependency: "direct main"
     description: flutter
@@ -520,14 +496,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "6.0.2"
-  pie_chart:
-    dependency: "direct main"
-    description:
-      name: pie_chart
-      sha256: "58e6a46999ac938bfa1c3e5be414d6e149f037647197dca03ba3614324c12c82"
-      url: "https://pub.dev"
-    source: hosted
-    version: "5.4.0"
   platform:
     dependency: transitive
     description:
@@ -653,14 +621,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.10.0"
-  sprintf:
-    dependency: transitive
-    description:
-      name: sprintf
-      sha256: "1fc9ffe69d4df602376b52949af107d8f5703b77cda567c4d7d86a0693120f23"
-      url: "https://pub.dev"
-    source: hosted
-    version: "7.0.0"
   stack_trace:
     dependency: transitive
     description:
@@ -669,14 +629,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.11.1"
-  staggered_grid_view_flutter:
-    dependency: "direct main"
-    description:
-      name: staggered_grid_view_flutter
-      sha256: d46b27d1b57344945edf9eadbd5ee03a667a6599fd87e79f9a2d5e717e6accf3
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.0.4"
   storage_client:
     dependency: transitive
     description:
@@ -821,14 +773,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.1.1"
-  uuid:
-    dependency: "direct main"
-    description:
-      name: uuid
-      sha256: "814e9e88f21a176ae1359149021870e87f7cddaf633ab678a5d2b0bff7fd1ba8"
-      url: "https://pub.dev"
-    source: hosted
-    version: "4.4.0"
   vector_graphics:
     dependency: transitive
     description:
