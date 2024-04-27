@@ -20,9 +20,10 @@
 
 ## Screenshots
 
-<img src="https://github.com/Ankit180898/spendify/assets/48925155/3dc972f5-e264-48a8-b565-2871a12a33da" width="150" height="350">
+<img src ="https://github.com/Ankit180898/spendify/assets/48925155/a94efcd3-a5ff-4ed8-8e70-1e74d5607939" width="150" height="350">
+<img src="https://github.com/Ankit180898/spendify/assets/48925155/8d0f5b06-a0c0-4fae-aea6-352d22353f18" width="150" height="350">
+<img src="https://github.com/Ankit180898/spendify/assets/48925155/a25f0f1a-35a7-4cc9-ae6a-bf8e9dd69f7a" width="150" height="350">
 
-<img src="https://github.com/Ankit180898/spendify/assets/48925155/1d35e673-95b9-41a0-88b8-e3a4ce0f2ed8" width="150" height="350">
 
 ## Setup
   1) Clone the repository:
