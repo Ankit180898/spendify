@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 import 'package:spendify/config/app_color.dart';
 import 'package:spendify/controller/home_controller/home_controller.dart';
 import 'package:spendify/utils/utils.dart';
 
 class TopBarContents extends StatelessWidget {
+  const TopBarContents({super.key});
+
   @override
   Widget build(BuildContext context) {
     final controller = Get.find<HomeController>();

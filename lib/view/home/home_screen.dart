@@ -9,7 +9,6 @@ import 'package:spendify/view/home/components/tabs_view.dart';
 import 'package:spendify/view/home/components/top_bar_contents.dart';
 import 'package:spendify/view/home/components/transaction_list.dart';
 import 'package:spendify/widgets/bottom_navigation.dart';
-import 'package:spendify/widgets/transaction_graph.dart';
 import 'package:spendify/widgets/user_info_card.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -35,7 +34,7 @@ class HomeScreen extends StatelessWidget {
                       bottomRight: Radius.circular(28))),
               child: Column(
                 children: [
-                  TopBarContents(),
+                  const TopBarContents(),
                   UserInfoCard(size: displayHeight(context) * 0.10),
                   verticalSpace(32),
                 ],

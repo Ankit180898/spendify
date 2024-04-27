@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:spendify/controller/home_controller/home_controller.dart';
 import 'package:spendify/main.dart';
-import 'package:uuid/uuid.dart';
 
 import '../../widgets/toast/custom_toast.dart';
 

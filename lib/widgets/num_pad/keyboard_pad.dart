@@ -10,9 +10,9 @@ import 'package:staggered_grid_view_flutter/widgets/staggered_tile.dart';
 class KeyboardPad extends StatefulWidget {
  
   const KeyboardPad({
-    Key? key,
+    super.key,
   
-  }) : super(key: key);
+  });
 
   @override
   _KeyboardPadState createState() => _KeyboardPadState();
