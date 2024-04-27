@@ -1,13 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/svg.dart';
 import 'package:get/get.dart';
-import 'package:intl/intl.dart';
 import 'package:spendify/config/app_color.dart';
 import 'package:spendify/controller/home_controller/home_controller.dart';
-import 'package:spendify/model/categories_model.dart';
 import 'package:spendify/utils/image_constants.dart';
-import 'package:spendify/utils/size_helpers.dart';
 import 'package:spendify/utils/utils.dart';
+import 'package:spendify/view/wallet/transaction_list_item.dart';
 
 class TransactionsContent extends StatelessWidget {
   const TransactionsContent({super.key});
@@ -42,65 +39,12 @@ class TransactionsContent extends StatelessWidget {
                             var i = controller.transactions[index];
                             var category = i['category'];
                             return Padding(
-                              padding:
-                                  const EdgeInsets.only(bottom: 8.0, top: 8.0),
-                              child: ListTile(
-                                leading: CircleAvatar(
-                                    radius: 24,
-                                    backgroundColor: AppColor.primaryExtraSoft,
-                                    child: getCategoryImage(
-                                        category, categoryList)),
-                                title: Row(
-                                  children: [
-                                    Text(
-                                      '${i['description']}',
-                                      style: mediumTextStyle(
-                                          16, AppColor.secondary),
-                                    ),
-                                  ],
-                                ),
-                                subtitle: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      _formatDateTime('${i['date']}'),
-                                      style: normalText(
-                                          14, AppColor.secondarySoft),
-                                    ),
-                                    verticalSpace(5),
-                                    Container(
-                                      decoration: BoxDecoration(
-                                          color: AppColor.primarySoft,
-                                          borderRadius:
-                                              BorderRadius.circular(20)),
-                                      child: Padding(
-                                        padding: const EdgeInsets.all(8.0),
-                                        child: Text('${i['category']}',
-                                            style:
-                                                normalText(14, Colors.white)),
-                                      ),
-                                    )
-                                  ],
-                                ),
-                                trailing: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    i['type'] == 'expense'
-                                        ? ImageConstants(
-                                                colors: AppColor.warning)
-                                            .expense
-                                        : ImageConstants(
-                                                colors: AppColor.success)
-                                            .income,
-                                    Text(
-                                      "${i['amount']}",
-                                      style: mediumTextStyle(
-                                          16, AppColor.secondary),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            );
+                                padding: const EdgeInsets.only(
+                                    bottom: 8.0, top: 8.0),
+                                child: TransactionListItem(
+                                  transaction: controller.transactions,
+                                  index: index,
+                                ));
                           },
                           separatorBuilder: (BuildContext context, int index) {
                             return Padding(
@@ -125,61 +69,13 @@ class TransactionsContent extends StatelessWidget {
                                 .filteredTransactionsByCategoryList[index];
                             var category = i['category'];
                             return Padding(
-                              padding:
-                                  const EdgeInsets.only(bottom: 8.0, top: 8.0),
-                              child: ListTile(
-                                leading: CircleAvatar(
-                                    radius: 24,
-                                    backgroundColor: AppColor.primaryExtraSoft,
-                                    child: getCategoryImage(
-                                        category, categoryList)),
-                                title: Text(
-                                  '${i['description']}',
-                                  style:
-                                      mediumTextStyle(16, AppColor.secondary),
-                                ),
-                                subtitle: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      _formatDateTime('${i['date']}'),
-                                      style: normalText(
-                                          14, AppColor.secondarySoft),
-                                    ),
-                                    verticalSpace(5),
-                                    Container(
-                                      decoration: BoxDecoration(
-                                          color: AppColor.primarySoft,
-                                          borderRadius:
-                                              BorderRadius.circular(20)),
-                                      child: Padding(
-                                        padding: const EdgeInsets.all(8.0),
-                                        child: Text('${i['category']}',
-                                            style:
-                                                normalText(14, Colors.white)),
-                                      ),
-                                    )
-                                  ],
-                                ),
-                                trailing: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    i['type'] == 'expense'
-                                        ? ImageConstants(
-                                                colors: AppColor.warning)
-                                            .expense
-                                        : ImageConstants(
-                                                colors: AppColor.success)
-                                            .income,
-                                    Text(
-                                      "${i['amount']}",
-                                      style: mediumTextStyle(
-                                          16, AppColor.secondary),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            );
+                                padding: const EdgeInsets.only(
+                                    bottom: 8.0, top: 8.0),
+                                child: TransactionListItem(
+                                  transaction: controller
+                                      .filteredTransactionsByCategoryList,
+                                  index: index,
+                                ));
                           },
                           separatorBuilder: (BuildContext context, int index) {
                             return Padding(
@@ -200,30 +96,5 @@ class TransactionsContent extends StatelessWidget {
         ),
       ],
     );
-  }
-
-// Function to parse and format date time string
-  String _formatDateTime(String dateTimeString) {
-    final dateTime =
-        DateTime.parse(dateTimeString); // Parse the date time string
-    return DateFormat("MMMM d, y").format(dateTime); // Format the date and time
-  }
-
-  // Function to get the category image based on the category name
-  Widget getCategoryImage(String category, List<CategoriesModel> categoryList) {
-    var matchingCategory = categoryList.firstWhere(
-      (element) => element.category == category,
-      orElse: () => CategoriesModel(category: '', image: ''),
-    );
-
-    if (matchingCategory.category.isNotEmpty) {
-      return SvgPicture.asset(
-        matchingCategory.image,
-        height: 20,
-        width: 20,
-      );
-    } else {
-      return ImageConstants(colors: AppColor.secondaryExtraSoft).avatar;
-    }
   }
 }

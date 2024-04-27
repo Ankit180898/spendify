@@ -71,7 +71,7 @@ class UserInfoCard extends StatelessWidget {
                           )
                         ],
                       ),
-                      Spacer(),
+                      const Spacer(),
                       Row(
                         children: [
                           ImageConstants(colors: AppColor.warning).expense,

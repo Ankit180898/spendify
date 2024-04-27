@@ -56,7 +56,7 @@ class _BottomSheetExampleState extends State<BottomSheetExample> {
                       },
                     ),
                     side: MaterialStateProperty.all<BorderSide>(
-                        BorderSide(color: Colors.white)),
+                        const BorderSide(color: Colors.white)),
                     shape: MaterialStateProperty.all<RoundedRectangleBorder>(
                       const RoundedRectangleBorder(
                         borderRadius: BorderRadius.all(Radius.circular(8)),

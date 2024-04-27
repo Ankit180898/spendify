@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:spendify/config/app_color.dart';
 import 'package:spendify/main.dart';
+import 'package:spendify/model/categories_model.dart';
 import 'package:spendify/model/transaction_model.dart';
+import 'package:spendify/utils/image_constants.dart';
 import 'package:spendify/widgets/toast/custom_toast.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -199,5 +203,26 @@ class HomeController extends GetxController {
   static String formatDate(DateTime dateTime, String format) {
     final formatter = DateFormat(format);
     return formatter.format(dateTime);
+  }
+
+  // Function to parse and format date time string
+  String formatDateTime(String dateTimeString) {
+    final dateTime =
+        DateTime.parse(dateTimeString); // Parse the date time string
+    return DateFormat("MMMM d, y").format(dateTime); // Format the date and time
+  }
+
+  // Function to get the category image based on the category name
+  Widget getCategoryImage(String category, List<CategoriesModel> categoryList) {
+    var matchingCategory = categoryList.firstWhere(
+      (element) => element.category == category,
+      orElse: () => CategoriesModel(category: '', image: ''),
+    );
+
+    if (matchingCategory.category.isNotEmpty) {
+      return SvgPicture.asset(matchingCategory.image);
+    } else {
+      return ImageConstants(colors: AppColor.secondaryExtraSoft).avatar;
+    }
   }
 }

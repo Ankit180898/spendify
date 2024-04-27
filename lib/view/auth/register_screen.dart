@@ -1,9 +1,7 @@
-import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:iconsax/iconsax.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:spendify/config/app_color.dart';
 import 'package:spendify/controller/auth_controller/register_controller.dart';
 import 'package:spendify/utils/size_helpers.dart';
@@ -11,7 +9,6 @@ import 'package:spendify/utils/utils.dart';
 import 'package:spendify/widgets/custom_button.dart';
 
 import '../../routes/app_pages.dart';
-import '../../utils/image_constants.dart';
 
 class RegisterScreen extends StatelessWidget {
   const RegisterScreen({super.key});
