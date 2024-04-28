@@ -192,7 +192,9 @@ class NewWalletScreen extends StatelessWidget {
                     ),
                     const Spacer(),
                     IconButton(
-                        onPressed: () {},
+                        onPressed: () {
+                          
+                        },
                         icon: Icon(
                           Icons.filter_list,
                           color: AppColor.secondary,

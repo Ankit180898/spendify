@@ -229,4 +229,6 @@ class HomeController extends GetxController {
       return ImageConstants(colors: AppColor.secondaryExtraSoft).avatar;
     }
   }
+
+  
 }
