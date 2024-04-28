@@ -88,7 +88,7 @@ class RegisterController extends GetxController {
           "name": nameC.text,
           "email": emailC.text,
           "created_at": DateTime.now().toIso8601String(),
-          "balance": 12334,
+          "balance": 0,
         });
 
         Get.offAll(const BottomNav());

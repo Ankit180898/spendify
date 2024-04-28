@@ -100,7 +100,7 @@ class _BottomSheetExampleState extends State<BottomSheetExample> {
                   Container(
                     margin: const EdgeInsets.only(bottom: 24),
                     child: Text(
-                      transactions.value == Transactions.income
+                      controller.selectedType.value=='income'
                           ? 'Add Income'
                           : 'Add Expense',
                       style: mediumTextStyle(24, Colors.white),
