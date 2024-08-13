@@ -17,17 +17,6 @@ class TopBarContents extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisAlignment: MainAxisAlignment.start,
           children: [
-            InkWell(
-              onTap: () => controller.signOut(),
-              child: const CircleAvatar(
-                radius: 24.0,
-                backgroundImage: NetworkImage(
-                    'https://avatar.iran.liara.run/public/boy',
-                    scale: 10),
-                backgroundColor: Colors.transparent,
-              ),
-            ),
-            horizontalSpace(8.0),
             RichText(
               textScaler: const TextScaler.linear(1),
               textAlign: TextAlign.start,
