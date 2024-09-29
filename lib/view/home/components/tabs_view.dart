@@ -12,8 +12,6 @@ class TabsView extends StatelessWidget {
   Widget build(BuildContext context) {
     final controller = Get.find<HomeController>();
 
-    // Select the "All" category chip by default when the widget is initialized
-
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
@@ -21,23 +19,35 @@ class TabsView extends StatelessWidget {
         children: categoryList.map((category) {
           return InkWell(
             onTap: () {
-              controller.filterTransactionsByCategory(category.category);
+              // Toggle selection: if the same category is tapped, clear the filter
+              if (controller.selectedChip.value == category.category) {
+                controller.selectedChip.value = ""; // Deselect the category
+                controller.getTransactions(); // Show all categories
+              } else {
+                controller.selectedChip.value = category.category;
+                controller.filterTransactionsByCategory(category.category);
+              }
             },
             child: Obx(
               () => Padding(
                 padding: const EdgeInsets.only(right: 8.0),
                 child: Chip(
                   side: BorderSide(color: AppColor.primarySoft),
-                  avatar: SvgPicture.asset(category.image,
-                      color: controller.selectedChip.value == category.category
+                  avatar: SvgPicture.asset(
+                    category.image,
+                    color: controller.selectedChip.value == category.category
+                        ? Colors.white
+                        : AppColor.secondary,
+                  ),
+                  label: Text(
+                    category.category,
+                    style: normalText(
+                      18,
+                      controller.selectedChip.value == category.category
                           ? Colors.white
-                          : AppColor.secondary),
-                  label: Text(category.category,
-                      style: normalText(
-                          18,
-                          controller.selectedChip.value == category.category
-                              ? Colors.white
-                              : AppColor.secondary)),
+                          : AppColor.secondary,
+                    ),
+                  ),
                   backgroundColor:
                       controller.selectedChip.value == category.category
                           ? AppColor.primarySoft

@@ -5,6 +5,7 @@ import 'package:spendify/config/app_color.dart';
 import 'package:spendify/utils/image_constants.dart';
 import 'package:spendify/utils/size_helpers.dart';
 import 'package:spendify/view/home/home_screen.dart';
+import 'package:spendify/view/profile/profile_screen.dart';
 import 'package:spendify/view/wallet/new_wallet_screen.dart';
 import 'package:spendify/widgets/common_bottom_sheet.dart';
 
@@ -30,7 +31,7 @@ class _BottomNavState extends State<BottomNav>
   void initState() {
     super.initState();
     _tabController =
-        TabController(length: 2, vsync: this, initialIndex: initialIndex);
+        TabController(length: 3, vsync: this, initialIndex: initialIndex);
     _isVisible = true;
 
     // Initialize the ScrollController
@@ -70,6 +71,7 @@ class _BottomNavState extends State<BottomNav>
   final screens = [
     const HomeScreen(),
     const NewWalletScreen(),
+    const ProfileScreen()
   ];
 
   void _onItemTapped(int index) {
@@ -93,6 +95,7 @@ class _BottomNavState extends State<BottomNav>
             // SearchScreen(),
             //WalletScreen()
             NewWalletScreen(),
+            ProfileScreen()
           ],
         ),
         floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
@@ -109,7 +112,7 @@ class _BottomNavState extends State<BottomNav>
                   padding: const EdgeInsets.all(8.0),
                   child: Container(
                     height: displayHeight(context) * 0.20,
-                    width: MediaQuery.of(context).size.width * 0.5,
+                    width: MediaQuery.of(context).size.width * 0.50,
                     decoration: BoxDecoration(
                       border: Border.all(color: Colors.white),
                       borderRadius: BorderRadius.circular(40),
@@ -133,6 +136,11 @@ class _BottomNavState extends State<BottomNav>
                           Iconsax.wallet,
                           size: 30,
                         )),
+                        Tab(
+                            icon: Icon(
+                          Iconsax.user,
+                          size: 30,
+                        )),
                       ],
                       unselectedLabelColor: AppColor.secondarySoft,
                       labelColor: Colors.white,
@@ -146,9 +154,9 @@ class _BottomNavState extends State<BottomNav>
             Visibility(
               visible: _isVisible,
               child: Positioned(
-                  bottom: displayHeight(context) * 0.05, // Adjust as needed
-                  right:
-                      displayWidth(context) / 2 - 50 - 70, // Adjust as needed
+                  bottom: displayHeight(context) * 0.08, // Adjust as needed
+                  right: 0,
+                  left: 0, // Adjust as needed
                   child: FloatingActionButton(
                     onPressed: () {
                       showModalBottomSheet(
