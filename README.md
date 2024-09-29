@@ -27,7 +27,7 @@
 
 ## Setup
   1) Clone the repository:
-    - [(https://github.com/Ankit180898/spendify.git)]
+    - https://github.com/Ankit180898/spendify.git
   2) Navigate to the project directory:
     - cd spendify
   3) Run the app:
