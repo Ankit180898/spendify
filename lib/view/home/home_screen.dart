@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:iconsax/iconsax.dart';
 import 'package:spendify/config/app_color.dart';
 import 'package:spendify/controller/home_controller/home_controller.dart';
 import 'package:spendify/controller/wallet_controller/wallet_controller.dart';
@@ -19,6 +21,7 @@ class HomeScreen extends StatelessWidget {
     final controller = Get.put(HomeController());
     final controller1 = Get.put(TransactionController());
     debugPrint("email: ${controller.userEmail}");
+
     return Scaffold(
       resizeToAvoidBottomInset: false,
       backgroundColor: Colors.white,
@@ -34,7 +37,20 @@ class HomeScreen extends StatelessWidget {
                       bottomRight: Radius.circular(28))),
               child: Column(
                 children: [
-                  const TopBarContents(),
+                  Row(
+                    children: [
+                      const TopBarContents(),
+                      const Spacer(),
+                      IconButton(
+                          onPressed: () {
+                            controller.signOut();
+                          },
+                          icon: Icon(
+                            Iconsax.logout,
+                            color: AppColor.secondaryExtraSoft,
+                          ))
+                    ],
+                  ),
                   UserInfoCard(size: displayHeight(context) * 0.10),
                   verticalSpace(32),
                 ],
