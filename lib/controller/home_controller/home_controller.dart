@@ -4,29 +4,32 @@ import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:spendify/config/app_color.dart';
+import 'package:spendify/controller/wallet_controller/wallet_controller.dart';
 import 'package:spendify/main.dart';
 import 'package:spendify/model/categories_model.dart';
 import 'package:spendify/model/transaction_model.dart';
 import 'package:spendify/utils/image_constants.dart';
+import 'package:spendify/utils/utils.dart';
 import 'package:spendify/widgets/toast/custom_toast.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../routes/app_pages.dart';
 
 class HomeController extends GetxController {
+  var transactionController = Get.put(TransactionController);
   var userEmail = ''.obs;
   var userName = ''.obs;
-  var totalBalance = 0.obs;
+  var totalBalance = 0.0.obs;
   RxDouble newBalance = RxDouble(0.0);
   var imageUrl = ''.obs;
   var transactions = <Map<String, dynamic>>[].obs;
-  var transactionsList = <TransactionModel>[].obs; // Adjust the type here
+  var transactionsList = <TransactionModel>[].obs;
   var incomeTransactions = <Map<String, dynamic>>[];
   var expenseTransactions = <Map<String, dynamic>>[];
 
   var isLoading = false.obs;
-  var totalExpense = 0.obs;
-  var totalIncome = 0.obs;
+  var totalExpense = 0.0.obs;
+  var totalIncome = 0.0.obs;
   var selectedFilter = 'weekly'.obs;
 
   var selectedChip = ''.obs;
@@ -36,49 +39,43 @@ class HomeController extends GetxController {
   // pagination variables
   var currentPage = 1;
   var itemsPerPage = 10;
+
   @override
   void onInit() async {
     super.onInit();
     await getProfile();
     await getTransactions();
-    await getBalance();
+    // await getBalance();
     // Filter transactions into income and expense
     filterTransactions(selectedFilter.value);
   }
 
   Future<void> getProfile() async {
     final prefs = await SharedPreferences.getInstance();
-
     final user = supabaseC.auth.currentUser;
     if (user != null) {
       final response = await supabaseC.from("users").select().eq('id', user.id);
 
       if (response.isEmpty) {
-        // Handle error
         CustomToast.errorToast("Error", 'Error fetching user profile');
         return;
       }
 
       final userData = response.first;
-      // Save user's email, name, and balance in shared preferences
       await prefs.setString('name', userData['name']);
       await prefs.setString('email', userData['email']);
 
-      // Update reactive variables
       userEmail.value = userData['email'];
       userName.value = userData['name'];
-      totalBalance.value = userData['balance'] ?? 0.0;
+      totalBalance.value = (userData['balance'] ?? 0.0).toDouble();
       debugPrint(totalBalance.value.toString());
     } else {
-      // Handle case when no user is found
       CustomToast.errorToast("Error", 'User not found');
-      // You may want to navigate the user to a specific screen or handle this case differently
     }
   }
 
   Future<void> signOut() async {
     final prefs = await SharedPreferences.getInstance();
-
     try {
       await supabaseC.auth.signOut();
       CustomToast.successToast("Success", "Signed out successfully");
@@ -92,20 +89,17 @@ class HomeController extends GetxController {
     }
   }
 
-  Future<void> getBalance() async {
-    final response = await supabaseC
-        .from("users")
-        .select('balance')
-        .eq('id', supabaseC.auth.currentUser!.id)
-        .single(); // Assuming there's only one row for the user's balance
-
-    // Extract balance value from response data
-    final balanceData = response;
-    final balance = balanceData['balance'];
-
-    // Update totalBalance with the fetched balance value
-    totalBalance.value = balance;
-  }
+  // Future<void> getBalance() async {
+  //   final response = await supabaseC
+  //       .from("users")
+  //       .select('balance')
+  //       .eq('id', supabaseC.auth.currentUser!.id)
+  //       .single(); // Assuming there's only one row for the user's balance
+  //
+  //   final balanceData = response;
+  //   final balance = balanceData['balance'];
+  //   totalBalance.value = balance;
+  // }
 
   Future<void> getTransactions() async {
     isLoading.value = true;
@@ -114,11 +108,37 @@ class HomeController extends GetxController {
         .select()
         .eq('user_id', supabaseC.auth.currentUser!.id);
 
-    // Calculate income and expense
-    calculateIncomeData();
-    calculateExpensedata();
+    // Filter transactions into income and expense categories
+    incomeTransactions = transactions
+        .where((transaction) => transaction['type'] == 'income')
+        .toList();
+    expenseTransactions = transactions
+        .where((transaction) => transaction['type'] == 'expense')
+        .toList();
+
+    // Calculate balance based on all transactions
+    calculateBalance();
 
     isLoading.value = false;
+  }
+
+  // Unified method to calculate balance based on income and expenses
+  void calculateBalance() {
+    // Calculate total income
+    totalIncome.value = incomeTransactions.fold(
+        0.0,
+        (double sum, transaction) =>
+            sum + double.parse(transaction['amount'].toString()));
+
+    // Calculate total expense
+    totalExpense.value = expenseTransactions.fold(
+        0.0,
+        (double sum, transaction) =>
+            sum + double.parse(transaction['amount'].toString()));
+
+    // Set total balance as income - expense
+    totalBalance.value = totalIncome.value - totalExpense.value;
+    debugPrint("Total Balance: $totalBalance");
   }
 
   var filteredTransactions = <Map<String, dynamic>>[].obs;
@@ -159,39 +179,6 @@ class HomeController extends GetxController {
         .toList());
   }
 
-  // Function to calculate income data for the pie chart
-  void calculateIncomeData() {
-    // Filter transactions of type 'income'
-    incomeTransactions = transactions
-        .where((transaction) => transaction['type'] == 'income')
-        .toList();
-
-    print("Income trans: $incomeTransactions");
-
-    // Calculate total income
-    totalIncome.value = incomeTransactions.fold(
-        0,
-        (int sum, transaction) =>
-            sum + int.parse(transaction['amount'].toString()));
-
-    print("totalIncome: $totalIncome");
-  }
-
-  void calculateExpensedata() {
-    // Filter transactions of type 'income'
-    expenseTransactions = transactions
-        .where((transaction) => transaction['type'] == 'expense')
-        .toList();
-    print("expense trans: $expenseTransactions");
-    // Calculate total income
-    totalExpense.value = expenseTransactions.fold(
-        0,
-        (int sum, transaction) =>
-            sum + int.parse(transaction['amount'].toString()));
-
-    print("totalIncome: $totalIncome");
-  }
-
   // Method to get the start of the current week (Monday)
   static DateTime getMondayOfCurrentWeek() {
     final now = DateTime.now();
@@ -230,5 +217,23 @@ class HomeController extends GetxController {
     }
   }
 
-  
+  // Get category-wise income/expense data
+  Map<String, double> calculateTotalsByCategory() {
+    Map<String, double> categoryTotals = {};
+
+    for (var transaction in transactions) {
+      String category = transaction['category'];
+      double amount = double.parse(transaction['amount'].toString());
+
+      // Check if the category exists in the predefined category list
+      if (categoryList.any((element) => element.category == category)) {
+        if (!categoryTotals.containsKey(category)) {
+          categoryTotals[category] = 0.0;
+        }
+        categoryTotals[category] = categoryTotals[category]! + amount;
+      }
+    }
+
+    return categoryTotals;
+  }
 }
