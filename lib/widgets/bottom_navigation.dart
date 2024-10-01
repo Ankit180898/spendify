@@ -2,10 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:spendify/config/app_color.dart';
-import 'package:spendify/utils/image_constants.dart';
 import 'package:spendify/utils/size_helpers.dart';
 import 'package:spendify/view/home/home_screen.dart';
-import 'package:spendify/view/profile/profile_screen.dart';
 import 'package:spendify/view/wallet/new_wallet_screen.dart';
 import 'package:spendify/widgets/common_bottom_sheet.dart';
 
@@ -20,211 +18,107 @@ class BottomNav extends StatefulWidget {
 
 class _BottomNavState extends State<BottomNav>
     with SingleTickerProviderStateMixin {
-  var _isVisible;
-  int index_x = 0;
-
-  var initialIndex = 0;
-
-  TabController? _tabController;
+  int currentIndex = 0;
+  bool _isVisible = true;
+  late TabController _tabController;
 
   @override
   void initState() {
     super.initState();
-    _tabController =
-        TabController(length: 3, vsync: this, initialIndex: initialIndex);
-    _isVisible = true;
-
-    // Initialize the ScrollController
-    hideBottomAppBarController = ScrollController();
-
-    // Add a listener to the ScrollController
-    hideBottomAppBarController.addListener(() {
-      // Determine the scroll direction
-      final ScrollDirection direction =
-          hideBottomAppBarController.position.userScrollDirection;
-
-      // Show the bottom navigation bar when scrolling in reverse
-      if (direction == ScrollDirection.reverse) {
-        setState(() {
-          _isVisible = false;
-        });
-      }
-      // Hide the bottom navigation bar when scrolling forward
-      else if (direction == ScrollDirection.forward) {
-        setState(() {
-          _isVisible = true;
-        });
-      } else {
-        setState(() {
-          _isVisible = false;
-        });
-      }
-    });
+    _tabController = TabController(length: 2, vsync: this);
+    hideBottomAppBarController.addListener(_scrollListener);
   }
 
   @override
   void dispose() {
+    _tabController.dispose();
+    hideBottomAppBarController.removeListener(_scrollListener);
     super.dispose();
-    _tabController?.dispose();
   }
 
-  final screens = [
-    const HomeScreen(),
-    const NewWalletScreen(),
-    const ProfileScreen()
-  ];
-
-  void _onItemTapped(int index) {
+  void _scrollListener() {
+    final direction = hideBottomAppBarController.position.userScrollDirection;
     setState(() {
-      index_x = index;
+      _isVisible = (direction == ScrollDirection.forward);
     });
   }
 
-  //floating bottom nav bar
+  void _onTabTapped(int index) {
+    setState(() {
+      currentIndex = index;
+      _tabController.index = currentIndex;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    Size size = MediaQuery.of(context).size;
     return SafeArea(
       child: Scaffold(
         body: TabBarView(
-          clipBehavior: Clip.none,
-          physics: const NeverScrollableScrollPhysics(),
           controller: _tabController,
+          physics: const NeverScrollableScrollPhysics(),
           children: const [
             HomeScreen(),
-            // SearchScreen(),
-            //WalletScreen()
             NewWalletScreen(),
-            ProfileScreen()
           ],
         ),
-        floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
-        floatingActionButton: Stack(
-          fit: StackFit.loose,
-          clipBehavior: Clip.none,
-          children: [
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              height: _isVisible ? displayHeight(context) * 0.10 : 0.0,
-              child: Visibility(
-                visible: _isVisible,
-                child: Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Container(
-                    height: displayHeight(context) * 0.20,
-                    width: MediaQuery.of(context).size.width * 0.50,
-                    decoration: BoxDecoration(
-                      border: Border.all(color: Colors.white),
-                      borderRadius: BorderRadius.circular(40),
-                      gradient: SweepGradient(
-                          colors: [AppColor.primarySoft, Colors.white],
-                          endAngle: 20,
-                          startAngle: 10),
-                    ),
-                    child: TabBar(
-                      automaticIndicatorColorAdjustment: false,
-                      dividerColor: Colors.transparent,
-                      controller: _tabController,
-                      tabs: const [
-                        Tab(
-                            icon: Icon(
-                          Iconsax.home,
-                          size: 30,
-                        )),
-                        Tab(
-                            icon: Icon(
-                          Iconsax.wallet,
-                          size: 30,
-                        )),
-                        Tab(
-                            icon: Icon(
-                          Iconsax.user,
-                          size: 30,
-                        )),
-                      ],
-                      unselectedLabelColor: AppColor.secondarySoft,
-                      labelColor: Colors.white,
-                      indicatorColor: Colors.transparent,
-                    ),
-                  ),
-                ),
+        floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+        floatingActionButton: _buildFloatingActionButton(),
+        bottomNavigationBar: Material(
+            color: Colors.transparent, child: _buildBottomNavigationBar()),
+      ),
+    );
+  }
+
+  Widget _buildFloatingActionButton() {
+    return Visibility(
+      visible: _isVisible,
+      child: FloatingActionButton(
+        onPressed: () {
+          showModalBottomSheet(
+            isScrollControlled: true,
+            context: context,
+            builder: (context) => const BottomSheetExample(),
+          );
+        },
+        backgroundColor: Colors.indigo[50],
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(20)),
+        ),
+        child: const Icon(Iconsax.add, size: 36),
+      ),
+    );
+  }
+
+  Widget _buildBottomNavigationBar() {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      height: _isVisible ? kBottomNavigationBarHeight : 0.0,
+      child: Visibility(
+        visible: _isVisible,
+        child: BottomAppBar(
+          shape: const CircularNotchedRectangle(),
+          notchMargin: 8.0,
+          child: SizedBox(
+            height: kBottomNavigationBarHeight,
+            child: TabBar(
+              controller: _tabController,
+              onTap: _onTabTapped,
+              tabs: const [
+                Tab(icon: Icon(Iconsax.home, size: 30)),
+                Tab(icon: Icon(Iconsax.chart_square, size: 30)),
+              ],
+              unselectedLabelColor: AppColor.secondarySoft,
+              labelColor: Colors.white,
+              indicator: BoxDecoration(
+                // This removes the default indicator line
+                color: Colors.transparent,
               ),
+              indicatorColor: Colors.transparent,
             ),
-            // Place the SpeedDial on top
-            Visibility(
-              visible: _isVisible,
-              child: Positioned(
-                  bottom: displayHeight(context) * 0.08, // Adjust as needed
-                  right: 0,
-                  left: 0, // Adjust as needed
-                  child: FloatingActionButton(
-                    onPressed: () {
-                      showModalBottomSheet(
-                          isScrollControlled: true,
-                          context: context,
-                          builder: (context) => const BottomSheetExample());
-                    },
-                    backgroundColor: AppColor.secondary,
-                    shape: const CircleBorder(),
-                    child: ImageConstants(colors: Colors.white).plus,
-                  )),
-            ),
-          ],
+          ),
         ),
       ),
     );
   }
 }
-
-//previous bottom nav bar
-  // @override
-  // Widget build(BuildContext context) {
-  //   Size size = MediaQuery.of(context).size;
-  //   return SafeArea(
-  //     child: Scaffold(
-  //       body: screens[index_x],
-  //       bottomNavigationBar: Container(
-  //         color: Colors.black12,
-  //         child: Padding(
-  //           padding: const EdgeInsets.all(20.0),
-  //           child: Container(
-  //             height: 70,
-  //             child: ClipRRect(
-  //               borderRadius: BorderRadius.circular(30),
-  //               child: BottomNavigationBar(
-  //                 elevation: 10.0,
-  //                 backgroundColor: Color(0xFF4051A9),
-  //                 items: <BottomNavigationBarItem>[
-  //                   BottomNavigationBarItem(
-  //                     icon: Icon(Icons.home_rounded),
-  //                     label: 'Home',
-  //                   ),
-  //                   BottomNavigationBarItem(
-  //                     icon: Icon(Icons.wallet),
-  //                     label: 'Wallet',
-  //                   ),
-  //                 ],
-  //                 type: BottomNavigationBarType.fixed,
-  //                 currentIndex: index_x,
-  //                 selectedItemColor: Colors.white,
-  //                 unselectedItemColor: Colors.black.withOpacity(0.5),
-  //                 selectedLabelStyle: const TextStyle(
-  //                   color: Colors.black,
-  //                   fontFamily: 'Roboto',
-  //                   fontWeight: FontWeight.w200,
-  //                   fontSize: 14,
-  //                 ),
-  //                 unselectedLabelStyle: TextStyle(
-  //                   color: Colors.amber,
-  //                   fontSize: 12,
-  //                 ),
-  //                 iconSize: 30,
-  //                 onTap: _onItemTapped,
-  //               ),
-  //             ),
-  //           ),
-  //         ),
-  //       ),
-  //     ),
-  //   );
-  // }

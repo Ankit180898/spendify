@@ -18,28 +18,32 @@ class RegisterScreen extends StatelessWidget {
     final controller = Get.put(RegisterController());
 
     return Scaffold(
+      backgroundColor: Colors.white,
       resizeToAvoidBottomInset: true,
-      bottomNavigationBar: SizedBox(
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              style: TextStyle(
-                  fontWeight: FontWeight.w500,
-                  color: AppColor.secondarySoft,
-                  fontSize: 16),
-              "Already have an account?",
-            ),
-            TextButton(
-                onPressed: () {
-                  Get.toNamed(Routes.LOGIN);
-                },
-                child: Text(
-                  "Login",
-                  style: TextStyle(color: AppColor.primary, fontSize: 16),
-                ))
-          ],
+      bottomSheet: Material(
+        color: Colors.white,
+        child: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                style: TextStyle(
+                    fontWeight: FontWeight.w500,
+                    color: AppColor.secondarySoft,
+                    fontSize: 16),
+                "Already have an account?",
+              ),
+              TextButton(
+                  onPressed: () {
+                    Get.toNamed(Routes.LOGIN);
+                  },
+                  child: Text(
+                    "Login",
+                    style: TextStyle(color: AppColor.primary, fontSize: 16),
+                  ))
+            ],
+          ),
         ),
       ),
       body: SizedBox(
@@ -69,6 +73,7 @@ class RegisterScreen extends StatelessWidget {
                     ),
                   ),
                   verticalSpace(16),
+                  // name
                   Container(
                     width: MediaQuery.of(context).size.width,
                     padding: const EdgeInsets.only(left: 14, right: 14, top: 4),
@@ -80,10 +85,10 @@ class RegisterScreen extends StatelessWidget {
                           width: 1, color: AppColor.secondaryExtraSoft),
                     ),
                     child: TextField(
+                      controller: controller.nameC,
                       style:
                           const TextStyle(fontSize: 14, fontFamily: 'poppins'),
                       maxLines: 1,
-                      controller: controller.nameC,
                       decoration: InputDecoration(
                         label: Text(
                           "Name",
@@ -105,6 +110,7 @@ class RegisterScreen extends StatelessWidget {
                     ),
                   ),
                   verticalSpace(8),
+                  // email
                   Container(
                     width: MediaQuery.of(context).size.width,
                     padding: const EdgeInsets.only(left: 14, right: 14, top: 4),
@@ -116,10 +122,10 @@ class RegisterScreen extends StatelessWidget {
                           width: 1, color: AppColor.secondaryExtraSoft),
                     ),
                     child: TextField(
+                      controller: controller.emailC,
                       style:
                           const TextStyle(fontSize: 14, fontFamily: 'poppins'),
                       maxLines: 1,
-                      controller: controller.emailC,
                       decoration: InputDecoration(
                         label: Text(
                           "Email",
@@ -141,50 +147,49 @@ class RegisterScreen extends StatelessWidget {
                     ),
                   ),
                   verticalSpace(8),
-                  Material(
-                    child: Container(
-                      width: MediaQuery.of(context).size.width,
-                      padding:
-                          const EdgeInsets.only(left: 14, right: 14, top: 4),
-                      margin: const EdgeInsets.only(bottom: 24),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                            width: 1, color: AppColor.secondaryExtraSoft),
-                      ),
-                      child: Obx(
-                        () => TextField(
-                          style: const TextStyle(
-                              fontSize: 14, fontFamily: 'poppins'),
-                          maxLines: 1,
-                          controller: controller.passwordC,
-                          obscureText: controller.isHidden.value,
-                          decoration: InputDecoration(
-                            label: Text(
-                              "Password",
-                              style: TextStyle(
-                                color: AppColor.secondarySoft,
-                                fontSize: 14,
-                              ),
-                            ),
-                            floatingLabelBehavior: FloatingLabelBehavior.always,
-                            border: InputBorder.none,
-                            hintText: "*************",
-                            suffixIcon: IconButton(
-                              icon: (controller.isHidden.value != false)
-                                  ? const Icon(Iconsax.eye)
-                                  : const Icon(Iconsax.eye_slash4),
-                              onPressed: () {
-                                controller.isHidden.value =
-                                    !(controller.isHidden.value);
-                              },
-                            ),
-                            hintStyle: TextStyle(
-                              fontSize: 14,
-                              fontFamily: 'poppins',
-                              fontWeight: FontWeight.w500,
+
+                  Container(
+                    width: MediaQuery.of(context).size.width,
+                    padding:
+                        const EdgeInsets.only(left: 14, right: 14, top: 4),
+                    margin: const EdgeInsets.only(bottom: 24),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                          width: 1, color: AppColor.secondaryExtraSoft),
+                    ),
+                    child: Obx(
+                      () => TextField(
+                        style: const TextStyle(
+                            fontSize: 14, fontFamily: 'poppins'),
+                        maxLines: 1,
+                        controller: controller.passwordC,
+                        obscureText: controller.isHidden.value,
+                        decoration: InputDecoration(
+                          label: Text(
+                            "Password",
+                            style: TextStyle(
                               color: AppColor.secondarySoft,
+                              fontSize: 14,
                             ),
+                          ),
+                          floatingLabelBehavior: FloatingLabelBehavior.always,
+                          border: InputBorder.none,
+                          hintText: "*************",
+                          suffixIcon: IconButton(
+                            icon: (controller.isHidden.value != false)
+                                ? const Icon(Iconsax.eye)
+                                : const Icon(Iconsax.eye_slash4),
+                            onPressed: () {
+                              controller.isHidden.value =
+                                  !(controller.isHidden.value);
+                            },
+                          ),
+                          hintStyle: TextStyle(
+                            fontSize: 14,
+                            fontFamily: 'poppins',
+                            fontWeight: FontWeight.w500,
+                            color: AppColor.secondarySoft,
                           ),
                         ),
                       ),

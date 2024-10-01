@@ -43,7 +43,7 @@ dependencies:
   shared_preferences: ^2.2.3
   supabase_flutter: ^2.5.0
   syncfusion_flutter_charts: ^27.1.50
-  
+
 dev_dependencies:
   flutter_lints: ^3.0.0
   flutter_test:

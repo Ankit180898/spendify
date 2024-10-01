@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:iconsax/iconsax.dart';
@@ -17,31 +16,35 @@ class LoginScreen extends StatelessWidget {
     final controller = Get.put(LoginController());
     return Scaffold(
       appBar: AppBar(
-
-          // leading: ImageConstants.leftArrow,
-          ),
+        backgroundColor: Colors.white,
+        // leading: ImageConstants.leftArrow,
+      ),
       resizeToAvoidBottomInset: true,
-      bottomNavigationBar: SizedBox(
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              style: TextStyle(
-                  fontWeight: FontWeight.w500,
-                  color: AppColor.secondarySoft,
-                  fontSize: 16),
-              "Don't have an account?",
-            ),
-            TextButton(
-                onPressed: () {
-                  Get.offAllNamed(Routes.REGISTER);
-                },
-                child: Text(
-                  "Register",
-                  style: TextStyle(color: AppColor.primary, fontSize: 16),
-                ))
-          ],
+      bottomNavigationBar: Material(
+        color: Colors.white,
+        child: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                style: TextStyle(
+                    fontWeight: FontWeight.w500,
+                    color: AppColor.secondarySoft,
+                    fontSize: 16),
+                "Don't have an account?",
+              ),
+              TextButton(
+                  onPressed: () {
+                    Get.offAllNamed(Routes.REGISTER);
+                  },
+                  child: Text(
+                    "Register",
+                    style: TextStyle(color: AppColor.primary, fontSize: 16),
+                  ))
+            ],
+          ),
         ),
       ),
       body: ListView(
@@ -104,49 +107,47 @@ class LoginScreen extends StatelessWidget {
                   ),
                 ),
                 verticalSpace(8),
-                Material(
-                  child: Container(
-                    width: MediaQuery.of(context).size.width,
-                    padding: const EdgeInsets.only(left: 14, right: 14, top: 4),
-                    margin: const EdgeInsets.only(bottom: 24),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                          width: 1, color: AppColor.secondaryExtraSoft),
-                    ),
-                    child: Obx(
-                      () => TextField(
-                        style: const TextStyle(
-                            fontSize: 14, fontFamily: 'poppins'),
-                        maxLines: 1,
-                        controller: controller.passwordC,
-                        obscureText: controller.isHidden.value,
-                        decoration: InputDecoration(
-                          label: Text(
-                            "Password",
-                            style: TextStyle(
-                              color: AppColor.secondarySoft,
-                              fontSize: 14,
-                            ),
-                          ),
-                          floatingLabelBehavior: FloatingLabelBehavior.always,
-                          border: InputBorder.none,
-                          hintText: "*************",
-                          suffixIcon: IconButton(
-                            icon: (controller.isHidden.value != false)
-                                ? const Icon(Iconsax.eye)
-                                : const Icon(Iconsax.eye_slash4),
-                            onPressed: () {
-                              controller.isHidden.value =
-                                  !(controller.isHidden.value);
-                            },
-                          ),
-                          hintStyle: TextStyle(
-                            fontSize: 14,
-                            fontFamily: 'poppins',
-                            fontWeight: FontWeight.w500,
+                Container(
+                  width: MediaQuery.of(context).size.width,
+                  padding: const EdgeInsets.only(left: 14, right: 14, top: 4),
+                  margin: const EdgeInsets.only(bottom: 24),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                        width: 1, color: AppColor.secondaryExtraSoft),
+                  ),
+                  child: Obx(
+                    () => TextField(
+                      style:
+                          const TextStyle(fontSize: 14, fontFamily: 'poppins'),
+                      maxLines: 1,
+                      controller: controller.passwordC,
+                      obscureText: controller.isHidden.value,
+                      decoration: InputDecoration(
+                        label: Text(
+                          "Password",
+                          style: TextStyle(
                             color: AppColor.secondarySoft,
+                            fontSize: 14,
                           ),
+                        ),
+                        floatingLabelBehavior: FloatingLabelBehavior.always,
+                        border: InputBorder.none,
+                        hintText: "*************",
+                        suffixIcon: IconButton(
+                          icon: (controller.isHidden.value != false)
+                              ? const Icon(Iconsax.eye)
+                              : const Icon(Iconsax.eye_slash4),
+                          onPressed: () {
+                            controller.isHidden.value =
+                                !(controller.isHidden.value);
+                          },
+                        ),
+                        hintStyle: TextStyle(
+                          fontSize: 14,
+                          fontFamily: 'poppins',
+                          fontWeight: FontWeight.w500,
+                          color: AppColor.secondarySoft,
                         ),
                       ),
                     ),

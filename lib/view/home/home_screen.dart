@@ -22,7 +22,16 @@ class HomeScreen extends StatelessWidget {
     final controller1 = Get.put(TransactionController());
     debugPrint("email: ${controller.userEmail}");
 
+    // Set the status bar color to match the container color
+    SystemChrome.setSystemUIOverlayStyle(
+      SystemUiOverlayStyle.light.copyWith(
+        statusBarColor: AppColor.primaryGradient.colors.first, // Use the first color of the gradient
+        systemNavigationBarColor: Colors.white, // Optional: set navigation bar color
+      ),
+    );
+
     return Scaffold(
+
       resizeToAvoidBottomInset: false,
       backgroundColor: Colors.white,
       body: SingleChildScrollView(
@@ -31,10 +40,12 @@ class HomeScreen extends StatelessWidget {
           children: [
             Container(
               decoration: BoxDecoration(
-                  gradient: AppColor.primaryGradient,
-                  borderRadius: const BorderRadius.only(
-                      bottomLeft: Radius.circular(28),
-                      bottomRight: Radius.circular(28))),
+                gradient: AppColor.primaryGradient,
+                borderRadius: const BorderRadius.only(
+                  bottomLeft: Radius.circular(28),
+                  bottomRight: Radius.circular(28),
+                ),
+              ),
               child: Column(
                 children: [
                   Row(
@@ -42,13 +53,14 @@ class HomeScreen extends StatelessWidget {
                       const TopBarContents(),
                       const Spacer(),
                       IconButton(
-                          onPressed: () {
-                            controller.signOut();
-                          },
-                          icon: Icon(
-                            Iconsax.logout,
-                            color: AppColor.secondaryExtraSoft,
-                          ))
+                        onPressed: () {
+                          controller.signOut();
+                        },
+                        icon: Icon(
+                          Iconsax.logout,
+                          color: AppColor.secondaryExtraSoft,
+                        ),
+                      ),
                     ],
                   ),
                   UserInfoCard(size: displayHeight(context) * 0.10),
@@ -57,8 +69,7 @@ class HomeScreen extends StatelessWidget {
               ),
             ),
             Padding(
-              padding:
-                  const EdgeInsets.only(left: 24.0, right: 24.0, top: 24.0),
+              padding: const EdgeInsets.only(left: 24.0, right: 24.0, top: 24.0),
               child: Align(
                 alignment: Alignment.centerLeft,
                 child: Text(
@@ -68,9 +79,8 @@ class HomeScreen extends StatelessWidget {
               ),
             ),
             const TabsView(),
-
             //  TransactionsGraph(),
-            const SingleChildScrollView(child: TransactionsContent()),
+            SingleChildScrollView(child: TransactionsContent(10)),
           ],
         ),
       ),

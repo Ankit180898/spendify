@@ -35,8 +35,7 @@ class TransactionController extends GetxController {
       var currentUser = supabaseC.auth.currentUser;
 
       // Parse amount from String to double
-      int amount = int.parse(amountController.text);
-
+      double amount = double.parse(amountController.text);
       // Add resource
       final response = await supabaseC.from('transactions').insert({
         'user_id': currentUser!.id,
@@ -48,11 +47,14 @@ class TransactionController extends GetxController {
       });
 
       // Update balance based on transaction type
-      updateBalance(amount, selectedType.value);
+      // updateBalance(amount, selectedType.value);
+
 
       // Refresh balance and transactions
-      homeC.getBalance();
       homeC.getTransactions();
+      homeC.incomeTransactions;
+      homeC.expenseTransactions;
+
 
       // Clear text fields and selected category
       amountController.clear();
@@ -81,7 +83,7 @@ class TransactionController extends GetxController {
     }
   }
 
-  Future<void> updateBalance(int amount, String type) async {
+  Future<void> updateBalance(double amount, String type) async {
     try {
       // Fetch the current balance from the user's balance table
       final response = await supabaseC
@@ -102,7 +104,8 @@ class TransactionController extends GetxController {
           .update({'balance': homeC.totalBalance.value}).eq(
               'id', supabaseC.auth.currentUser!.id);
 
-      homeC.getBalance();
+      // homeC.getBalance();
+      homeC.getProfile();
       debugPrint("new bal: $updateResponse");
       // Check if the update was successful
       if (updateResponse.error == null) {
@@ -139,6 +142,7 @@ class TransactionController extends GetxController {
       homeC.getTransactions();
       amountController.clear();
       titleController.clear();
+      homeC.getProfile();
 
       Get.back();
 

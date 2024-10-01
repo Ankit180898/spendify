@@ -6,8 +6,8 @@ import 'package:spendify/controller/home_controller/home_controller.dart';
 import 'package:spendify/controller/wallet_controller/wallet_controller.dart';
 import 'package:spendify/utils/size_helpers.dart';
 import 'package:spendify/utils/utils.dart';
-import 'package:spendify/view/wallet/transaction_list_item.dart';
 import 'package:spendify/widgets/bottom_navigation.dart';
+import 'package:spendify/widgets/categories_grid.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 
 enum Filtered { weekly, monthly }
@@ -53,18 +53,18 @@ class NewWalletScreen extends StatelessWidget {
                         child: SegmentedButton<Filtered>(
                           style: ButtonStyle(
                             backgroundColor:
-                                MaterialStateProperty.resolveWith<Color>(
-                              (Set<MaterialState> states) {
-                                if (states.contains(MaterialState.selected)) {
+                                WidgetStateProperty.resolveWith<Color>(
+                              (Set<WidgetState> states) {
+                                if (states.contains(WidgetState.selected)) {
                                   return Colors.white;
                                 }
                                 return AppColor.primarySoft;
                               },
                             ),
                             enableFeedback: true,
-                            side: MaterialStateProperty.all<BorderSide>(
+                            side: WidgetStateProperty.all<BorderSide>(
                                 const BorderSide(color: Colors.white)),
-                            shape: MaterialStateProperty.all<
+                            shape: WidgetStateProperty.all<
                                 RoundedRectangleBorder>(
                               const RoundedRectangleBorder(
                                 borderRadius:
@@ -182,43 +182,13 @@ class NewWalletScreen extends StatelessWidget {
               ),
               verticalSpace(16),
               Padding(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 24.0, vertical: 16.0),
-                child: Row(
-                  children: [
-                    Text(
-                      'All Transactions',
-                      style: titleText(18, AppColor.secondary),
-                    ),
-                    const Spacer(),
-                    IconButton(
-                        onPressed: () {
-                          
-                        },
-                        icon: Icon(
-                          Icons.filter_list,
-                          color: AppColor.secondary,
-                        ))
-                  ],
+                padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                child: Text(
+                  'Spending Details',
+                  style: titleText(18, AppColor.secondary),
                 ),
               ),
-              ListView.builder(
-                padding: const EdgeInsets.all(0),
-                shrinkWrap: true,
-                reverse: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: controller.transactions.length,
-                itemBuilder: (context, index) {
-                  var i = controller.transactions[index];
-                  var category = i['category'];
-                  return Padding(
-                      padding: const EdgeInsets.only(bottom: 8.0, top: 8.0),
-                      child: TransactionListItem(
-                        transaction: controller.transactions,
-                        index: index,
-                      ));
-                },
-              ),
+              CategoriesGrid()
             ],
           ),
         ),
@@ -226,34 +196,3 @@ class NewWalletScreen extends StatelessWidget {
     );
   }
 }
-
-
-// SfCartesianChart(
-//                         plotAreaBorderWidth: 0,
-//                         primaryXAxis: const CategoryAxis(
-//                             majorGridLines: MajorGridLines(width: 0)),
-//                         primaryYAxis: NumericAxis(
-//                           axisLine: AxisLine(width: 0),
-//                           title: AxisTitle(
-//                               text: 'Amount',
-//                               textStyle:
-//                                   mediumTextStyle(16, AppColor.secondary)),
-//                         ),
-//                         series: <CartesianSeries>[
-//                           ColumnSeries<Map<String, dynamic>, String>(
-//                             borderRadius: BorderRadius.only(
-//                                 topRight: Radius.circular(20),
-//                                 topLeft: Radius.circular(20)),
-//                             color: AppColor.primarySoft,
-//                             enableTooltip: true,
-//                             dataSource:
-//                                 controller.selectedFilter.value == 'expense'
-//                                     ? controller.expenseTransactions
-//                                     : controller.incomeTransactions,
-//                             xValueMapper: (datum, _) => DateFormat('MMM')
-//                                 .format(DateTime.parse(datum['date'])),
-//                             yValueMapper: (datum, _) => datum['amount'],
-//                             name: 'Expense',
-//                           ),
-//                         ],
-//                       ),

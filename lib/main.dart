@@ -26,6 +26,7 @@ class MyApp extends StatelessWidget {
     return GetMaterialApp(
         debugShowCheckedModeBanner: false,
         title: 'Spendify',
+        themeMode: ThemeMode.light,
         initialRoute: Routes.SPLASH,
         getPages: AppPages.routes,
         builder: (context, child) {

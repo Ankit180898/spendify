@@ -6,7 +6,8 @@ import 'package:spendify/utils/utils.dart';
 import 'package:spendify/view/wallet/transaction_list_item.dart';
 
 class TransactionsContent extends StatelessWidget {
-  const TransactionsContent({super.key});
+  int? limit;
+  TransactionsContent(this.limit, {super.key});
 
   @override
   Widget build(BuildContext context) {

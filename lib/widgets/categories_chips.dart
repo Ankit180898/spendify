@@ -2,13 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:spendify/config/app_color.dart';
 import 'package:spendify/model/categories_model.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:spendify/utils/utils.dart';
 
 class CategoriesChips extends StatelessWidget {
   final List<CategoriesModel> categories;
-  final String? selectedCategory;
-  final ValueChanged<String?>? onChanged;
+  final String? selectedCategory; // Keep it nullable
+  final ValueChanged<String?>? onChanged; // Keep it nullable
 
   const CategoriesChips({
     super.key,
@@ -42,9 +41,8 @@ class CategoriesChips extends StatelessWidget {
           ),
           selected: selectedCategory == category.category,
           onSelected: (selected) {
-            if (onChanged != null) {
-              onChanged!(selected ? category.category : null);
-            }
+            // Check for null before calling onChanged
+            onChanged?.call(selected ? category.category : null);
           },
         );
       }).toList(),
