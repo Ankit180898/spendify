@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:spendify/config/app_color.dart';
@@ -6,7 +7,6 @@ import 'package:spendify/controller/home_controller/home_controller.dart';
 import 'package:spendify/controller/wallet_controller/wallet_controller.dart';
 import 'package:spendify/utils/size_helpers.dart';
 import 'package:spendify/utils/utils.dart';
-import 'package:spendify/widgets/bottom_navigation.dart';
 import 'package:spendify/widgets/categories_grid.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 
@@ -17,15 +17,20 @@ class NewWalletScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+
     final controller = Get.find<HomeController>();
     final controller2 = Get.find<TransactionController>();
     var selectedFilter = 'income'.obs;
 
     var transactions = Filtered.weekly.obs;
-    return Scaffold(
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+        value:  const SystemUiOverlayStyle(
+        statusBarColor: Colors.white, // Set status bar color
+        statusBarIconBrightness: Brightness.light, // Icon color
+    ),
+    child: Scaffold(
       backgroundColor: Colors.white,
       body: SingleChildScrollView(
-        controller: hideBottomAppBarController,
         child: Obx(
           () => Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -64,8 +69,8 @@ class NewWalletScreen extends StatelessWidget {
                             enableFeedback: true,
                             side: WidgetStateProperty.all<BorderSide>(
                                 const BorderSide(color: Colors.white)),
-                            shape: WidgetStateProperty.all<
-                                RoundedRectangleBorder>(
+                            shape:
+                                WidgetStateProperty.all<RoundedRectangleBorder>(
                               const RoundedRectangleBorder(
                                 borderRadius:
                                     BorderRadius.all(Radius.circular(8)),
@@ -193,6 +198,7 @@ class NewWalletScreen extends StatelessWidget {
           ),
         ),
       ),
+    ),
     );
   }
 }

@@ -10,7 +10,6 @@ import 'package:spendify/utils/utils.dart';
 import 'package:spendify/view/home/components/tabs_view.dart';
 import 'package:spendify/view/home/components/top_bar_contents.dart';
 import 'package:spendify/view/home/components/transaction_list.dart';
-import 'package:spendify/widgets/bottom_navigation.dart';
 import 'package:spendify/widgets/user_info_card.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -20,22 +19,17 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final controller = Get.put(HomeController());
     final controller1 = Get.put(TransactionController());
-    debugPrint("email: ${controller.userEmail}");
 
-    // Set the status bar color to match the container color
-    SystemChrome.setSystemUIOverlayStyle(
-      SystemUiOverlayStyle.light.copyWith(
-        statusBarColor: AppColor.primaryGradient.colors.first, // Use the first color of the gradient
-        systemNavigationBarColor: Colors.white, // Optional: set navigation bar color
-      ),
-    );
-
-    return Scaffold(
-
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+        value:  SystemUiOverlayStyle(
+        statusBarColor: AppColor.primaryGradient.colors.first, // Set status bar color
+        statusBarIconBrightness: Brightness.light,
+          // Icon color
+    ),
+    child: Scaffold(
       resizeToAvoidBottomInset: false,
       backgroundColor: Colors.white,
       body: SingleChildScrollView(
-        controller: hideBottomAppBarController,
         child: Column(
           children: [
             Container(
@@ -69,7 +63,8 @@ class HomeScreen extends StatelessWidget {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.only(left: 24.0, right: 24.0, top: 24.0),
+              padding:
+                  const EdgeInsets.only(left: 24.0, right: 24.0, top: 24.0),
               child: Align(
                 alignment: Alignment.centerLeft,
                 child: Text(
@@ -84,6 +79,7 @@ class HomeScreen extends StatelessWidget {
           ],
         ),
       ),
+    ),
     );
   }
 }
