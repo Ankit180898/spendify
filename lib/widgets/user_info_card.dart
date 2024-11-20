@@ -25,14 +25,9 @@ class UserInfoCard extends StatelessWidget {
           height: displayHeight(context) / 4,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(15),
-            gradient: LinearGradient(
-              colors: [
-                Colors.white70.withOpacity(0.2),
-                AppColor.secondaryExtraSoft.withOpacity(0.2),
-              ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
+            gradient: AppColor.cardGradient
+           
+            
           ),
           child: Column(
             children: [

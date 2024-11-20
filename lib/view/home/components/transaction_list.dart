@@ -12,6 +12,7 @@ class TransactionsContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final controller = Get.find<HomeController>();
+    final monthlyTransactions = controller.groupTransactionsByMonth();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -28,66 +29,48 @@ class TransactionsContent extends StatelessWidget {
           () => controller.isLoading.value == true
               ? const CircularProgressIndicator()
               : controller.transactions.isNotEmpty
-                  ? controller.selectedChip.value.isEmpty
-                      ? ListView.separated(
-                          reverse: true,
-                          padding: const EdgeInsets.all(0),
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          itemCount: controller.transactions.length,
-                          itemBuilder: (context, index) {
-                            var i = controller.transactions[index];
-                            var category = i['category'];
-                            return Padding(
-                                padding: const EdgeInsets.only(
-                                    bottom: 8.0, top: 8.0),
-                                child: TransactionListItem(
-                                  transaction: controller.transactions,
-                                  index: index,
-                                ));
-                          },
-                          separatorBuilder: (BuildContext context, int index) {
-                            return Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 24.0),
-                              child: Divider(
-                                thickness: 0.5,
-                                color: AppColor.secondaryExtraSoft,
+                  ? ListView.builder(
+                      padding: const EdgeInsets.all(0),
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: monthlyTransactions.keys.length,
+                      itemBuilder: (context, monthIndex) {
+                        String month = monthlyTransactions.keys.elementAt(monthIndex);
+                        List<Map<String, dynamic>> transactionsForMonth = monthlyTransactions[month]!;
+
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0),
+                              child: Text(
+                                month,
+                                style: normalText(14, AppColor.secondarySoft)
                               ),
-                            );
-                          },
-                        )
-                      : ListView.separated(
-                          reverse: true,
-                          padding: const EdgeInsets.all(0),
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          itemCount: controller
-                              .filteredTransactionsByCategoryList.length,
-                          itemBuilder: (context, index) {
-                            var i = controller
-                                .filteredTransactionsByCategoryList[index];
-                            var category = i['category'];
-                            return Padding(
-                                padding: const EdgeInsets.only(
-                                    bottom: 8.0, top: 8.0),
-                                child: TransactionListItem(
-                                  transaction: controller
-                                      .filteredTransactionsByCategoryList,
-                                  index: index,
-                                ));
-                          },
-                          separatorBuilder: (BuildContext context, int index) {
-                            return Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 24.0),
-                              child: Divider(
-                                thickness: 0.5,
-                                color: AppColor.secondaryExtraSoft,
+                            ),
+                            ListView.separated(
+                              padding: const EdgeInsets.all(0),
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              itemCount: transactionsForMonth.length,
+                              itemBuilder: (context, transactionIndex) {
+                                return TransactionListItem(
+                                  transaction: transactionsForMonth,
+                                  index: transactionIndex,
+                                );
+                              },
+                              separatorBuilder: (context, index) => Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                                child: Divider(
+                                  thickness: 0.5,
+                                  color: AppColor.secondaryExtraSoft,
+                                ),
                               ),
-                            );
-                          },
-                        )
+                            ),
+                          ],
+                        );
+                      },
+                    )
                   : const Center(
                       child: Padding(
                       padding: EdgeInsets.all(50.0),

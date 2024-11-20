@@ -49,12 +49,10 @@ class TransactionController extends GetxController {
       // Update balance based on transaction type
       // updateBalance(amount, selectedType.value);
 
-
       // Refresh balance and transactions
       homeC.getTransactions();
       homeC.incomeTransactions;
       homeC.expenseTransactions;
-
 
       // Clear text fields and selected category
       amountController.clear();

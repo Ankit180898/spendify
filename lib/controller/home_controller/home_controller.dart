@@ -40,14 +40,24 @@ class HomeController extends GetxController {
   var currentPage = 1;
   var itemsPerPage = 10;
 
+  // Add these variables at the class level if not already present
+  var groupedTransactions = <String, List<Map<String, dynamic>>>{}.obs;
+  var limit = 20.obs; // Number of transactions to load initially
+
+  // Add this variable
+  var selectedYear = DateTime.now().year.obs;
+
+  // Cache computed values
+  final _transactionsByYear = <int, List<Map<String, dynamic>>>{};
+  final _transactionsByMonth = <String, List<Map<String, dynamic>>>{};
+  
   @override
   void onInit() async {
     super.onInit();
     await getProfile();
     await getTransactions();
-    // await getBalance();
-    // Filter transactions into income and expense
-    filterTransactions(selectedFilter.value);
+    filterTransactions('weekly'); // Set default filter to weekly
+     groupTransactionsByMonth();
   }
 
   Future<void> getProfile() async {
@@ -103,23 +113,42 @@ class HomeController extends GetxController {
 
   Future<void> getTransactions() async {
     isLoading.value = true;
-    transactions.value = await supabaseC
-        .from("transactions")
-        .select()
-        .eq('user_id', supabaseC.auth.currentUser!.id);
+    try {
+      final response = await supabaseC
+          .from("transactions")
+          .select()
+          .eq('user_id', supabaseC.auth.currentUser!.id)
+          .order('date', ascending: false) // Order by date descending
+          .limit(limit.value); // Add limit
 
-    // Filter transactions into income and expense categories
-    incomeTransactions = transactions
-        .where((transaction) => transaction['type'] == 'income')
-        .toList();
-    expenseTransactions = transactions
-        .where((transaction) => transaction['type'] == 'expense')
-        .toList();
+      transactions.value = response
+          .map((transaction) {
+            final parsedDate = DateTime.tryParse(transaction['date']);
+            if (parsedDate == null) return null;
+            transaction['parsedDate'] = parsedDate;
+            return transaction;
+          })
+          .whereType<Map<String, dynamic>>()
+          .toList();
 
-    // Calculate balance based on all transactions
-    calculateBalance();
+      // Update grouped transactions immediately
+      groupedTransactions.value = groupTransactionsByMonth();
+      
+      // Filter income and expense transactions
+      incomeTransactions = transactions
+          .where((transaction) => transaction['type'] == 'income')
+          .toList();
+      expenseTransactions = transactions
+          .where((transaction) => transaction['type'] == 'expense')
+          .toList();
 
-    isLoading.value = false;
+      calculateBalance();
+    } catch (e) {
+      debugPrint('Error fetching transactions: $e');
+      CustomToast.errorToast("Error", "Failed to fetch transactions");
+    } finally {
+      isLoading.value = false;
+    }
   }
 
   // Unified method to calculate balance based on income and expenses
@@ -145,27 +174,85 @@ class HomeController extends GetxController {
 
   // Method to filter transactions based on date
   void filterTransactions(String date) {
-    final now = DateTime.now();
-    switch (date) {
-      case 'weekly':
-        final startOfWeek = getMondayOfCurrentWeek();
-        filteredTransactions.assignAll(transactions
-            .where((transaction) =>
-                DateTime.parse(transaction['date']).isAfter(startOfWeek))
-            .toList());
-        break;
-      case 'monthly':
-        final startOfMonth = DateTime(now.year, now.month, 1);
-        filteredTransactions.assignAll(transactions
-            .where((transaction) =>
-                DateTime.parse(transaction['date']).isAfter(startOfMonth))
-            .toList());
-        break;
-      // Add more cases for other date filters
-      default:
-        filteredTransactions.assignAll(transactions); // No filter applied
-        break;
+    selectedFilter.value = date;
+    
+    try {
+      // First filter by year
+      var yearFiltered = transactions.where((transaction) {
+        final transDate = DateTime.parse(transaction['date']);
+        return transDate.year == selectedYear.value;
+      }).toList();
+
+      switch (date) {
+        case 'weekly':
+          // Get current month's data instead of just the week
+          final now = DateTime.now();
+          final startOfMonth = DateTime(now.year, now.month, 1);
+          final endOfMonth = DateTime(now.year, now.month + 1, 0);
+          
+          filteredTransactions.value = yearFiltered
+              .where((transaction) {
+                final transDate = DateTime.parse(transaction['date']);
+                return transDate.isAfter(startOfMonth.subtract(const Duration(days: 1))) && 
+                       transDate.isBefore(endOfMonth.add(const Duration(days: 1)));
+              })
+              .toList();
+          break;
+          
+        case 'monthly':
+          // Show all transactions for the selected year
+          filteredTransactions.value = yearFiltered;
+          break;
+          
+        default:
+          filteredTransactions.value = yearFiltered;
+          break;
+      }
+
+      // Sort transactions by date
+      filteredTransactions.value.sort((a, b) => 
+        DateTime.parse(b['date']).compareTo(DateTime.parse(a['date'])));
+          
+    } catch (e) {
+      debugPrint('Error filtering transactions: $e');
+      filteredTransactions.value = [];
     }
+  }
+
+  // Compute transactions for year only when year changes
+  List<Map<String, dynamic>> _getTransactionsForYear(int year) {
+    if (!_transactionsByYear.containsKey(year)) {
+      _transactionsByYear[year] = transactions
+          .where((t) => DateTime.parse(t['date']).year == year)
+          .toList();
+    }
+    return _transactionsByYear[year] ?? [];
+  }
+
+  // Compute monthly transactions only when needed
+  List<Map<String, dynamic>> _getTransactionsForMonth() {
+    final now = DateTime.now();
+    final monthKey = '${now.year}-${now.month}';
+    
+    if (!_transactionsByMonth.containsKey(monthKey)) {
+      final startOfMonth = DateTime(now.year, now.month, 1);
+      final endOfMonth = DateTime(now.year, now.month + 1, 0);
+      
+      _transactionsByMonth[monthKey] = transactions
+          .where((t) {
+            final date = DateTime.parse(t['date']);
+            return date.isAfter(startOfMonth.subtract(const Duration(days: 1))) && 
+                   date.isBefore(endOfMonth.add(const Duration(days: 1)));
+          })
+          .toList();
+    }
+    return _transactionsByMonth[monthKey] ?? [];
+  }
+
+  // Clear cache when transactions are updated
+  void clearCache() {
+    _transactionsByYear.clear();
+    _transactionsByMonth.clear();
   }
 
   var filteredTransactionsByCategoryList = <Map<String, dynamic>>[].obs;
@@ -182,8 +269,7 @@ class HomeController extends GetxController {
   // Method to get the start of the current week (Monday)
   static DateTime getMondayOfCurrentWeek() {
     final now = DateTime.now();
-    final daysSinceMonday = (now.weekday + 6) % 7;
-    return now.subtract(Duration(days: daysSinceMonday));
+    return DateTime(now.year, now.month, now.day - now.weekday + 1);
   }
 
   // Method to format a DateTime object to a specific format
@@ -235,5 +321,26 @@ class HomeController extends GetxController {
     }
 
     return categoryTotals;
+  }
+
+  Map<String, List<Map<String, dynamic>>> groupTransactionsByMonth() {
+    final Map<String, List<Map<String, dynamic>>> monthlyTransactions = {};
+
+    for (var transaction in transactions) {
+      final parsedDate = transaction['parsedDate'];
+      if (parsedDate != null) {
+        String month = DateFormat('MMMM yyyy').format(parsedDate);
+        monthlyTransactions.putIfAbsent(month, () => []);
+        monthlyTransactions[month]!.add(transaction);
+      }
+    }
+
+    return monthlyTransactions;
+  }
+
+  // Add this method to load more transactions
+  Future<void> loadMore() async {
+    limit.value += 20; // Increase limit by 20
+    await getTransactions();
   }
 }

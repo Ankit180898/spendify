@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+// import 'package:flutter/rendering.dart';
 import 'package:get/get.dart';
 import 'package:spendify/routes/app_pages.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart' as dotenv;
 
 Future<void> main() async {
+  // debugRepaintRainbowEnabled = true;
+
   await dotenv.dotenv.load(fileName: '.env');
   final supaUri = dotenv.dotenv.env['SUPABASE_URL']; //get env key
   final supaAnon = dotenv.dotenv.env['SUPABASE_ANONKEY'];
@@ -24,12 +27,11 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GetMaterialApp(
-        debugShowCheckedModeBanner: false,
-        title: 'Spendify',
-        initialRoute: Routes.SPLASH,
-        getPages: AppPages.routes,
-        builder: (context, child) {
-          return child!;
-        });
+      
+      debugShowCheckedModeBanner: false,
+      title: 'Spendify',
+      initialRoute: Routes.SPLASH,
+      getPages: AppPages.routes,
+    );
   }
 }

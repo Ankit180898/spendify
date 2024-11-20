@@ -58,14 +58,17 @@ class _BottomNavState extends State<BottomNav> {
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.all(Radius.circular(20)),
         ),
-        child:  Icon(Iconsax.add, size: 36,color: AppColor.secondarySoft,),
+        child: const Icon(
+          Iconsax.add,
+          size: 36,
+          color: AppColor.darkCard,
+        ),
       ),
     );
   }
 
   Widget _buildBottomNavigationBar() {
     return BottomNavigationBar(
-
       type: BottomNavigationBarType.fixed,
       currentIndex: currentIndex,
       onTap: _onNavTapped,
@@ -79,11 +82,11 @@ class _BottomNavState extends State<BottomNav> {
           label: 'Wallet',
         ),
       ],
-      selectedLabelStyle: normalText(16,AppColor.primarySoft),
+      selectedLabelStyle: normalText(16, AppColor.primarySoft),
       unselectedLabelStyle: normalText(12, AppColor.secondarySoft),
       selectedItemColor: Colors.white,
       unselectedItemColor: AppColor.secondarySoft,
-      backgroundColor: AppColor.primarySoft, // Set background color
+      backgroundColor: AppColor.darkBackground, // Set background color
       elevation: 0, // Optional: remove shadow
     );
   }
