@@ -21,65 +21,56 @@ class HomeScreen extends StatelessWidget {
     final controller1 = Get.put(TransactionController());
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
-        value:  SystemUiOverlayStyle(
-        statusBarColor: AppColor.primaryGradient.colors.first, // Set status bar color
+      value: SystemUiOverlayStyle(
+        statusBarColor:
+            AppColor.primaryGradient.colors.first, // Set status bar color
         statusBarIconBrightness: Brightness.light,
-          // Icon color
-    ),
-    child: Scaffold(
-      resizeToAvoidBottomInset: false,
-      backgroundColor: Colors.white,
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            Container(
-              decoration: BoxDecoration(
-                gradient: AppColor.primaryGradient,
-                borderRadius: const BorderRadius.only(
-                  bottomLeft: Radius.circular(28),
-                  bottomRight: Radius.circular(28),
-                ),
-              ),
-              child: Column(
-                children: [
-                  Row(
-                    children: [
-                      const TopBarContents(),
-                      const Spacer(),
-                      IconButton(
-                        onPressed: () {
-                          controller.signOut();
-                        },
-                        icon: Icon(
-                          Iconsax.logout,
-                          color: AppColor.secondaryExtraSoft,
-                        ),
-                      ),
-                    ],
+        // Icon color
+      ),
+      child: Scaffold(
+        resizeToAvoidBottomInset: false,
+        backgroundColor: AppColor.darkBackground,
+        body: SingleChildScrollView(
+          child: Column(
+            children: [
+              Container(
+                decoration: const BoxDecoration(
+                  gradient: AppColor.darkGradientAlt,
+                  borderRadius: BorderRadius.only(
+                    bottomLeft: Radius.circular(28),
+                    bottomRight: Radius.circular(28),
                   ),
-                  UserInfoCard(size: displayHeight(context) * 0.10),
-                  verticalSpace(32),
-                ],
-              ),
-            ),
-            Padding(
-              padding:
-                  const EdgeInsets.only(left: 24.0, right: 24.0, top: 24.0),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  'Categories',
-                  style: titleText(18, AppColor.secondary),
+                ),
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        TopBarContents(),
+                      ],
+                    ),
+                    UserInfoCard(size: displayHeight(context) * 0.10),
+                    verticalSpace(32),
+                  ],
                 ),
               ),
-            ),
-            const TabsView(),
-            //  TransactionsGraph(),
-            SingleChildScrollView(child: TransactionsContent(10)),
-          ],
+              // Padding(
+              //   padding:
+              //       const EdgeInsets.only(left: 24.0, right: 24.0, top: 24.0),
+              //   child: Align(
+              //     alignment: Alignment.centerLeft,
+              //     child: Text(
+              //       'Categories',
+              //       style: titleText(18, AppColor.secondary),
+              //     ),
+              //   ),
+              // ),
+              // const TabsView(),
+              //  TransactionsGraph(),
+              SingleChildScrollView(child: TransactionsContent(10)),
+            ],
+          ),
         ),
       ),
-    ),
     );
   }
 }

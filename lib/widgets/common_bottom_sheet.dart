@@ -30,78 +30,80 @@ class _BottomSheetExampleState extends State<BottomSheetExample> {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      child: Container(
-        width: displayWidth(context),
-        constraints: BoxConstraints(
-          minHeight: MediaQuery.of(context).size.height * 0.3,
-        ),
-        padding: const EdgeInsets.all(24.0),
-        decoration: BoxDecoration(
-          gradient: SweepGradient(
-            colors: [AppColor.primarySoft, Colors.white],
-            endAngle: 20,
-            startAngle: 10,
+    return RepaintBoundary(
+      child: SingleChildScrollView(
+        child: Container(
+          width: displayWidth(context),
+          constraints: BoxConstraints(
+            minHeight: MediaQuery.of(context).size.height * 0.3,
           ),
-          color: AppColor.secondaryExtraSoft,
-          borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(20.0),
-            topRight: Radius.circular(20.0),
-          ),
-        ),
-        child: Column(
-          children: <Widget>[
-            Obx(
-                  () => SegmentedButton<Transactions>(
-                style: ButtonStyle(
-                  backgroundColor: WidgetStateProperty.resolveWith<Color>(
-                        (Set<WidgetState> states) {
-                      if (states.contains(WidgetState.selected)) {
-                        return Colors.white;
-                      }
-                      return AppColor.primarySoft;
-                    },
-                  ),
-                  side: WidgetStateProperty.all<BorderSide>(
-                    const BorderSide(color: Colors.white),
-                  ),
-                  shape: WidgetStateProperty.all<RoundedRectangleBorder>(
-                    const RoundedRectangleBorder(
-                      borderRadius: BorderRadius.all(Radius.circular(8)),
-                    ),
-                  ),
-                ),
-                showSelectedIcon: true,
-                segments: <ButtonSegment<Transactions>>[
-                  ButtonSegment<Transactions>(
-                    enabled: true,
-                    value: Transactions.income,
-                    label: Text(
-                      'Income',
-                      style: normalText(16, AppColor.secondary),
-                    ),
-                    icon: ImageConstants(colors: AppColor.secondary).income,
-                  ),
-                  ButtonSegment<Transactions>(
-                    value: Transactions.expense,
-                    label: Text(
-                      'Expense',
-                      style: normalText(16, AppColor.secondary),
-                    ),
-                    icon: ImageConstants(colors: AppColor.secondary).expense,
-                  ),
-                ],
-                selected: <Transactions>{transactions.value},
-                onSelectionChanged: (Set<Transactions> newSelection) {
-                  transactions.value = newSelection.first;
-                  controller.selectedType.value = newSelection.first == Transactions.income ? 'income' : 'expense';
-                },
-              ),
+          padding: const EdgeInsets.all(24.0),
+          decoration: BoxDecoration(
+            gradient: SweepGradient(
+              colors: [AppColor.primarySoft, Colors.white],
+              endAngle: 20,
+              startAngle: 10,
             ),
-            verticalSpace(16),
-            Obx(() => AddTransactionTitle(controller.selectedType.value)),
-            TransactionForm(controller: controller),
-          ],
+            color: AppColor.secondaryExtraSoft,
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(20.0),
+              topRight: Radius.circular(20.0),
+            ),
+          ),
+          child: Column(
+            children: <Widget>[
+              Obx(
+                    () => SegmentedButton<Transactions>(
+                  style: ButtonStyle(
+                    backgroundColor: WidgetStateProperty.resolveWith<Color>(
+                          (Set<WidgetState> states) {
+                        if (states.contains(WidgetState.selected)) {
+                          return Colors.white;
+                        }
+                        return AppColor.primarySoft;
+                      },
+                    ),
+                    side: WidgetStateProperty.all<BorderSide>(
+                      const BorderSide(color: Colors.white),
+                    ),
+                    shape: WidgetStateProperty.all<RoundedRectangleBorder>(
+                      const RoundedRectangleBorder(
+                        borderRadius: BorderRadius.all(Radius.circular(8)),
+                      ),
+                    ),
+                  ),
+                  showSelectedIcon: true,
+                  segments: <ButtonSegment<Transactions>>[
+                    ButtonSegment<Transactions>(
+                      enabled: true,
+                      value: Transactions.income,
+                      label: Text(
+                        'Income',
+                        style: normalText(16, AppColor.secondary),
+                      ),
+                      icon: ImageConstants(colors: AppColor.secondary).income,
+                    ),
+                    ButtonSegment<Transactions>(
+                      value: Transactions.expense,
+                      label: Text(
+                        'Expense',
+                        style: normalText(16, AppColor.secondary),
+                      ),
+                      icon: ImageConstants(colors: AppColor.secondary).expense,
+                    ),
+                  ],
+                  selected: <Transactions>{transactions.value},
+                  onSelectionChanged: (Set<Transactions> newSelection) {
+                    transactions.value = newSelection.first;
+                    controller.selectedType.value = newSelection.first == Transactions.income ? 'income' : 'expense';
+                  },
+                ),
+              ),
+              verticalSpace(16),
+              Obx(() => AddTransactionTitle(controller.selectedType.value)),
+              TransactionForm(controller: controller),
+            ],
+          ),
         ),
       ),
     );
