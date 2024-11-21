@@ -22,8 +22,8 @@ class CategoriesChips extends StatelessWidget {
       spacing: 8.0, // Adjust spacing between chips as needed
       children: categories.map((category) {
         return ChoiceChip(
-          selectedColor: AppColor.primary.withOpacity(0.6),
-          backgroundColor: Colors.white,
+          selectedColor: AppColor.darkSurface.withOpacity(0.4),
+          backgroundColor: Colors.transparent,
           label: Row(
             mainAxisSize: MainAxisSize.min,
             children: [

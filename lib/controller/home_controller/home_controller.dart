@@ -48,8 +48,8 @@ class HomeController extends GetxController {
   var selectedYear = DateTime.now().year.obs;
 
   // Cache computed values
-  final _transactionsByYear = <int, List<Map<String, dynamic>>>{};
-  final _transactionsByMonth = <String, List<Map<String, dynamic>>>{};
+  final _transactionsByYear = <int, List<Map<String, dynamic>>>{}.obs;
+  final _transactionsByMonth = <String, List<Map<String, dynamic>>>{}.obs;
   
   @override
   void onInit() async {
@@ -57,7 +57,7 @@ class HomeController extends GetxController {
     await getProfile();
     await getTransactions();
     filterTransactions('weekly'); // Set default filter to weekly
-     groupTransactionsByMonth();
+    groupTransactionsByMonth();
   }
 
   Future<void> getProfile() async {
@@ -118,8 +118,8 @@ class HomeController extends GetxController {
           .from("transactions")
           .select()
           .eq('user_id', supabaseC.auth.currentUser!.id)
-          .order('date', ascending: false) // Order by date descending
-          .limit(limit.value); // Add limit
+          .order('date', ascending: false)
+          .limit(limit.value);
 
       transactions.value = response
           .map((transaction) {
@@ -131,9 +131,11 @@ class HomeController extends GetxController {
           .whereType<Map<String, dynamic>>()
           .toList();
 
-      // Update grouped transactions immediately
+      debugPrint('Fetched Transactions: $transactions'); // Debug print
+
+      // Update grouped transactions immediately after fetching
       groupedTransactions.value = groupTransactionsByMonth();
-      
+
       // Filter income and expense transactions
       incomeTransactions = transactions
           .where((transaction) => transaction['type'] == 'income')
