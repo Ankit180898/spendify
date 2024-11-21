@@ -17,57 +17,35 @@ class TransactionListItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final controller = Get.find<HomeController>();
-    var trans = transaction[index];
-    var category = trans['category'];
+    final trans = transaction[index];
+    final category = trans['category'];
+    final amount = trans['amount'].toString();
+    final isExpense = trans['type'] == 'expense';
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: 
-         ListTile(
-          leading: CircleAvatar(
-            radius: 24,
-            backgroundColor: AppColor.primaryExtraSoft,
-            child: controller.getCategoryImage(category, categoryList),
-          ),
-          title: Text(
-            trans['description'].toString(),
-            style: mediumTextStyle(16, AppColor.secondary),
-          ),
-          subtitle: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                controller.formatDateTime(trans['date'].toString()),
-                style: normalText(14, AppColor.secondarySoft),
-              ),
-              // verticalSpace(5),
-              // Container(
-              //   decoration: BoxDecoration(
-              //     color: AppColor.primarySoft,
-              //     borderRadius: BorderRadius.circular(20),
-              //   ),
-              //   child: Padding(
-              //     padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
-              //     child: Text(
-              //       category.toString(),
-              //       style: normalText(14, Colors.white),
-              //     ),
-              //   ),
-              // ),
-            ],
-          ),
-          trailing: 
-             trans['type'] == 'expense'? Text(
-                "-${trans['amount'].toString()}",
-                style: mediumTextStyle(16, AppColor.secondary))
-                :Text(
-                "+${trans['amount'].toString()}",
-                style: mediumTextStyle(16, AppColor.secondary))
-                
-              
-            
+      child: ListTile(
+        leading: CircleAvatar(
+          radius: 24,
+          backgroundColor: AppColor.primaryExtraSoft,
+          child: controller.getCategoryImage(category, categoryList),
         ),
-      
+        title: Text(
+          trans['description'].toString(),
+          style: mediumTextStyle(16, Colors.white),
+        ),
+        subtitle: Text(
+          controller.formatDateTime(trans['date'].toString()),
+          style: normalText(14, AppColor.secondarySoft),
+        ),
+        trailing: Text(
+          isExpense ? "-$amount" : "+$amount",
+          style: mediumTextStyle(
+            16,
+            isExpense ? AppColor.error : AppColor.success,
+          ),
+        ),
+      ),
     );
   }
 }

@@ -25,7 +25,7 @@ class _BottomSheetExampleState extends State<BottomSheetExample> {
   void dispose() {
     // TODO: implement dispose
     super.dispose();
-    controller.selectedCategory.value='';
+    controller.selectedCategory.value = '';
   }
 
   @override
@@ -38,14 +38,9 @@ class _BottomSheetExampleState extends State<BottomSheetExample> {
             minHeight: MediaQuery.of(context).size.height * 0.3,
           ),
           padding: const EdgeInsets.all(24.0),
-          decoration: BoxDecoration(
-            gradient: SweepGradient(
-              colors: [AppColor.primarySoft, Colors.white],
-              endAngle: 20,
-              startAngle: 10,
-            ),
-            color: AppColor.secondaryExtraSoft,
-            borderRadius: const BorderRadius.only(
+          decoration: const BoxDecoration(
+            color: AppColor.darkCard,
+            borderRadius: BorderRadius.only(
               topLeft: Radius.circular(20.0),
               topRight: Radius.circular(20.0),
             ),
@@ -53,51 +48,139 @@ class _BottomSheetExampleState extends State<BottomSheetExample> {
           child: Column(
             children: <Widget>[
               Obx(
-                    () => SegmentedButton<Transactions>(
-                  style: ButtonStyle(
-                    backgroundColor: WidgetStateProperty.resolveWith<Color>(
-                          (Set<WidgetState> states) {
-                        if (states.contains(WidgetState.selected)) {
-                          return Colors.white;
-                        }
-                        return AppColor.primarySoft;
+                () => Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    GestureDetector(
+                      onTap: () {
+                        transactions.value = Transactions.income;
+                        controller.selectedType.value = 'income';
                       },
-                    ),
-                    side: WidgetStateProperty.all<BorderSide>(
-                      const BorderSide(color: Colors.white),
-                    ),
-                    shape: WidgetStateProperty.all<RoundedRectangleBorder>(
-                      const RoundedRectangleBorder(
-                        borderRadius: BorderRadius.all(Radius.circular(8)),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 12.0, horizontal: 24.0),
+                        decoration: BoxDecoration(
+                          color: transactions.value == Transactions.income
+                              ? Colors.white // Selected color
+                              : Colors.transparent, // Deselected color
+                          borderRadius: const BorderRadius.only(
+                              topLeft: Radius.circular(8.0),
+                              bottomLeft: Radius.circular(8)),
+                          border: Border.all(
+                            color: Colors.white,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            ImageConstants(
+                                    colors: transactions.value ==
+                                            Transactions.income
+                                        ? AppColor.darkBackground
+                                        : Colors.white)
+                                .income,
+                            const SizedBox(width: 8),
+                            Text(
+                              'Income',
+                              style: normalText(
+                                  16,
+                                  transactions.value == Transactions.income
+                                      ? AppColor.darkBackground
+                                      : Colors.white),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                  showSelectedIcon: true,
-                  segments: <ButtonSegment<Transactions>>[
-                    ButtonSegment<Transactions>(
-                      enabled: true,
-                      value: Transactions.income,
-                      label: Text(
-                        'Income',
-                        style: normalText(16, AppColor.secondary),
+                    GestureDetector(
+                      onTap: () {
+                        transactions.value = Transactions.expense;
+                        controller.selectedType.value = 'expense';
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 12.0, horizontal: 24.0),
+                        decoration: BoxDecoration(
+                          color: transactions.value == Transactions.expense
+                              ? Colors.white // Selected color
+                              : Colors.transparent, // Deselected color
+                          borderRadius: const BorderRadius.only(
+                              topRight: Radius.circular(8.0),
+                              bottomRight: Radius.circular(8)),
+                          border: Border.all(
+                            color: Colors.white,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            ImageConstants(
+                                    colors: transactions.value ==
+                                            Transactions.expense
+                                        ? AppColor.darkBackground
+                                        : Colors.white)
+                                .expense,
+                            const SizedBox(width: 8),
+                            Text(
+                              'Expense',
+                              style: normalText(
+                                  16,
+                                  transactions.value == Transactions.expense
+                                      ? AppColor.darkBackground
+                                      : Colors.white),
+                            ),
+                          ],
+                        ),
                       ),
-                      icon: ImageConstants(colors: AppColor.secondary).income,
-                    ),
-                    ButtonSegment<Transactions>(
-                      value: Transactions.expense,
-                      label: Text(
-                        'Expense',
-                        style: normalText(16, AppColor.secondary),
-                      ),
-                      icon: ImageConstants(colors: AppColor.secondary).expense,
                     ),
                   ],
-                  selected: <Transactions>{transactions.value},
-                  onSelectionChanged: (Set<Transactions> newSelection) {
-                    transactions.value = newSelection.first;
-                    controller.selectedType.value = newSelection.first == Transactions.income ? 'income' : 'expense';
-                  },
                 ),
+                // () => SegmentedButton<Transactions>(
+                //   style: ButtonStyle(
+                //     backgroundColor: WidgetStateProperty.resolveWith<Color>(
+                //       (Set<WidgetState> states) {
+                //         if (states.contains(WidgetState.selected)) {
+                //           return Colors.white;
+                //         }
+                //         return AppColor.primarySoft;
+                //       },
+                //     ),
+                //     side: WidgetStateProperty.all<BorderSide>(
+                //       const BorderSide(color: Colors.white),
+                //     ),
+                //     shape: WidgetStateProperty.all<RoundedRectangleBorder>(
+                //       const RoundedRectangleBorder(
+                //         borderRadius: BorderRadius.all(Radius.circular(8)),
+                //       ),
+                //     ),
+                //   ),
+                //   showSelectedIcon: true,
+                //   segments: <ButtonSegment<Transactions>>[
+                //     ButtonSegment<Transactions>(
+                //       enabled: true,
+                //       value: Transactions.income,
+                //       label: Text(
+                //         'Income',
+                //         style: normalText(16, AppColor.secondary),
+                //       ),
+                //       icon: ImageConstants(colors: AppColor.secondary).income,
+                //     ),
+                //     ButtonSegment<Transactions>(
+                //       value: Transactions.expense,
+                //       label: Text(
+                //         'Expense',
+                //         style: normalText(16, AppColor.secondary),
+                //       ),
+                //       icon: ImageConstants(colors: AppColor.secondary).expense,
+                //     ),
+                //   ],
+                //   selected: <Transactions>{transactions.value},
+                //   onSelectionChanged: (Set<Transactions> newSelection) {
+                //     transactions.value = newSelection.first;
+                //     controller.selectedType.value =
+                //         newSelection.first == Transactions.income
+                //             ? 'income'
+                //             : 'expense';
+                //   },
+                // ),
               ),
               verticalSpace(16),
               Obx(() => AddTransactionTitle(controller.selectedType.value)),
@@ -138,40 +221,40 @@ class TransactionForm extends StatelessWidget {
         TransactionInputField(
           controller: controller.amountController,
           label: "Amount",
-          hintText: "100",
+          hintText: "Enter the amount",
           prefix: '₹',
         ),
         verticalSpace(8),
         TransactionInputField(
           controller: controller.titleController,
           label: "Title",
-          hintText: "Food",
+          hintText: "Enter the title",
         ),
         verticalSpace(8),
-        Obx(()=>
-           CategoriesChips(
+        Obx(
+          () => CategoriesChips(
             categories: categoryList,
             onChanged: (value) => controller.selectedCategory.value = value!,
             selectedCategory: controller.selectedCategory.value,
-
           ),
         ),
         verticalSpace(16),
         Obx(
-              () => CustomButton(
+          () => CustomButton(
             text: controller.isLoading.isFalse ? "Add" : "...Loading",
             onPressed: () {
               if (controller.isLoading.isFalse) {
                 controller.addResource();
               }
             },
-            bgcolor: AppColor.secondary,
-            height: displayHeight(context) * 0.08,
+            bgcolor: AppColor.darkSurface,
+            height: displayHeight(context) * 0.07,
             width: displayWidth(context),
-            textSize: 16,
+            textSize: 24,
             textColor: Colors.white,
           ),
         ),
+        verticalSpace(16),
       ],
     );
   }
@@ -198,7 +281,7 @@ class TransactionInputField extends StatelessWidget {
       padding: const EdgeInsets.only(left: 14, right: 14, top: 4),
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        gradient: AppColor.cardGradient,
         borderRadius: BorderRadius.circular(8),
         border: Border.all(width: 1, color: AppColor.secondaryExtraSoft),
       ),
@@ -213,7 +296,9 @@ class TransactionInputField extends StatelessWidget {
           ),
           floatingLabelBehavior: FloatingLabelBehavior.always,
           border: InputBorder.none,
-          prefix: prefix != null ? Text(prefix!, style: normalText(16, AppColor.secondarySoft)) : null,
+          prefix: prefix != null
+              ? Text(prefix!, style: normalText(16, AppColor.secondarySoft))
+              : null,
           hintText: hintText,
           hintStyle: normalText(16, AppColor.secondarySoft),
         ),
