@@ -98,14 +98,15 @@ class NewWalletScreen extends StatelessWidget {
         ),
         child: Container(
           decoration: const BoxDecoration(
-            gradient: AppColor.darkGradient, // Your gradient background
+            color: AppColor.darkBackground,
+            // gradient: AppColor.darkGradient, // Your gradient background
           ),
           child: Scaffold(
             backgroundColor: Colors.transparent,
             appBar: AppBar(
               backgroundColor: Colors.transparent,
               title: Text(
-                "Transactions",
+                "Statistics",
                 style: titleText(24, Colors.white),
               ),
               centerTitle: false,
