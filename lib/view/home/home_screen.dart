@@ -17,12 +17,11 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final controller = Get.put(HomeController());
     final controller1 = Get.put(TransactionController());
-     // Set the status bar color
+    // Set the status bar color
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: const SystemUiOverlayStyle(
-        statusBarColor:
-            AppColor.darkBackground, // Set status bar color
+        statusBarColor: AppColor.darkBackground, // Set status bar color
         statusBarIconBrightness: Brightness.light,
         // Icon color
       ),
@@ -65,7 +64,21 @@ class HomeScreen extends StatelessWidget {
               // ),
               // const TabsView(),
               //  TransactionsGraph(),
-              const SingleChildScrollView(child: TransactionsContent(10)),
+              SingleChildScrollView(
+                child: Column(
+                  children: [
+                    const TransactionsContent(10), // Pass the initial limit
+                    // Add a "Load More" button if needed
+                    Obx(() =>
+                        controller.transactions.length >= controller.limit.value
+                            ? ElevatedButton(
+                                onPressed: () => controller.loadMore(),
+                                child: const Text('Load More'),
+                              )
+                            : const SizedBox()),
+                  ],
+                ),
+              ),
             ],
           ),
         ),

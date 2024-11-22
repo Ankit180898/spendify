@@ -42,7 +42,7 @@ class HomeController extends GetxController {
 
   // Add these variables at the class level if not already present
   var groupedTransactions = <String, List<Map<String, dynamic>>>{}.obs;
-  var limit = 20.obs; // Number of transactions to load initially
+  var limit = 10.obs; // Default limit
 
   // Add this variable
   var selectedYear = DateTime.now().year.obs;
@@ -114,6 +114,8 @@ class HomeController extends GetxController {
   Future<void> getTransactions() async {
     isLoading.value = true;
     try {
+      debugPrint('Fetching transactions with limit: ${limit.value}');
+      
       final response = await supabaseC
           .from("transactions")
           .select()
@@ -131,11 +133,11 @@ class HomeController extends GetxController {
           .whereType<Map<String, dynamic>>()
           .toList();
 
-      debugPrint('Fetched Transactions: $transactions'); // Debug print
-
-      // Update grouped transactions immediately after fetching
+      debugPrint('Fetched ${transactions.length} transactions');
+      
+      // Update grouped transactions
       groupedTransactions.value = groupTransactionsByMonth();
-
+      
       // Filter income and expense transactions
       incomeTransactions = transactions
           .where((transaction) => transaction['type'] == 'income')
@@ -337,12 +339,13 @@ class HomeController extends GetxController {
       }
     }
 
+    debugPrint('Grouped ${monthlyTransactions.length} months of transactions');
     return monthlyTransactions;
   }
 
-  // Add this method to load more transactions
+  // Add a method to load more transactions
   Future<void> loadMore() async {
-    limit.value += 20; // Increase limit by 20
+    limit.value += 10; // Increase limit by 10
     await getTransactions();
   }
 }

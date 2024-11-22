@@ -3,10 +3,11 @@ import 'package:get/get.dart';
 import 'package:spendify/config/app_color.dart';
 import 'package:spendify/controller/home_controller/home_controller.dart';
 import 'package:spendify/utils/utils.dart';
+import 'package:spendify/view/wallet/all_transaction_screen.dart';
 import 'package:spendify/view/wallet/transaction_list_item.dart';
 
 class TransactionsContent extends StatelessWidget {
-  final int? limit;
+  final int limit;
 
   const TransactionsContent(this.limit, {super.key});
 
@@ -20,9 +21,21 @@ class TransactionsContent extends StatelessWidget {
       children: [
         Padding(
           padding: const EdgeInsets.only(left: 22.0, right: 22.0, top: 16.0),
-          child: Text(
-            'Transactions',
-            style: titleText(18, Colors.white),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Transactions',
+                style: titleText(18, Colors.white),
+              ),
+              TextButton(
+                onPressed: () => Get.to(() => const AllTransactionsScreen()),
+                child: Text(
+                  'View All',
+                  style: normalText(14, AppColor.primary),
+                ),
+              ),
+            ],
           ),
         ),
         Obx(
@@ -50,13 +63,21 @@ class TransactionsContent extends StatelessWidget {
               itemCount: monthlyTransactions.keys.length,
               itemBuilder: (context, monthIndex) {
                 String month = monthlyTransactions.keys.elementAt(monthIndex);
-                List<Map<String, dynamic>> transactionsForMonth = monthlyTransactions[month] ?? [];
+                List<Map<String, dynamic>> transactionsForMonth =
+                    monthlyTransactions[month] ?? [];
+
+                // Apply limit to transactions for each month
+                if (limit > 0 && transactionsForMonth.length > limit) {
+                  transactionsForMonth =
+                      transactionsForMonth.take(limit).toList();
+                }
 
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 24.0, vertical: 8.0),
                       child: Text(
                         month,
                         style: normalText(14, AppColor.secondarySoft),
