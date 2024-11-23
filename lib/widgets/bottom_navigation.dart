@@ -79,7 +79,7 @@ class _BottomNavState extends State<BottomNav> {
         ),
         BottomNavigationBarItem(
           icon: Icon(Iconsax.chart_square, size: 30),
-          label: 'Report',
+          label: 'Statistics',
         ),
       ],
       selectedLabelStyle: normalText(16, AppColor.primarySoft),
