@@ -11,8 +11,8 @@ import 'package:flutter/cupertino.dart';
 
 enum Filtered { weekly, monthly }
 
-class NewWalletScreen extends StatelessWidget {
-  const NewWalletScreen({super.key});
+class StatisticsScreen extends StatelessWidget {
+  const StatisticsScreen({super.key});
 
   void _showYearPicker(BuildContext context, HomeController controller) {
     final currentYear = DateTime.now().year;

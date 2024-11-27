@@ -71,7 +71,6 @@ class TransactionsContent extends StatelessWidget {
                   transactionsForMonth =
                       transactionsForMonth.take(limit).toList();
                 }
-
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -90,6 +89,7 @@ class TransactionsContent extends StatelessWidget {
                       itemCount: transactionsForMonth.length,
                       itemBuilder: (context, transactionIndex) {
                         return TransactionListItem(
+                          key: ValueKey(transactionsForMonth[transactionIndex]),
                           transaction: transactionsForMonth,
                           index: transactionIndex,
                         );

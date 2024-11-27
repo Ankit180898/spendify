@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:spendify/config/app_color.dart';
 import 'package:spendify/view/home/home_screen.dart';
-import 'package:spendify/view/wallet/new_wallet_screen.dart';
+import 'package:spendify/view/wallet/statistics_screen.dart';
 import 'package:spendify/widgets/common_bottom_sheet.dart';
 
 import '../utils/utils.dart';
@@ -19,7 +19,7 @@ class _BottomNavState extends State<BottomNav> {
   final bool _isVisible = true;
   final List<Widget> _screens = const [
     HomeScreen(),
-    NewWalletScreen(),
+    StatisticsScreen(),
   ];
 
   void _onNavTapped(int index) {
@@ -79,7 +79,7 @@ class _BottomNavState extends State<BottomNav> {
         ),
         BottomNavigationBarItem(
           icon: Icon(Iconsax.chart_square, size: 30),
-          label: 'Statistics',
+          label: 'Stats',
         ),
       ],
       selectedLabelStyle: normalText(16, AppColor.primarySoft),
