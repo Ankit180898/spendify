@@ -123,10 +123,13 @@ class StatisticsScreen extends StatelessWidget {
                       mainAxisSize: MainAxisSize.max,
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          controller.selectedYear.value.toString(),
-                          style: TextStyle(
-                              fontSize: 14, color: AppColor.secondaryExtraSoft),
+                        Obx(
+                          () => Text(
+                            controller.selectedYear.value.toString(),
+                            style: TextStyle(
+                                fontSize: 14,
+                                color: AppColor.secondaryExtraSoft),
+                          ),
                         ),
                         const SizedBox(
                           width: 5,
