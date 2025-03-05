@@ -348,4 +348,31 @@ class HomeController extends GetxController {
     limit.value += 10; // Increase limit by 10
     await getTransactions();
   }
+
+  // Method to filter transactions by month
+void filterTransactionsByMonth(String monthYear) {
+  try {
+    final parts = monthYear.split(' ');
+    final month = DateFormat('MMM').parse(parts[0]).month;
+    final year = int.parse(parts[1]);
+
+    final startOfMonth = DateTime(year, month, 1);
+    final endOfMonth = DateTime(year, month + 1, 0);
+
+    filteredTransactions.value = transactions
+        .where((transaction) {
+          final transDate = DateTime.parse(transaction['date']);
+          return transDate.isAfter(startOfMonth.subtract(const Duration(days: 1))) && 
+                 transDate.isBefore(endOfMonth.add(const Duration(days: 1)));
+        })
+        .toList();
+
+    // Sort transactions by date
+    filteredTransactions.value.sort((a, b) => 
+      DateTime.parse(b['date']).compareTo(DateTime.parse(a['date'])));
+  } catch (e) {
+    debugPrint('Error filtering transactions by month: $e');
+    filteredTransactions.value = [];
+  }
+}
 }

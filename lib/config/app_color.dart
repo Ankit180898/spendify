@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class AppColor {
-    // Dark Theme Gradients
+  // Dark Theme Gradients
   static const darkGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
@@ -42,6 +42,7 @@ class AppColor {
   static Color primary = const Color(0xFF7B88FC);
   static Color primarySoft = const Color(0xFFCED3FE);
   static Color primaryExtraSoft = const Color(0xFFEFF3FC);
+  static Color whiteColor = Colors.white;
   static Color secondary = const Color(0xFF171717);
   static Color secondarySoft = const Color(0xFF9D9D9D);
   static Color secondaryExtraSoft = const Color(0xFFE9E9E9);
@@ -49,7 +50,7 @@ class AppColor {
   static Color success = const Color(0xFF16AE26);
   static Color warning = const Color(0xFFEB8600);
 
-    // Solid Colors
+  // Solid Colors
   static const darkBackground = Color(0xFF0D1321);
   static const darkSurface = Color(0xFF1A1F38);
   static const darkCard = Color(0xFF242B42);

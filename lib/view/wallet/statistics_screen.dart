@@ -153,73 +153,6 @@ class StatisticsScreen extends StatelessWidget {
                               borderRadius: BorderRadius.circular(24)),
                           child: Column(
                             children: [
-                              // Add the filter buttons
-                              // Row(
-                              //   children: [
-                              //     Expanded(
-                              //       child: InkWell(
-                              //         onTap: () =>
-                              //             controller.filterTransactions('weekly'),
-                              //         child: Container(
-                              //           padding:
-                              //               const EdgeInsets.symmetric(vertical: 8),
-                              //           decoration: BoxDecoration(
-                              //             color: controller.selectedFilter.value ==
-                              //                     'weekly'
-                              //                 ? AppColor.secondaryExtraSoft
-                              //                 : Colors.transparent,
-                              //             borderRadius: BorderRadius.circular(8),
-                              //           ),
-                              //           child: Center(
-                              //             child: Text(
-                              //               'Weekly',
-                              //               style: TextStyle(
-                              //                 color:
-                              //                     controller.selectedFilter.value ==
-                              //                             'weekly'
-                              //                         ? Colors.white
-                              //                         : Colors.white.withOpacity(0.5),
-                              //                 fontWeight: FontWeight.bold,
-                              //               ),
-                              //             ),
-                              //           ),
-                              //         ),
-                              //       ),
-                              //     ),
-                              //     const SizedBox(width: 8),
-                              //     Expanded(
-                              //       child: InkWell(
-                              //         onTap: () =>
-                              //             controller.filterTransactions('monthly'),
-                              //         child: Container(
-                              //           padding:
-                              //               const EdgeInsets.symmetric(vertical: 8),
-                              //           decoration: BoxDecoration(
-                              //             color: controller.selectedFilter.value ==
-                              //                     'monthly'
-                              //                 ? AppColor.secondaryExtraSoft
-                              //                 : Colors.transparent,
-                              //             borderRadius: BorderRadius.circular(8),
-                              //           ),
-                              //           child: Center(
-                              //             child: Text(
-                              //               'Monthly',
-                              //               style: TextStyle(
-                              //                 color:
-                              //                     controller.selectedFilter.value ==
-                              //                             'monthly'
-                              //                         ? Colors.white
-                              //                         : Colors.white.withOpacity(0.5),
-                              //                 fontWeight: FontWeight.bold,
-                              //               ),
-                              //             ),
-                              //           ),
-                              //         ),
-                              //       ),
-                              //     ),
-                              //   ],
-                              // ),
-
                               Padding(
                                 padding: const EdgeInsets.symmetric(
                                     horizontal: 24.0, vertical: 24.0),
@@ -438,7 +371,7 @@ class TransactionChart extends StatelessWidget {
           chartData[key]!.expense += amount;
         }
       } catch (e) {
-        print('Error processing transaction: $e');
+        debugPrint('Error processing transaction: $e');
         continue;
       }
     }

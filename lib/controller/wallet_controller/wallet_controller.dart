@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:spendify/controller/home_controller/home_controller.dart';
 import 'package:spendify/main.dart';
-
-import '../../widgets/toast/custom_toast.dart';
+import 'package:spendify/widgets/toast/custom_toast.dart';
 
 class TransactionController extends GetxController {
   final amountController = TextEditingController();
@@ -12,12 +11,12 @@ class TransactionController extends GetxController {
   final selectedType = 'income'.obs;
   var isLoading = false.obs;
   var isSubmitted = false.obs;
+  var selectedDate =
+      DateTime.now().toIso8601String().obs; // Default to March 5, 2025
   final homeC = Get.find<HomeController>();
-
 
   @override
   void onInit() {
-    // TODO: implement onInit
     super.onInit();
   }
 
@@ -31,9 +30,13 @@ class TransactionController extends GetxController {
   Future<void> addResource() async {
     try {
       isSubmitted.value = true;
-      // Set loading to true to display the loader
       isLoading.value = true;
       var currentUser = supabaseC.auth.currentUser;
+
+      // Validate amount before parsing
+      if (amountController.text.isEmpty) {
+        throw Exception("Amount cannot be empty");
+      }
 
       // Parse amount from String to double
       double amount = double.parse(amountController.text);
@@ -44,11 +47,11 @@ class TransactionController extends GetxController {
         'description': titleController.text,
         'type': selectedType.value,
         'category': selectedCategory.value,
-        'date': DateTime.now().toIso8601String(),
+        'date': selectedDate.value, // Use the selected date
       });
 
       // Update balance based on transaction type
-      // updateBalance(amount, selectedType.value);
+      updateBalance(amount, selectedType.value);
 
       // Refresh balance and transactions
       homeC.getTransactions();
@@ -59,6 +62,8 @@ class TransactionController extends GetxController {
       amountController.clear();
       titleController.clear();
       selectedCategory.value = '';
+      selectedDate.value =
+          DateTime(2025, 3, 5).toIso8601String(); // Reset to default date
 
       // Close the current screen
       Get.back();
@@ -66,38 +71,36 @@ class TransactionController extends GetxController {
       // Show success message
       CustomToast.successToast('Success', 'Transaction submitted successfully');
     } catch (e) {
+      // Log the error for debugging
+      debugPrint("Error in addResource: $e");
       // Clear text fields and selected category
       amountController.clear();
       titleController.clear();
       selectedCategory.value = '';
+      selectedDate.value =
+          DateTime(2025, 3, 5).toIso8601String(); // Reset to default date
 
       // Show error message if transaction submission fails
       CustomToast.errorToast('Failure', "Failed to submit!");
       throw Exception('Failed to add resource: $e');
     } finally {
-      // Set loading to false to hide the loader
       isLoading.value = false;
-
       isSubmitted.value = false;
     }
   }
 
   Future<void> updateBalance(double amount, String type) async {
     try {
-      // Fetch the current balance from the user's balance table
       final response = await supabaseC
           .from("users")
           .select('balance')
           .eq('id', supabaseC.auth.currentUser!.id)
           .single();
-      final currentBalance = response['balance'];
-      debugPrint("cur bal:$currentBalance");
+      final currentBalance = response['balance'] as double? ?? 0.0;
 
-      // Calculate the new balance based on the transaction type (income or expense)
       homeC.totalBalance.value =
           type == 'income' ? currentBalance + amount : currentBalance - amount;
 
-      // Update the user's balance in the balance table
       final updateResponse = await supabaseC
           .from("users")
           .update({'balance': homeC.totalBalance.value}).eq(
@@ -108,14 +111,11 @@ class TransactionController extends GetxController {
       debugPrint("new bal: $updateResponse");
       // Check if the update was successful
       if (updateResponse.error == null) {
-        // Update successful
         debugPrint("User's balance updated successfully.");
       } else {
-        // Update failed
         debugPrint("Failed to update user's balance: ${updateResponse.error}");
       }
     } catch (error) {
-      // Handle errors
       debugPrint("Error updating user's balance: $error");
     }
   }
@@ -133,24 +133,26 @@ class TransactionController extends GetxController {
         'description': titleController.text,
         'type': selectedType.value,
         'category': selectedCategory.value,
-        'date': DateTime.now().toIso8601String(),
+        'date': selectedDate.value,
       });
-      debugPrint(response);
+      debugPrint(response.toString());
       isLoading.value = false;
       selectedCategory.value = '';
       homeC.getTransactions();
       amountController.clear();
       titleController.clear();
+      selectedDate.value =
+          DateTime.now().toIso8601String(); // Reset to default date
       homeC.getProfile();
 
       Get.back();
-
-      // Transaction added successfully
-      print('Transaction added successfully');
+      debugPrint('Transaction added successfully');
     } else {
       amountController.clear();
       titleController.clear();
       selectedCategory.value = '';
+      selectedDate.value =
+          DateTime.now().toIso8601String(); // Reset to default date
       CustomToast.errorToast(
           "ERROR", "Amount, title, and category are required");
     }
