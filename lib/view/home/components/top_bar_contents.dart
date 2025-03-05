@@ -7,7 +7,7 @@ import 'package:spendify/utils/utils.dart';
 class TopBarContents extends StatelessWidget {
   final HomeController controller = Get.find<HomeController>();
 
-   TopBarContents({super.key});
+  TopBarContents({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -19,9 +19,14 @@ class TopBarContents extends StatelessWidget {
       if (userName.isNotEmpty) {
         List<String> nameParts = userName.split(' ');
         // Safely get initials, ensuring there are at least two parts
-        String firstInitial = nameParts.isNotEmpty && nameParts[0].isNotEmpty ? nameParts[0][0] : '';
-        String lastInitial = nameParts.length > 1 && nameParts.last.isNotEmpty ? nameParts.last[0] : '';
-        initials = '$firstInitial$lastInitial'.toUpperCase(); // Combine initials
+        String firstInitial = nameParts.isNotEmpty && nameParts[0].isNotEmpty
+            ? nameParts[0][0]
+            : '';
+        String lastInitial = nameParts.length > 1 && nameParts.last.isNotEmpty
+            ? nameParts.last[0]
+            : '';
+        initials =
+            '$firstInitial$lastInitial'.toUpperCase(); // Combine initials
       } else {
         initials = '??'; // Fallback text if userName is empty
       }
@@ -34,16 +39,16 @@ class TopBarContents extends StatelessWidget {
           children: [
             Row(
               children: [
-                CircleAvatar(
-                  backgroundColor: AppColor.secondary,
-                  child: Text(
-                    initials, // Use the calculated initials
-                    style: const TextStyle(color: Colors.white),
-                  ),
-                ),
-                const SizedBox(
-                  width: 8,
-                ),
+                // CircleAvatar(
+                //   backgroundColor: AppColor.secondary,
+                //   child: Text(
+                //     initials, // Use the calculated initials
+                //     style: const TextStyle(color: Colors.white),
+                //   ),
+                // ),
+                // const SizedBox(
+                //   width: 8,
+                // ),
                 RichText(
                   textScaler: const TextScaler.linear(1),
                   textAlign: TextAlign.start,
@@ -54,7 +59,7 @@ class TopBarContents extends StatelessWidget {
                     children: <TextSpan>[
                       TextSpan(
                           text: userName, // Use the userName variable
-                          style: titleText(16, AppColor.secondaryExtraSoft)),
+                          style: titleText(24, AppColor.secondaryExtraSoft)),
                     ],
                   ),
                 ),
