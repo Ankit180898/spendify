@@ -124,15 +124,15 @@ Widget build(BuildContext context) {
                 padding: const EdgeInsets.only(right: 8),
                 child: FilterChip(
                   selected:
-                  controller.selectedChip.value == category.category,
+                  controller.selectedChip.value == category.name,
                   label: Text(
-                    category.category,
+                    category.name,
                     style: normalText(14, Colors.white),
                   ),
                   onSelected: (bool selected) {
                     if (selected) {
                       controller
-                          .filterTransactionsByCategory(category.category);
+                          .filterTransactionsByCategory(category.name);
                     } else {
                       controller.selectedChip.value = '';
                       controller.isSelected.value = false;
@@ -217,7 +217,7 @@ Widget build(BuildContext context) {
                 final transaction = transactions[index];
                 return TransactionListItem(
                   transaction: [transaction],
-                  index: 0,
+                  index: 0, categoryList: categoryList,
                 );
               },
               separatorBuilder: (context, index) => Divider(

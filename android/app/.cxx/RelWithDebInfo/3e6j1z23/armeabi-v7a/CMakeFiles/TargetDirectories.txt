@@ -1,0 +1,2 @@
+/Users/ankitkumar/Developer/Flutter projects/expense tracker/spendify/android/app/.cxx/RelWithDebInfo/3e6j1z23/armeabi-v7a/CMakeFiles/edit_cache.dir
+/Users/ankitkumar/Developer/Flutter projects/expense tracker/spendify/android/app/.cxx/RelWithDebInfo/3e6j1z23/armeabi-v7a/CMakeFiles/rebuild_cache.dir

@@ -3,314 +3,354 @@ import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:spendify/config/app_color.dart';
 import 'package:spendify/controller/wallet_controller/wallet_controller.dart';
-import 'package:spendify/utils/image_constants.dart';
-import 'package:spendify/utils/size_helpers.dart';
-import 'package:spendify/utils/utils.dart';
-import 'package:spendify/widgets/custom_button.dart';
 
-enum Transactions { income, expense }
-
-// Keep the existing categoryList as requested
-final List<String> categoryList = [
-  'Investments',
-  'Health',
-  'Bills & Fees',
-  'Food & Drinks',
-  'Car',
-  'Groceries',
-  'Gifts',
-  'Transport',
-];
-
-class BottomSheetExample extends StatefulWidget {
-  const BottomSheetExample({super.key});
+class CommonBottomSheet extends StatefulWidget {
+  const CommonBottomSheet({super.key});
 
   @override
-  State<BottomSheetExample> createState() => _BottomSheetExampleState();
+  _CommonBottomSheetState createState() => _CommonBottomSheetState();
 }
 
-class _BottomSheetExampleState extends State<BottomSheetExample> {
+class _CommonBottomSheetState extends State<CommonBottomSheet> {
   final controller = Get.find<TransactionController>();
-  var transactions =
-      Transactions.expense.obs; // Default to expense as per image
+  final _transactionType = Transactions.expense.obs;
 
-  @override
-  void dispose() {
-    super.dispose();
-    controller.selectedCategory.value = '';
-  }
+  // Enhanced category list with icons
+  final List<CategoryItem> _categories = [
+    CategoryItem(name: 'Investments', icon: Icons.trending_up),
+    CategoryItem(name: 'Health', icon: Icons.medical_services_outlined),
+    CategoryItem(name: 'Bills & Fees', icon: Icons.receipt_long),
+    CategoryItem(name: 'Food & Drinks', icon: Icons.restaurant),
+    CategoryItem(name: 'Car', icon: Icons.directions_car),
+    CategoryItem(name: 'Groceries', icon: Icons.shopping_cart),
+    CategoryItem(name: 'Gifts', icon: Icons.card_giftcard),
+    CategoryItem(name: 'Transport', icon: Icons.transit_enterexit),
+  ];
 
   @override
   Widget build(BuildContext context) {
-    return RepaintBoundary(
-      child: SingleChildScrollView(
-        child: Container(
-          width: displayWidth(context),
-          constraints: BoxConstraints(
-            minHeight: MediaQuery.of(context).size.height * 0.3,
-          ),
-          padding: const EdgeInsets.all(24.0),
-          decoration: const BoxDecoration(
-            color: AppColor.darkCard, // Keep dark card background as requested
-            borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(20.0),
-              topRight: Radius.circular(20.0),
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            AppColor.darkBackground.withOpacity(0.9),
+            AppColor.darkSurface.withOpacity(0.7),
+          ],
+        ),
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(24),
+          topRight: Radius.circular(24),
+        ),
+      ),
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 20.0),
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Enhanced Amount Input
+                _buildAmountInput(),
+                
+                // Transaction Type Selector
+                _buildTransactionTypeSelector(),
+                
+                // Category Grid
+                _buildCategoryGrid(),
+                
+                // Date and Name Inputs
+                _buildDateAndNameInputs(),
+                
+                // Submit Button
+                _buildSubmitButton(),
+              ],
             ),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Large TextField for amount at the top
-              Container(
-                width: displayWidth(context),
-                padding: const EdgeInsets.all(16.0),
-                margin: const EdgeInsets.only(bottom: 16),
-                child: TextField(
-                  controller: controller.amountController,
-                  style: const TextStyle(
-                    fontSize: 48, // Large, bold font as in the image
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                  ),
-                  textAlign: TextAlign.center,
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
-                  decoration: InputDecoration(
-                    hintText: '₹ 0.00',
-                    hintStyle: TextStyle(
-                      fontSize: 48,
-                      color: AppColor.secondarySoft,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    border: InputBorder.none,
-                  ),
-                  onChanged: (value) {
-                    // Ensure the value starts with '0.' if empty or invalid
-                    if (value.isEmpty) {
-                    } else if (!RegExp(r'^\d*\.?\d*$').hasMatch(value)) {
-                      // Remove non-numeric characters except decimal point
-                      String cleaned = value.replaceAll(RegExp(r'[^\d.]'), '');
-                      controller.amountController.text = cleaned;
-                    }
-                  },
-                ),
-              ),
-              // Segmented button for Income/Expense
-              Obx(
-                () => Row(
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  children: [
-                    GestureDetector(
-                      onTap: () {
-                        transactions.value = Transactions.income;
-                        controller.selectedType.value = 'income';
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            vertical: 12.0, horizontal: 24.0),
-                        decoration: BoxDecoration(
-                          color: transactions.value == Transactions.income
-                              ? AppColor
-                                  .whiteColor // White for selected, matching image
-                              : Colors
-                                  .transparent, // Transparent for unselected
-                          borderRadius: const BorderRadius.only(
-                              topLeft: Radius.circular(8.0),
-                              bottomLeft: Radius.circular(8)),
-                          border: Border.all(
-                            color: AppColor.whiteColor, // White border
-                          ),
-                        ),
-                        child: Row(
-                          children: [
-                            ImageConstants(colors: AppColor.whiteColor).income,
-                            const SizedBox(width: 8),
-                            Text(
-                              'Income',
-                              style: normalText(
-                                  16,
-                                  transactions.value == Transactions.income
-                                      ? AppColor
-                                          .darkBackground // Dark text on white
-                                      : AppColor
-                                          .whiteColor), // White text on transparent
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    GestureDetector(
-                      onTap: () {
-                        transactions.value = Transactions.expense;
-                        controller.selectedType.value = 'expense';
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            vertical: 12.0, horizontal: 24.0),
-                        decoration: BoxDecoration(
-                          color: transactions.value == Transactions.expense
-                              ? AppColor
-                                  .whiteColor // White for selected, matching image
-                              : Colors
-                                  .transparent, // Transparent for unselected
-                          borderRadius: const BorderRadius.only(
-                              topRight: Radius.circular(8.0),
-                              bottomRight: Radius.circular(8)),
-                          border: Border.all(
-                            color: AppColor.whiteColor, // White border
-                          ),
-                        ),
-                        child: Row(
-                          children: [
-                            ImageConstants(colors: AppColor.whiteColor).expense,
-                            const SizedBox(width: 8),
-                            Text(
-                              'Expense',
-                              style: normalText(
-                                  16,
-                                  transactions.value == Transactions.expense
-                                      ? AppColor
-                                          .darkBackground // Dark text on white
-                                      : AppColor
-                                          .whiteColor), // White text on transparent
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              verticalSpace(24),
-              // Transaction Form Fields
-              TransactionForm(controller: controller),
-            ],
           ),
         ),
       ),
     );
   }
-}
 
-class TransactionForm extends StatelessWidget {
-  final TransactionController controller;
-  const TransactionForm({required this.controller, super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Title Field (labeled as "Name" in the image)
-        TransactionInputField(
-          isNumber: false,
-          controller: controller.titleController,
-          label: "Name",
-          hintText: "Enter the name",
+  Widget _buildAmountInput() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withOpacity(0.2), width: 1),
+      ),
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+      margin: const EdgeInsets.only(bottom: 16),
+      child: TextField(
+        controller: controller.amountController,
+        style: const TextStyle(
+          fontSize: 48, 
+          color: Colors.white,
+          fontWeight: FontWeight.w600,
+          letterSpacing: 1.2,
         ),
-        verticalSpace(8),
-        // Date Field
+        textAlign: TextAlign.center,
+        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+        decoration: InputDecoration(
+          prefixText: '₹ ',
+          prefixStyle: TextStyle(
+            fontSize: 48, 
+            color: Colors.white.withOpacity(0.7),
+            fontWeight: FontWeight.w600,
+          ),
+          hintText: '0.00',
+          hintStyle: TextStyle(
+            fontSize: 48,
+            color: Colors.white.withOpacity(0.3),
+            fontWeight: FontWeight.w600,
+          ),
+          border: InputBorder.none,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTransactionTypeSelector() {
+    return Obx(() => Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        _buildTypeButton(
+          Transactions.income, 
+          'Income', 
+          Icons.arrow_upward_rounded
+        ),
+        _buildTypeButton(
+          Transactions.expense, 
+          'Expense', 
+          Icons.arrow_downward_rounded
+        ),
+      ],
+    ));
+  }
+
+  Widget _buildTypeButton(Transactions type, String label, IconData icon) {
+    bool isSelected = _transactionType.value == type;
+    return GestureDetector(
+      onTap: () {
+        _transactionType.value = type;
+        controller.selectedType.value = type == Transactions.income 
+            ? 'income' 
+            : 'expense';
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        margin: const EdgeInsets.symmetric(horizontal: 8),
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
+        decoration: BoxDecoration(
+          color: isSelected 
+            ? Colors.white 
+            : Colors.transparent,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: Colors.white.withOpacity(0.5),
+            width: 1.5
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              icon,
+              color: isSelected 
+                ? AppColor.darkBackground 
+                : Colors.white,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: TextStyle(
+                color: isSelected 
+                  ? AppColor.darkBackground 
+                  : Colors.white,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCategoryGrid() {
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 16),
+      child: GridView.builder(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 4,
+          crossAxisSpacing: 12,
+          mainAxisSpacing: 12,
+        ),
+        itemCount: _categories.length,
+        itemBuilder: (context, index) {
+          return _buildCategoryItem(_categories[index]);
+        },
+      ),
+    );
+  }
+
+  Widget _buildCategoryItem(CategoryItem category) {
+    return Obx(() {
+      final isSelected = controller.selectedCategory.value == category.name;
+      return GestureDetector(
+        onTap: () {
+          controller.selectedCategory.value = category.name;
+        },
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          decoration: BoxDecoration(
+            color: isSelected 
+              ? Colors.white.withOpacity(0.2) 
+              : Colors.white.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: isSelected 
+                ? Colors.white 
+                : Colors.transparent,
+              width: 2
+            ),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                category.icon,
+                color: Colors.white,
+                size: 32,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                category.name,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w500,
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ),
+      );
+    });
+  }
+
+  Widget _buildDateAndNameInputs() {
+    return Column(
+      children: [
+        // Date Picker
         GestureDetector(
           onTap: () => _selectDate(context),
           child: Container(
-            width: MediaQuery.of(context).size.width,
-            padding:
-                const EdgeInsets.symmetric(vertical: 12.0, horizontal: 14.0),
-            margin: const EdgeInsets.only(bottom: 16),
+            padding: const EdgeInsets.all(16),
+            margin: const EdgeInsets.symmetric(vertical: 8),
             decoration: BoxDecoration(
-              gradient: AppColor.cardGradient, // Keep gradient as requested
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(width: 1, color: AppColor.secondaryExtraSoft),
+              color: Colors.white.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: Colors.white.withOpacity(0.2),
+                width: 1
+              ),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  "Date",
-                  style: normalText(16, AppColor.secondarySoft),
-                ),
-                Obx(
-                  () => Text(
-                    DateFormat("MMM d, yyyy")
-                        .format(DateTime.parse(controller.selectedDate.value)),
-                    style: normalText(16, AppColor.whiteColor),
+                  'Transaction Date',
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.7),
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
+                Obx(() => Text(
+                  DateFormat("MMM d, yyyy")
+                    .format(DateTime.parse(controller.selectedDate.value)),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                  ),
+                )),
               ],
             ),
           ),
         ),
-        verticalSpace(8),
-        // Category Dropdown (replacing CategoriesChips)
+
+        // Name Input
         Container(
-          width: MediaQuery.of(context).size.width,
-          padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 14.0),
-          margin: const EdgeInsets.only(bottom: 16),
+          margin: const EdgeInsets.symmetric(vertical: 8),
           decoration: BoxDecoration(
-            gradient: AppColor.cardGradient, // Keep gradient as requested
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(width: 1, color: AppColor.secondaryExtraSoft),
+            color: Colors.white.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: Colors.white.withOpacity(0.2),
+              width: 1
+            ),
           ),
-          child: Obx(
-            () => DropdownButtonFormField<String>(
-              value: controller.selectedCategory.value.isEmpty
-                  ? null
-                  : controller.selectedCategory.value,
-              decoration: InputDecoration(
-                label: Text(
-                  "Category",
-                  style: normalText(16, AppColor.secondarySoft),
-                ),
-                floatingLabelBehavior: FloatingLabelBehavior.always,
-                border: InputBorder.none,
+          child: TextField(
+            controller: controller.titleController,
+            style: const TextStyle(color: Colors.white),
+            decoration: InputDecoration(
+              hintText: 'Transaction Name',
+              hintStyle: TextStyle(
+                color: Colors.white.withOpacity(0.5),
               ),
-              items: categoryList.map((String category) {
-                return DropdownMenuItem<String>(
-                  value: category,
-                  child: Text(
-                    category,
-                    style: normalText(16, AppColor.whiteColor),
-                  ),
-                );
-              }).toList(),
-              onChanged: (String? value) {
-                if (value != null) {
-                  controller.selectedCategory.value = value;
-                }
-              },
-              hint: Text(
-                "Select a category",
-                style: normalText(16, AppColor.secondarySoft),
+              border: InputBorder.none,
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16, 
+                vertical: 16
               ),
-              dropdownColor: AppColor
-                  .darkCard, // Match the dark card background for dropdown
-              icon: const Icon(Icons.keyboard_arrow_down_rounded,
-                  color: Colors.white, size: 24),
-              isExpanded: true,
-              style: normalText(16, AppColor.whiteColor),
             ),
           ),
         ),
-        verticalSpace(16),
-        // Add Button (purple as in the image)
-        Obx(
-          () => CustomButton(
-            text: controller.isLoading.isFalse ? "Add" : "...Loading",
-            onPressed: () {
-              if (controller.isLoading.isFalse) {
-                controller.addResource();
-              }
-            },
-            bgcolor: AppColor.darkSurface, // Match the image’s button color
-            height: displayHeight(context) * 0.07,
-            width: displayWidth(context),
-            textSize: 24,
-            textColor: Colors.white,
-          ),
-        ),
-        verticalSpace(16),
       ],
     );
+  }
+
+  Widget _buildSubmitButton() {
+    return Obx(() => GestureDetector(
+      onTap: controller.isLoading.isFalse 
+        ? () => controller.addResource() 
+        : null,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        margin: const EdgeInsets.symmetric(vertical: 8),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              Colors.white.withOpacity(0.3),
+              Colors.white.withOpacity(0.1),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: Colors.white.withOpacity(0.2),
+            width: 1
+          ),
+        ),
+        child: Center(
+          child: Text(
+            controller.isLoading.isFalse ? 'Add Transaction' : 'Processing...',
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w600,
+              fontSize: 18,
+            ),
+          ),
+        ),
+      ),
+    ));
   }
 
   Future<void> _selectDate(BuildContext context) async {
@@ -321,15 +361,15 @@ class TransactionForm extends StatelessWidget {
       lastDate: DateTime(2100),
       builder: (context, child) {
         return Theme(
-          data: ThemeData.light().copyWith(
-            colorScheme: ColorScheme.light(
-              primary: AppColor.whiteColor,
-              onPrimary: AppColor.darkSurface,
-              surface: AppColor.darkCard,
+          data: ThemeData.dark().copyWith(
+            colorScheme: const ColorScheme.dark(
+              primary: Colors.white,
+              surface: AppColor.darkSurface,
               onSurface: Colors.white,
             ),
-            dialogTheme:
-                const DialogThemeData(backgroundColor: AppColor.darkCard),
+            dialogTheme: const DialogThemeData(
+              backgroundColor: AppColor.darkBackground,
+            ),
           ),
           child: child!,
         );
@@ -341,55 +381,13 @@ class TransactionForm extends StatelessWidget {
   }
 }
 
-class TransactionInputField extends StatelessWidget {
-  final TextEditingController controller;
-  final String label;
-  final bool? isNumber;
-  final String hintText;
-  final String? prefix;
+// Helper class for categories
+class CategoryItem {
+  final String name;
+  final IconData icon;
 
-  const TransactionInputField({
-    super.key,
-    required this.controller,
-    required this.label,
-    required this.hintText,
-    this.prefix,
-    this.isNumber,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: MediaQuery.of(context).size.width,
-      padding: const EdgeInsets.only(left: 14, right: 14, top: 4),
-      margin: const EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(
-        gradient: AppColor.cardGradient, // Keep gradient as requested
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(width: 1, color: AppColor.secondaryExtraSoft),
-      ),
-      child: TextField(
-        controller: controller,
-        style: normalText(16, AppColor.whiteColor),
-        maxLines: 1,
-        undoController: UndoHistoryController(),
-        keyboardType: isNumber == true
-            ? const TextInputType.numberWithOptions(decimal: true)
-            : null,
-        decoration: InputDecoration(
-          label: Text(
-            label,
-            style: normalText(16, AppColor.secondarySoft),
-          ),
-          floatingLabelBehavior: FloatingLabelBehavior.always,
-          border: InputBorder.none,
-          prefix: prefix != null
-              ? Text(prefix!, style: normalText(16, AppColor.secondarySoft))
-              : null,
-          hintText: hintText,
-          hintStyle: normalText(16, AppColor.secondarySoft),
-        ),
-      ),
-    );
-  }
+  CategoryItem({required this.name, required this.icon});
 }
+
+// Enum (kept from original code)
+enum Transactions { income, expense }

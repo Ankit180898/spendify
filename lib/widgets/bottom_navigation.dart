@@ -51,7 +51,7 @@ class _BottomNavState extends State<BottomNav> {
           showModalBottomSheet(
             isScrollControlled: true,
             context: context,
-            builder: (context) => const BottomSheetExample(),
+            builder: (context) => const CommonBottomSheet(),
           );
         },
         backgroundColor: Colors.indigo[50],

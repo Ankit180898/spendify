@@ -1,6 +1,8 @@
-class CategoriesModel {
-  final String category;
-  final String image;
+import 'package:flutter/material.dart';
 
-  CategoriesModel({required this.category, required this.image});
+class CategoriesModel {
+  final String name;
+  final IconData icon;
+
+  CategoriesModel({required this.name, required this.icon});
 }

@@ -2,12 +2,10 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:spendify/main.dart';
 import 'package:spendify/widgets/bottom_navigation.dart';
 import 'package:spendify/widgets/toast/custom_toast.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-
 
 class RegisterController extends GetxController {
   RxBool isLoading = false.obs;
@@ -17,7 +15,6 @@ class RegisterController extends GetxController {
   var emailC = TextEditingController();
   var passwordC = TextEditingController();
   var nameC = TextEditingController();
-  Rx<XFile?> file = Rx<XFile?>(null);
   var imageUrl = ''.obs;
   RxString selectedAvatarUrl = ''.obs;
   List<String> avatarList = [
@@ -39,15 +36,15 @@ class RegisterController extends GetxController {
     nameC.dispose();
   }
 
-  Future pickImage() async {
-    final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
-    if (pickedFile != null) {
-      file.value = pickedFile;
-      return File(pickedFile.path);
-    }
-    return null;
-  }
+  // Future pickImage() async {
+  //   final picker = ImagePicker();
+  //   final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+  //   if (pickedFile != null) {
+  //     file.value = pickedFile;
+  //     return File(pickedFile.path);
+  //   }
+  //   return null;
+  // }
 
   Future<String?> uploadImage(File imageFile) async {
     final response = await supabaseC.storage
@@ -59,32 +56,35 @@ class RegisterController extends GetxController {
     return null;
   }
 
-  Future<void> uploadImageAndSaveToSupabase() async {
-    if (file.value != null) {
-      final imageUrl = await uploadImage(File(file.value!.path));
-      if (imageUrl != null) {
-        await supabaseC.storage.from('avatars/pics').upload(
-            '${DateTime.now().millisecondsSinceEpoch}', File(file.value!.path));
+  // Future<void> uploadImageAndSaveToSupabase() async {
+  //   if (file.value != null) {
+  //     final imageUrl = await uploadImage(File(file.value!.path));
+  //     if (imageUrl != null) {
+  //       await supabaseC.storage.from('avatars/pics').upload(
+  //           '${DateTime.now().millisecondsSinceEpoch}', File(file.value!.path));
 
-        CustomToast.successToast("Success", "Image Uploaded Successfully");
-      } else {
-        CustomToast.errorToast("Failure", "Failed to upload image");
-      }
-    }
-  }
+  //       CustomToast.successToast("Success", "Image Uploaded Successfully");
+  //     } else {
+  //       CustomToast.errorToast("Failure", "Failed to upload image");
+  //     }
+  //   }
+  // }
 
   Future<void> register() async {
-    if (emailC.text.isNotEmpty && passwordC.text.isNotEmpty && nameC.text.isNotEmpty) {
+    if (emailC.text.isNotEmpty &&
+        passwordC.text.isNotEmpty &&
+        nameC.text.isNotEmpty) {
       isLoading.value = true;
       try {
-        AuthResponse res = await supabaseC.auth.signUp(password: passwordC.text, email: emailC.text);
+        AuthResponse res = await supabaseC.auth
+            .signUp(password: passwordC.text, email: emailC.text);
 
         if (res.user != null) {
           await supabaseC.from("users").insert({
-            "id": res.user!.id,  // Use the user ID returned from auth
+            "id": res.user!.id, // Use the user ID returned from auth
             "name": nameC.text,
             "email": emailC.text,
-            "balance": 0.0,  // Use a double value for balance
+            "balance": 0.0, // Use a double value for balance
             "url": ""
           });
           Get.offAll(const BottomNav());
@@ -99,6 +99,4 @@ class RegisterController extends GetxController {
       CustomToast.errorToast("ERROR", "Email, password, and name are required");
     }
   }
-
-
 }

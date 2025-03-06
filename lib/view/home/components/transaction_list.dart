@@ -91,7 +91,7 @@ class TransactionsContent extends StatelessWidget {
                         return TransactionListItem(
                           key: ValueKey(transactionsForMonth[transactionIndex]),
                           transaction: transactionsForMonth,
-                          index: transactionIndex,
+                          index: transactionIndex, categoryList: categoryList,
                         );
                       },
                       separatorBuilder: (context, index) => Padding(

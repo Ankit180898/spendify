@@ -1,14 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/svg.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:spendify/config/app_color.dart';
 import 'package:spendify/controller/wallet_controller/wallet_controller.dart';
 import 'package:spendify/main.dart';
 import 'package:spendify/model/categories_model.dart';
 import 'package:spendify/model/transaction_model.dart';
-import 'package:spendify/utils/image_constants.dart';
 import 'package:spendify/utils/utils.dart';
 import 'package:spendify/widgets/toast/custom_toast.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -50,7 +47,7 @@ class HomeController extends GetxController {
   // Cache computed values
   final _transactionsByYear = <int, List<Map<String, dynamic>>>{}.obs;
   final _transactionsByMonth = <String, List<Map<String, dynamic>>>{}.obs;
-  
+
   @override
   void onInit() async {
     super.onInit();
@@ -99,23 +96,11 @@ class HomeController extends GetxController {
     }
   }
 
-  // Future<void> getBalance() async {
-  //   final response = await supabaseC
-  //       .from("users")
-  //       .select('balance')
-  //       .eq('id', supabaseC.auth.currentUser!.id)
-  //       .single(); // Assuming there's only one row for the user's balance
-  //
-  //   final balanceData = response;
-  //   final balance = balanceData['balance'];
-  //   totalBalance.value = balance;
-  // }
-
   Future<void> getTransactions() async {
     isLoading.value = true;
     try {
       debugPrint('Fetching transactions with limit: ${limit.value}');
-      
+
       final response = await supabaseC
           .from("transactions")
           .select()
@@ -134,10 +119,10 @@ class HomeController extends GetxController {
           .toList();
 
       debugPrint('Fetched ${transactions.length} transactions');
-      
+
       // Update grouped transactions
       groupedTransactions.value = groupTransactionsByMonth();
-      
+
       // Filter income and expense transactions
       incomeTransactions = transactions
           .where((transaction) => transaction['type'] == 'income')
@@ -179,7 +164,7 @@ class HomeController extends GetxController {
   // Method to filter transactions based on date
   void filterTransactions(String date) {
     selectedFilter.value = date;
-    
+
     try {
       // First filter by year
       var yearFiltered = transactions.where((transaction) {
@@ -193,30 +178,28 @@ class HomeController extends GetxController {
           final now = DateTime.now();
           final startOfMonth = DateTime(now.year, now.month, 1);
           final endOfMonth = DateTime(now.year, now.month + 1, 0);
-          
-          filteredTransactions.value = yearFiltered
-              .where((transaction) {
-                final transDate = DateTime.parse(transaction['date']);
-                return transDate.isAfter(startOfMonth.subtract(const Duration(days: 1))) && 
-                       transDate.isBefore(endOfMonth.add(const Duration(days: 1)));
-              })
-              .toList();
+
+          filteredTransactions.value = yearFiltered.where((transaction) {
+            final transDate = DateTime.parse(transaction['date']);
+            return transDate
+                    .isAfter(startOfMonth.subtract(const Duration(days: 1))) &&
+                transDate.isBefore(endOfMonth.add(const Duration(days: 1)));
+          }).toList();
           break;
-          
+
         case 'monthly':
           // Show all transactions for the selected year
           filteredTransactions.value = yearFiltered;
           break;
-          
+
         default:
           filteredTransactions.value = yearFiltered;
           break;
       }
 
       // Sort transactions by date
-      filteredTransactions.value.sort((a, b) => 
-        DateTime.parse(b['date']).compareTo(DateTime.parse(a['date'])));
-          
+      filteredTransactions.value.sort((a, b) =>
+          DateTime.parse(b['date']).compareTo(DateTime.parse(a['date'])));
     } catch (e) {
       debugPrint('Error filtering transactions: $e');
       filteredTransactions.value = [];
@@ -237,18 +220,16 @@ class HomeController extends GetxController {
   List<Map<String, dynamic>> _getTransactionsForMonth() {
     final now = DateTime.now();
     final monthKey = '${now.year}-${now.month}';
-    
+
     if (!_transactionsByMonth.containsKey(monthKey)) {
       final startOfMonth = DateTime(now.year, now.month, 1);
       final endOfMonth = DateTime(now.year, now.month + 1, 0);
-      
-      _transactionsByMonth[monthKey] = transactions
-          .where((t) {
-            final date = DateTime.parse(t['date']);
-            return date.isAfter(startOfMonth.subtract(const Duration(days: 1))) && 
-                   date.isBefore(endOfMonth.add(const Duration(days: 1)));
-          })
-          .toList();
+
+      _transactionsByMonth[monthKey] = transactions.where((t) {
+        final date = DateTime.parse(t['date']);
+        return date.isAfter(startOfMonth.subtract(const Duration(days: 1))) &&
+            date.isBefore(endOfMonth.add(const Duration(days: 1)));
+      }).toList();
     }
     return _transactionsByMonth[monthKey] ?? [];
   }
@@ -289,22 +270,15 @@ class HomeController extends GetxController {
     return DateFormat("MMMM d, y").format(dateTime); // Format the date and time
   }
 
-  // Function to get the category image based on the category name
-  Widget getCategoryImage(String category, List<CategoriesModel> categoryList) {
+  // Function to get the category icon based on the category name
+  IconData getCategoryIcon(
+      String category, List<CategoriesModel> categoryList) {
     var matchingCategory = categoryList.firstWhere(
-      (element) => element.category == category,
-      orElse: () => CategoriesModel(category: '', image: ''),
+      (element) => element.name == category,
+      orElse: () => CategoriesModel(name: category, icon: Icons.category),
     );
 
-    if (matchingCategory.category.isNotEmpty) {
-      return SvgPicture.asset(
-        matchingCategory.image,
-        height: 20,
-        width: 20,
-      );
-    } else {
-      return ImageConstants(colors: AppColor.secondaryExtraSoft).avatar;
-    }
+    return matchingCategory.icon;
   }
 
   // Get category-wise income/expense data
@@ -316,7 +290,7 @@ class HomeController extends GetxController {
       double amount = double.parse(transaction['amount'].toString());
 
       // Check if the category exists in the predefined category list
-      if (categoryList.any((element) => element.category == category)) {
+      if (categoryList.any((element) => element.name == category)) {
         if (!categoryTotals.containsKey(category)) {
           categoryTotals[category] = 0.0;
         }
@@ -350,29 +324,28 @@ class HomeController extends GetxController {
   }
 
   // Method to filter transactions by month
-void filterTransactionsByMonth(String monthYear) {
-  try {
-    final parts = monthYear.split(' ');
-    final month = DateFormat('MMM').parse(parts[0]).month;
-    final year = int.parse(parts[1]);
+  void filterTransactionsByMonth(String monthYear) {
+    try {
+      final parts = monthYear.split(' ');
+      final month = DateFormat('MMM').parse(parts[0]).month;
+      final year = int.parse(parts[1]);
 
-    final startOfMonth = DateTime(year, month, 1);
-    final endOfMonth = DateTime(year, month + 1, 0);
+      final startOfMonth = DateTime(year, month, 1);
+      final endOfMonth = DateTime(year, month + 1, 0);
 
-    filteredTransactions.value = transactions
-        .where((transaction) {
-          final transDate = DateTime.parse(transaction['date']);
-          return transDate.isAfter(startOfMonth.subtract(const Duration(days: 1))) && 
-                 transDate.isBefore(endOfMonth.add(const Duration(days: 1)));
-        })
-        .toList();
+      filteredTransactions.value = transactions.where((transaction) {
+        final transDate = DateTime.parse(transaction['date']);
+        return transDate
+                .isAfter(startOfMonth.subtract(const Duration(days: 1))) &&
+            transDate.isBefore(endOfMonth.add(const Duration(days: 1)));
+      }).toList();
 
-    // Sort transactions by date
-    filteredTransactions.value.sort((a, b) => 
-      DateTime.parse(b['date']).compareTo(DateTime.parse(a['date'])));
-  } catch (e) {
-    debugPrint('Error filtering transactions by month: $e');
-    filteredTransactions.value = [];
+      // Sort transactions by date
+      filteredTransactions.value.sort((a, b) =>
+          DateTime.parse(b['date']).compareTo(DateTime.parse(a['date'])));
+    } catch (e) {
+      debugPrint('Error filtering transactions by month: $e');
+      filteredTransactions.value = [];
+    }
   }
-}
 }
