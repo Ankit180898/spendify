@@ -4,12 +4,9 @@ import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:spendify/config/app_color.dart';
 import 'package:spendify/controller/home_controller/home_controller.dart';
-import 'package:spendify/utils/utils.dart';
 import 'package:spendify/widgets/categories_grid.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 import 'package:flutter/cupertino.dart';
-
-enum Filtered { weekly, monthly }
 
 class StatisticsScreen extends StatelessWidget {
   const StatisticsScreen({super.key});
@@ -18,48 +15,55 @@ class StatisticsScreen extends StatelessWidget {
     final currentYear = DateTime.now().year;
     final years = List.generate(5, (index) => currentYear - index);
 
-    showCupertinoModalPopup(
+    showModalBottomSheet(
       context: context,
-      builder: (BuildContext context) => Container(
-        height: 200,
-        padding: const EdgeInsets.only(top: 6.0),
-        margin: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom,
-        ),
-        color: AppColor.darkCard,
-        child: SafeArea(
-          top: false,
+      backgroundColor: Colors.transparent,
+      builder: (BuildContext context) {
+        return Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                AppColor.darkSurface.withOpacity(0.9),
+                AppColor.darkBackground.withOpacity(0.9),
+              ],
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+            ),
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(24),
+              topRight: Radius.circular(24),
+            ),
+          ),
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  CupertinoButton(
-                    child: Text(
-                      'Cancel',
-                      style: normalText(16, Colors.white),
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Select Year',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                    onPressed: () => Navigator.of(context).pop(),
-                  ),
-                  CupertinoButton(
-                    child: Text(
-                      'Confirm',
-                      style: normalText(16, Colors.white),
+                    IconButton(
+                      icon: const Icon(Icons.close, color: Colors.white),
+                      onPressed: () => Navigator.of(context).pop(),
                     ),
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                      controller
-                          .filterTransactions(controller.selectedFilter.value);
-                    },
-                  ),
-                ],
+                  ],
+                ),
               ),
-              Expanded(
+              SizedBox(
+                height: 200,
                 child: CupertinoPicker(
                   magnification: 1.22,
                   squeeze: 1.2,
                   useMagnifier: true,
-                  itemExtent: 32,
+                  itemExtent: 50,
                   scrollController: FixedExtentScrollController(
                     initialItem: years.indexOf(controller.selectedYear.value),
                   ),
@@ -70,17 +74,47 @@ class StatisticsScreen extends StatelessWidget {
                   },
                   children: years
                       .map((year) => Center(
-                              child: Text(
-                            year.toString(),
-                            style: mediumTextStyle(16, Colors.white),
-                          )))
+                            child: Text(
+                              year.toString(),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 22,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ))
                       .toList(),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white.withOpacity(0.2),
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size(double.infinity, 50),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    controller
+                        .filterTransactions(controller.selectedFilter.value);
+                  },
+                  child: const Text(
+                    'Confirm',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
               ),
             ],
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
@@ -88,351 +122,233 @@ class StatisticsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final controller = Get.find<HomeController>();
     return AnnotatedRegion<SystemUiOverlayStyle>(
-        value: const SystemUiOverlayStyle(
-          statusBarColor:
-              AppColor.darkBackground, // Make status bar transparent
-          systemNavigationBarColor:
-              AppColor.darkBackground, // Bottom nav bar color
-          statusBarIconBrightness: Brightness.light, // White status bar icons
-          systemNavigationBarIconBrightness: Brightness.light, // Icon color
-        ),
-        child: Container(
-          decoration: const BoxDecoration(
-            color: AppColor.darkBackground,
-            // gradient: AppColor.darkGradient, // Your gradient background
+      value: const SystemUiOverlayStyle(
+        statusBarColor: AppColor.darkBackground,
+        systemNavigationBarColor: AppColor.darkBackground,
+        statusBarIconBrightness: Brightness.light,
+        systemNavigationBarIconBrightness: Brightness.light,
+      ),
+      child: Scaffold(
+        backgroundColor: AppColor.darkBackground,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          title: const Text(
+            "Financial Insights",
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+            ),
           ),
-          child: Scaffold(
-            backgroundColor: Colors.transparent,
-            appBar: AppBar(
-              backgroundColor: Colors.transparent,
-              title: Text(
-                "Statistics",
-                style: titleText(24, Colors.white),
-              ),
-              centerTitle: false,
-              actions: [
-                InkWell(
-                  splashColor: Colors.transparent,
-                  onTap: () => _showYearPicker(context, controller),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: AppColor.darkCard,
-                      borderRadius: BorderRadius.circular(8),
+          actions: [
+            InkWell(
+              onTap: () => _showYearPicker(context, controller),
+              child: Container(
+                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: Colors.white.withOpacity(0.2),
+                    width: 1,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Obx(
+                      () => Text(
+                        controller.selectedYear.value.toString(),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                     ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.max,
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Obx(
-                          () => Text(
-                            controller.selectedYear.value.toString(),
-                            style: TextStyle(
-                                fontSize: 14,
-                                color: AppColor.secondaryExtraSoft),
-                          ),
-                        ),
-                        const SizedBox(
-                          width: 5,
-                        ),
-                        const Icon(Icons.arrow_drop_down),
-                      ],
-                    ).paddingAll(8),
-                  ).paddingSymmetric(horizontal: 8),
+                    const SizedBox(width: 8),
+                    const Icon(
+                      Icons.arrow_drop_down,
+                      color: Colors.white,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+        body: SingleChildScrollView(
+          child: Obx(() => Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildFilterAndChartSection(controller),
+                  _buildSpendingDetailsSection(),
+                ],
+              )),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFilterAndChartSection(HomeController controller) {
+    return Container(
+      margin: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            Colors.white.withOpacity(0.1),
+            Colors.white.withOpacity(0.05),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: Colors.white.withOpacity(0.1),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        children: [
+          // Filter Segment Control
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _buildFilterButton(
+                  controller,
+                  'Weekly',
+                  'weekly',
+                ),
+                _buildFilterButton(
+                  controller,
+                  'Monthly',
+                  'monthly',
                 ),
               ],
             ),
-            body: SingleChildScrollView(
-              child: Obx(() => Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Container(
-                          decoration: BoxDecoration(
-                              gradient: AppColor.darkGradientAlt,
-                              borderRadius: BorderRadius.circular(24)),
-                          child: Column(
-                            children: [
-                              Padding(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 24.0, vertical: 24.0),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    GestureDetector(
-                                      onTap: () {
-                                        controller.selectedFilter.value =
-                                            'weekly';
-                                        controller.filterTransactions(
-                                            controller.selectedFilter.value);
-                                      },
-                                      child: Container(
-                                        padding: const EdgeInsets.symmetric(
-                                            vertical: 12.0, horizontal: 24.0),
-                                        decoration: BoxDecoration(
-                                          color: controller
-                                                      .selectedFilter.value ==
-                                                  'weekly'
-                                              ? Colors.white // Selected color
-                                              : Colors
-                                                  .transparent, // Deselected color
-                                          borderRadius: const BorderRadius.only(
-                                              topLeft: Radius.circular(8.0),
-                                              bottomLeft: Radius.circular(8)),
-                                          border: Border.all(
-                                            color: controller
-                                                        .selectedFilter.value ==
-                                                    'weekly'
-                                                ? Colors
-                                                    .transparent // No border when selected
-                                                : Colors
-                                                    .white, // Border color when not selected
-                                          ),
-                                        ),
-                                        child: Text(
-                                          'Weekly',
-                                          style: normalText(
-                                              14,
-                                              controller.selectedFilter.value ==
-                                                      'weekly'
-                                                  ? Colors.black
-                                                  : Colors.white),
-                                        ),
-                                      ),
-                                    ),
-                                    GestureDetector(
-                                      onTap: () {
-                                        controller.selectedFilter.value =
-                                            'monthly';
-                                        controller.filterTransactions(
-                                            controller.selectedFilter.value);
-                                      },
-                                      child: Container(
-                                        padding: const EdgeInsets.symmetric(
-                                            vertical: 12.0, horizontal: 24.0),
-                                        decoration: BoxDecoration(
-                                          color: controller
-                                                      .selectedFilter.value ==
-                                                  'monthly'
-                                              ? Colors.white // Selected color
-                                              : Colors
-                                                  .transparent, // Deselected color
-                                          borderRadius: const BorderRadius.only(
-                                              topRight: Radius.circular(8.0),
-                                              bottomRight: Radius.circular(8)),
-                                          border: Border.all(
-                                            color: controller
-                                                        .selectedFilter.value ==
-                                                    'monthly'
-                                                ? Colors
-                                                    .transparent // No border when selected
-                                                : Colors
-                                                    .white, // Border color when not selected
-                                          ),
-                                        ),
-                                        child: Text(
-                                          'Monthly',
-                                          style: normalText(
-                                              14,
-                                              controller.selectedFilter.value ==
-                                                      'monthly'
-                                                  ? Colors.black
-                                                  : Colors.white),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(height: 16),
-                              Padding(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 16.0),
-                                child: SfCartesianChart(
-                                  tooltipBehavior: TooltipBehavior(),
-                                  primaryXAxis: CategoryAxis(
-                                    labelStyle: normalText(14, Colors.white),
-                                    majorGridLines:
-                                        const MajorGridLines(width: 0),
-                                  ),
-                                  primaryYAxis: NumericAxis(
-                                    labelStyle: normalText(14, Colors.white),
-                                    majorGridLines:
-                                        const MajorGridLines(width: 0),
-                                  ),
-                                  series: <CartesianSeries>[
-                                    // Income Series
-                                    ColumnSeries<Map<String, dynamic>, String>(
-                                      color: AppColor.secondaryExtraSoft,
-                                      enableTooltip: true,
-                                      dataSource: controller
-                                          .filteredTransactions
-                                          .where((transaction) =>
-                                              transaction['type'] == 'income' &&
-                                              DateTime.parse(
-                                                          transaction['date'])
-                                                      .year ==
-                                                  controller.selectedYear.value)
-                                          .toList(),
-                                      xValueMapper: (datum, _) {
-                                        final date =
-                                            DateTime.parse(datum['date']);
-                                        return controller
-                                                    .selectedFilter.value ==
-                                                'weekly'
-                                            ? DateFormat('EEE').format(date)
-                                            : DateFormat('MMM').format(date);
-                                      },
-                                      yValueMapper: (datum, _) =>
-                                          datum['amount'],
-                                    ),
-                                    // Expense Series
-                                    ColumnSeries<Map<String, dynamic>, String>(
-                                      color: AppColor.secondarySoft,
-                                      enableTooltip: true,
-                                      dataSource: controller
-                                          .filteredTransactions
-                                          .where((transaction) =>
-                                              transaction['type'] ==
-                                                  'expense' &&
-                                              DateTime.parse(
-                                                          transaction['date'])
-                                                      .year ==
-                                                  controller.selectedYear.value)
-                                          .toList(),
-                                      xValueMapper: (datum, _) {
-                                        final date =
-                                            DateTime.parse(datum['date']);
-                                        return controller
-                                                    .selectedFilter.value ==
-                                                'weekly'
-                                            ? DateFormat('EEE').format(date)
-                                            : DateFormat('MMM').format(date);
-                                      },
-                                      yValueMapper: (datum, _) =>
-                                          datum['amount'],
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                        child: Text('Spending Details',
-                            style: mediumTextStyle(18, Colors.white)),
-                      ),
-                      const CategoriesGrid(),
-                    ],
-                  )),
-            ),
           ),
-        ));
-  }
-}
 
-class ChartData {
-  final String date;
-  double income;
-  double expense;
-
-  ChartData(this.date, this.income, this.expense);
-}
-
-// Create a separate widget for the chart
-class TransactionChart extends StatelessWidget {
-  const TransactionChart({super.key});
-
-  List<ChartData> _processChartData(
-      List<Map<String, dynamic>> transactions, String filterType) {
-    final Map<String, ChartData> chartData = {};
-
-    for (var transaction in transactions) {
-      try {
-        final date = DateTime.parse(transaction['date']);
-        final key = filterType == 'weekly'
-            ? DateFormat('d MMM').format(date)
-            : DateFormat('MMM').format(date);
-
-        final amount = (transaction['amount'] ?? 0.0).toDouble();
-        final isIncome = transaction['type'] == 'income';
-
-        // Create new ChartData if it doesn't exist
-        if (!chartData.containsKey(key)) {
-          chartData[key] = ChartData(key, 0, 0);
-        }
-
-        // Update the values
-        if (isIncome) {
-          chartData[key]!.income += amount;
-        } else {
-          chartData[key]!.expense += amount;
-        }
-      } catch (e) {
-        debugPrint('Error processing transaction: $e');
-        continue;
-      }
-    }
-
-    // Sort the data by date
-    final sortedData = chartData.values.toList();
-    return sortedData;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final controller = Get.find<HomeController>();
-
-    return Obx(() {
-      final chartData = _processChartData(
-          controller.filteredTransactions, controller.selectedFilter.value);
-
-      if (chartData.isEmpty) {
-        return const Center(
-          child: Text(
-            'No transactions yet',
-            style: TextStyle(color: Colors.white),
-          ),
-        );
-      }
-
-      return SfCartesianChart(
-        margin: const EdgeInsets.all(0),
-        plotAreaBorderWidth: 0,
-        primaryXAxis: const CategoryAxis(
-          labelStyle: TextStyle(color: Colors.white, fontSize: 12),
-          majorGridLines: MajorGridLines(width: 0),
-          labelRotation: 45,
-        ),
-        primaryYAxis: const NumericAxis(
-          labelStyle: TextStyle(color: Colors.white, fontSize: 12),
-          majorGridLines: MajorGridLines(
-            width: 1,
-            color: Colors.white24,
-          ),
-          axisLine: AxisLine(width: 0),
-        ),
-        series: <CartesianSeries>[
-          ColumnSeries<ChartData, String>(
-            name: 'Income',
-            color: AppColor.success.withOpacity(0.7),
-            dataSource: chartData,
-            xValueMapper: (ChartData data, _) => data.date,
-            yValueMapper: (ChartData data, _) => data.income,
-            borderRadius: BorderRadius.circular(4),
-          ),
-          ColumnSeries<ChartData, String>(
-            name: 'Expense',
-            color: AppColor.error.withOpacity(0.7),
-            dataSource: chartData,
-            xValueMapper: (ChartData data, _) => data.date,
-            yValueMapper: (ChartData data, _) => data.expense,
-            borderRadius: BorderRadius.circular(4),
+          // Chart Section
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8.0),
+            child: _buildTransactionChart(controller),
           ),
         ],
-      );
-    });
+      ),
+    );
+  }
+
+  Widget _buildFilterButton(
+      HomeController controller, String label, String filterType) {
+    final isSelected = controller.selectedFilter.value == filterType;
+    return GestureDetector(
+      onTap: () {
+        controller.selectedFilter.value = filterType;
+        controller.filterTransactions(filterType);
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        margin: const EdgeInsets.symmetric(horizontal: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        decoration: BoxDecoration(
+          color: isSelected ? Colors.white : Colors.transparent,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: Colors.white.withOpacity(0.5),
+            width: 1.5,
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: isSelected ? AppColor.darkBackground : Colors.white,
+            fontWeight: FontWeight.w600,
+            fontSize: 16,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTransactionChart(HomeController controller) {
+    return SfCartesianChart(
+      margin: const EdgeInsets.all(0),
+      plotAreaBorderWidth: 0,
+      primaryXAxis: const CategoryAxis(
+        labelStyle: TextStyle(color: Colors.white, fontSize: 12),
+        majorGridLines: MajorGridLines(width: 0),
+        labelRotation: 45,
+      ),
+      primaryYAxis: NumericAxis(
+        labelStyle: const TextStyle(color: Colors.white, fontSize: 12),
+        majorGridLines: MajorGridLines(
+          width: 1,
+          color: Colors.white.withOpacity(0.1),
+        ),
+        axisLine: const AxisLine(width: 0),
+      ),
+      series: <CartesianSeries>[
+        ColumnSeries<Map<String, dynamic>, String>(
+          name: 'Income',
+          color: AppColor.success.withOpacity(0.7),
+          dataSource: controller.filteredTransactions
+              .where((transaction) =>
+                  transaction['type'] == 'income' &&
+                  DateTime.parse(transaction['date']).year ==
+                      controller.selectedYear.value)
+              .toList(),
+          xValueMapper: (datum, _) {
+            final date = DateTime.parse(datum['date']);
+            return controller.selectedFilter.value == 'weekly'
+                ? DateFormat('EEE').format(date)
+                : DateFormat('MMM').format(date);
+          },
+          yValueMapper: (datum, _) => datum['amount'],
+          borderRadius: BorderRadius.circular(8),
+        ),
+        ColumnSeries<Map<String, dynamic>, String>(
+          name: 'Expense',
+          color: AppColor.error.withOpacity(0.7),
+          dataSource: controller.filteredTransactions
+              .where((transaction) =>
+                  transaction['type'] == 'expense' &&
+                  DateTime.parse(transaction['date']).year ==
+                      controller.selectedYear.value)
+              .toList(),
+          xValueMapper: (datum, _) {
+            final date = DateTime.parse(datum['date']);
+            return controller.selectedFilter.value == 'weekly'
+                ? DateFormat('EEE').format(date)
+                : DateFormat('MMM').format(date);
+          },
+          yValueMapper: (datum, _) => datum['amount'],
+          borderRadius: BorderRadius.circular(8),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSpendingDetailsSection() {
+    return const Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: 24.0, vertical: 16),
+          child: Text(
+            'Spending Breakdown',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+        CategoriesGrid(),
+      ],
+    );
   }
 }

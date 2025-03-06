@@ -16,11 +16,6 @@ class TransactionController extends GetxController {
   final homeC = Get.find<HomeController>();
 
   @override
-  void onInit() {
-    super.onInit();
-  }
-
-  @override
   void dispose() {
     super.dispose();
     amountController.dispose();

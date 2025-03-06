@@ -1,0 +1,1 @@
+/Users/ankitkumar/Developer/Flutter projects/expense tracker/spendify/build/app/intermediates/cxx/Debug/5c2lz1x4/obj/x86

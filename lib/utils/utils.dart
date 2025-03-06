@@ -47,13 +47,13 @@ TextStyle normalText(double size, Color color) => GoogleFonts.dmSans(
           TextStyle(color: color, fontSize: size, fontWeight: FontWeight.w400),
     );
 
-List<CategoriesModel> categoryList = [
-  CategoriesModel(category: "Investments", image: "assets/investment.svg"),
-  CategoriesModel(category: "Health", image: "assets/health.svg"),
-  CategoriesModel(category: "Bills & Fees", image: "assets/bills.svg"),
-  CategoriesModel(category: "Food & Drinks", image: "assets/food.svg"),
-  CategoriesModel(category: "Car", image: "assets/car.svg"),
-  CategoriesModel(category: "Groceries", image: "assets/groceries.svg"),
-  CategoriesModel(category: "Gifts", image: "assets/gifts.svg"),
-  CategoriesModel(category: "Transport", image: "assets/transport.svg"),
-];
+   List<CategoriesModel> categoryList = [
+    CategoriesModel(name: 'Investments', icon: Icons.trending_up),
+    CategoriesModel(name: 'Health', icon: Icons.medical_services_outlined),
+    CategoriesModel(name: 'Bills & Fees', icon: Icons.receipt_long),
+    CategoriesModel(name: 'Food & Drinks', icon: Icons.restaurant),
+    CategoriesModel(name: 'Car', icon: Icons.directions_car),
+    CategoriesModel(name: 'Groceries', icon: Icons.shopping_cart),
+    CategoriesModel(name: 'Gifts', icon: Icons.card_giftcard),
+    CategoriesModel(name: 'Transport', icon: Icons.transit_enterexit),
+  ];
