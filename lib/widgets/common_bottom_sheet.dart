@@ -31,41 +31,40 @@ class _CommonBottomSheetState extends State<CommonBottomSheet> {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        gradient: LinearGradient(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF2C3E50), Color(0xFF1A2533)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            AppColor.darkBackground.withOpacity(0.9),
-            AppColor.darkSurface.withOpacity(0.7),
-          ],
         ),
         borderRadius: const BorderRadius.only(
           topLeft: Radius.circular(24),
           topRight: Radius.circular(24),
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.2),
+            blurRadius: 10,
+            offset: const Offset(0, -5),
+          ),
+        ],
+      ),
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
       ),
       child: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 20.0),
           child: SingleChildScrollView(
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Enhanced Amount Input
+                const SizedBox(height: 20),
                 _buildAmountInput(),
-                
-                // Transaction Type Selector
                 _buildTransactionTypeSelector(),
-                
-                // Category Grid
                 _buildCategoryGrid(),
-                
-                // Date and Name Inputs
                 _buildDateAndNameInputs(),
-                
-                // Submit Button
                 _buildSubmitButton(),
+                const SizedBox(height: 20),
               ],
             ),
           ),
@@ -76,58 +75,81 @@ class _CommonBottomSheetState extends State<CommonBottomSheet> {
 
   Widget _buildAmountInput() {
     return Container(
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withOpacity(0.2), width: 1),
-      ),
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-      margin: const EdgeInsets.only(bottom: 16),
-      child: TextField(
-        controller: controller.amountController,
-        style: const TextStyle(
-          fontSize: 48, 
-          color: Colors.white,
-          fontWeight: FontWeight.w600,
-          letterSpacing: 1.2,
-        ),
-        textAlign: TextAlign.center,
-        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-        decoration: InputDecoration(
-          prefixText: '₹ ',
-          prefixStyle: TextStyle(
-            fontSize: 48, 
-            color: Colors.white.withOpacity(0.7),
-            fontWeight: FontWeight.w600,
+      margin: const EdgeInsets.only(bottom: 24, top: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Text(
+            _transactionType.value == Transactions.income ? "INCOME AMOUNT" : "EXPENSE AMOUNT",
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.6),
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 1.5,
+            ),
           ),
-          hintText: '0.00',
-          hintStyle: TextStyle(
-            fontSize: 48,
+          const SizedBox(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Text(
+                '₹',
+                style: TextStyle(
+                  fontSize: 48,
+                  color: Colors.white.withOpacity(0.8),
+                  fontWeight: FontWeight.w400,
+                ),
+              ),
+              const SizedBox(width: 8),
+              SizedBox(
+                width: MediaQuery.of(context).size.width * 0.6,
+                child: TextField(
+                  controller: controller.amountController,
+                  style: const TextStyle(
+                    fontSize: 48,
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  textAlign: TextAlign.center,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  cursorColor: Colors.white,
+                  cursorWidth: 2.0,
+                  decoration: InputDecoration(
+                    hintText: '0.00',
+                    hintStyle: TextStyle(
+                      fontSize: 48,
+                      color: Colors.white.withOpacity(0.3),
+                      fontWeight: FontWeight.w600,
+                    ),
+                    border: InputBorder.none,
+                    enabledBorder: InputBorder.none,
+                    focusedBorder: InputBorder.none,
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          Container(
+            height: 1,
+            width: MediaQuery.of(context).size.width * 0.7,
+            margin: const EdgeInsets.symmetric(vertical: 8),
             color: Colors.white.withOpacity(0.3),
-            fontWeight: FontWeight.w600,
           ),
-          border: InputBorder.none,
-        ),
+        ],
       ),
     );
   }
 
   Widget _buildTransactionTypeSelector() {
     return Obx(() => Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        _buildTypeButton(
-          Transactions.income, 
-          'Income', 
-          Icons.arrow_upward_rounded
-        ),
-        _buildTypeButton(
-          Transactions.expense, 
-          'Expense', 
-          Icons.arrow_downward_rounded
-        ),
-      ],
-    ));
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            _buildTypeButton(Transactions.income, 'Income', Icons.arrow_upward_rounded),
+            _buildTypeButton(Transactions.expense, 'Expense', Icons.arrow_downward_rounded),
+          ],
+        ));
   }
 
   Widget _buildTypeButton(Transactions type, String label, IconData icon) {
@@ -135,39 +157,28 @@ class _CommonBottomSheetState extends State<CommonBottomSheet> {
     return GestureDetector(
       onTap: () {
         _transactionType.value = type;
-        controller.selectedType.value = type == Transactions.income 
-            ? 'income' 
-            : 'expense';
+        controller.selectedType.value = type == Transactions.income ? 'income' : 'expense';
       },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 300),
         margin: const EdgeInsets.symmetric(horizontal: 8),
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
         decoration: BoxDecoration(
-          color: isSelected 
-            ? Colors.white 
-            : Colors.transparent,
+          color: isSelected ? Colors.white : Colors.transparent,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: Colors.white.withOpacity(0.5),
-            width: 1.5
-          ),
+          border: Border.all(color: Colors.white.withOpacity(0.5), width: 1.5),
         ),
         child: Row(
           children: [
             Icon(
               icon,
-              color: isSelected 
-                ? AppColor.darkBackground 
-                : Colors.white,
+              color: isSelected ? AppColor.darkBackground : Colors.white,
             ),
             const SizedBox(width: 8),
             Text(
               label,
               style: TextStyle(
-                color: isSelected 
-                  ? AppColor.darkBackground 
-                  : Colors.white,
+                color: isSelected ? AppColor.darkBackground : Colors.white,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -206,16 +217,9 @@ class _CommonBottomSheetState extends State<CommonBottomSheet> {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 300),
           decoration: BoxDecoration(
-            color: isSelected 
-              ? Colors.white.withOpacity(0.2) 
-              : Colors.white.withOpacity(0.1),
+            color: isSelected ? Colors.white.withOpacity(0.2) : Colors.white.withOpacity(0.1),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: isSelected 
-                ? Colors.white 
-                : Colors.transparent,
-              width: 2
-            ),
+            border: Border.all(color: isSelected ? Colors.white : Colors.transparent, width: 2),
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -247,7 +251,6 @@ class _CommonBottomSheetState extends State<CommonBottomSheet> {
   Widget _buildDateAndNameInputs() {
     return Column(
       children: [
-        // Date Picker
         GestureDetector(
           onTap: () => _selectDate(context),
           child: Container(
@@ -256,10 +259,7 @@ class _CommonBottomSheetState extends State<CommonBottomSheet> {
             decoration: BoxDecoration(
               color: Colors.white.withOpacity(0.1),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: Colors.white.withOpacity(0.2),
-                width: 1
-              ),
+              border: Border.all(color: Colors.white.withOpacity(0.2), width: 1),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -272,42 +272,34 @@ class _CommonBottomSheetState extends State<CommonBottomSheet> {
                   ),
                 ),
                 Obx(() => Text(
-                  DateFormat("MMM d, yyyy")
-                    .format(DateTime.parse(controller.selectedDate.value)),
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
-                  ),
-                )),
+                      DateFormat("MMM d, yyyy").format(DateTime.parse(controller.selectedDate.value)),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    )),
               ],
             ),
           ),
         ),
-
-        // Name Input
         Container(
           margin: const EdgeInsets.symmetric(vertical: 8),
           decoration: BoxDecoration(
             color: Colors.white.withOpacity(0.1),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: Colors.white.withOpacity(0.2),
-              width: 1
-            ),
+            border: Border.all(color: Colors.white.withOpacity(0.2), width: 1),
           ),
           child: TextField(
             controller: controller.titleController,
             style: const TextStyle(color: Colors.white),
+            cursorColor: Colors.white,
             decoration: InputDecoration(
               hintText: 'Transaction Name',
               hintStyle: TextStyle(
                 color: Colors.white.withOpacity(0.5),
               ),
               border: InputBorder.none,
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 16, 
-                vertical: 16
-              ),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
             ),
           ),
         ),
@@ -317,40 +309,35 @@ class _CommonBottomSheetState extends State<CommonBottomSheet> {
 
   Widget _buildSubmitButton() {
     return Obx(() => GestureDetector(
-      onTap: controller.isLoading.isFalse 
-        ? () => controller.addResource() 
-        : null,
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        margin: const EdgeInsets.symmetric(vertical: 8),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              Colors.white.withOpacity(0.3),
-              Colors.white.withOpacity(0.1),
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: Colors.white.withOpacity(0.2),
-            width: 1
-          ),
-        ),
-        child: Center(
-          child: Text(
-            controller.isLoading.isFalse ? 'Add Transaction' : 'Processing...',
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.w600,
-              fontSize: 18,
+          onTap: controller.isLoading.isFalse ? () => controller.addResource() : null,
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            margin: const EdgeInsets.symmetric(vertical: 8),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Colors.white.withOpacity(0.3),
+                  Colors.white.withOpacity(0.1),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.white.withOpacity(0.2), width: 1),
+            ),
+            child: Center(
+              child: Text(
+                controller.isLoading.isFalse ? 'Add Transaction' : 'Processing...',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 18,
+                ),
+              ),
             ),
           ),
-        ),
-      ),
-    ));
+        ));
   }
 
   Future<void> _selectDate(BuildContext context) async {
@@ -381,7 +368,6 @@ class _CommonBottomSheetState extends State<CommonBottomSheet> {
   }
 }
 
-// Helper class for categories
 class CategoryItem {
   final String name;
   final IconData icon;
@@ -389,5 +375,4 @@ class CategoryItem {
   CategoryItem({required this.name, required this.icon});
 }
 
-// Enum (kept from original code)
 enum Transactions { income, expense }

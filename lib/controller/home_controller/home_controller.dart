@@ -47,11 +47,12 @@ class HomeController extends GetxController {
   // Cache computed values
   final _transactionsByYear = <int, List<Map<String, dynamic>>>{}.obs;
   final _transactionsByMonth = <String, List<Map<String, dynamic>>>{}.obs;
-
+  RxBool isAmountVisible = true.obs;
   @override
   void onInit() async {
     super.onInit();
     await getProfile();
+    await fetchTotalBalanceData();
     await getTransactions();
     filterTransactions('weekly'); // Set default filter to weekly
     groupTransactionsByMonth();
@@ -123,15 +124,12 @@ class HomeController extends GetxController {
       // Update grouped transactions
       groupedTransactions.value = groupTransactionsByMonth();
 
-      // Filter income and expense transactions
-      incomeTransactions = transactions
-          .where((transaction) => transaction['type'] == 'income')
-          .toList();
-      expenseTransactions = transactions
-          .where((transaction) => transaction['type'] == 'expense')
-          .toList();
+      // Filter income and expense transactions (for display only)
+      incomeTransactions = transactions.where((transaction) => transaction['type'] == 'income').toList();
+      expenseTransactions = transactions.where((transaction) => transaction['type'] == 'expense').toList();
 
-      calculateBalance();
+      // Don't recalculate balance here since we want the total from all transactions
+      // calculateBalance();
     } catch (e) {
       debugPrint('Error fetching transactions: $e');
       CustomToast.errorToast("Error", "Failed to fetch transactions");
@@ -143,16 +141,12 @@ class HomeController extends GetxController {
   // Unified method to calculate balance based on income and expenses
   void calculateBalance() {
     // Calculate total income
-    totalIncome.value = incomeTransactions.fold(
-        0.0,
-        (double sum, transaction) =>
-            sum + double.parse(transaction['amount'].toString()));
+    totalIncome.value =
+        incomeTransactions.fold(0.0, (double sum, transaction) => sum + double.parse(transaction['amount'].toString()));
 
     // Calculate total expense
     totalExpense.value = expenseTransactions.fold(
-        0.0,
-        (double sum, transaction) =>
-            sum + double.parse(transaction['amount'].toString()));
+        0.0, (double sum, transaction) => sum + double.parse(transaction['amount'].toString()));
 
     // Set total balance as income - expense
     totalBalance.value = totalIncome.value - totalExpense.value;
@@ -181,8 +175,7 @@ class HomeController extends GetxController {
 
           filteredTransactions.value = yearFiltered.where((transaction) {
             final transDate = DateTime.parse(transaction['date']);
-            return transDate
-                    .isAfter(startOfMonth.subtract(const Duration(days: 1))) &&
+            return transDate.isAfter(startOfMonth.subtract(const Duration(days: 1))) &&
                 transDate.isBefore(endOfMonth.add(const Duration(days: 1)));
           }).toList();
           break;
@@ -198,8 +191,7 @@ class HomeController extends GetxController {
       }
 
       // Sort transactions by date
-      filteredTransactions.value.sort((a, b) =>
-          DateTime.parse(b['date']).compareTo(DateTime.parse(a['date'])));
+      filteredTransactions.value.sort((a, b) => DateTime.parse(b['date']).compareTo(DateTime.parse(a['date'])));
     } catch (e) {
       debugPrint('Error filtering transactions: $e');
       filteredTransactions.value = [];
@@ -209,9 +201,7 @@ class HomeController extends GetxController {
   // Compute transactions for year only when year changes
   List<Map<String, dynamic>> _getTransactionsForYear(int year) {
     if (!_transactionsByYear.containsKey(year)) {
-      _transactionsByYear[year] = transactions
-          .where((t) => DateTime.parse(t['date']).year == year)
-          .toList();
+      _transactionsByYear[year] = transactions.where((t) => DateTime.parse(t['date']).year == year).toList();
     }
     return _transactionsByYear[year] ?? [];
   }
@@ -246,9 +236,8 @@ class HomeController extends GetxController {
   void filterTransactionsByCategory(String category) {
     isSelected.value = true;
     selectedChip.value = category;
-    filteredTransactionsByCategoryList.assignAll(transactions
-        .where((transaction) => transaction['category'] == category)
-        .toList());
+    filteredTransactionsByCategoryList
+        .assignAll(transactions.where((transaction) => transaction['category'] == category).toList());
   }
 
   // Method to get the start of the current week (Monday)
@@ -265,14 +254,12 @@ class HomeController extends GetxController {
 
   // Function to parse and format date time string
   String formatDateTime(String dateTimeString) {
-    final dateTime =
-        DateTime.parse(dateTimeString); // Parse the date time string
+    final dateTime = DateTime.parse(dateTimeString); // Parse the date time string
     return DateFormat("MMMM d, y").format(dateTime); // Format the date and time
   }
 
   // Function to get the category icon based on the category name
-  IconData getCategoryIcon(
-      String category, List<CategoriesModel> categoryList) {
+  IconData getCategoryIcon(String category, List<CategoriesModel> categoryList) {
     var matchingCategory = categoryList.firstWhere(
       (element) => element.name == category,
       orElse: () => CategoriesModel(name: category, icon: Icons.category),
@@ -335,17 +322,46 @@ class HomeController extends GetxController {
 
       filteredTransactions.value = transactions.where((transaction) {
         final transDate = DateTime.parse(transaction['date']);
-        return transDate
-                .isAfter(startOfMonth.subtract(const Duration(days: 1))) &&
+        return transDate.isAfter(startOfMonth.subtract(const Duration(days: 1))) &&
             transDate.isBefore(endOfMonth.add(const Duration(days: 1)));
       }).toList();
 
       // Sort transactions by date
-      filteredTransactions.value.sort((a, b) =>
-          DateTime.parse(b['date']).compareTo(DateTime.parse(a['date'])));
+      filteredTransactions.value.sort((a, b) => DateTime.parse(b['date']).compareTo(DateTime.parse(a['date'])));
     } catch (e) {
       debugPrint('Error filtering transactions by month: $e');
       filteredTransactions.value = [];
     }
+  }
+
+  // Add this method to HomeController
+  Future<void> fetchTotalBalanceData() async {
+    try {
+      // Get all transactions for balance calculation without pagination
+      final response = await supabaseC.from("transactions").select().eq('user_id', supabaseC.auth.currentUser!.id);
+
+      // Split into income and expense
+      final allIncomeTransactions = response.where((transaction) => transaction['type'] == 'income').toList();
+
+      final allExpenseTransactions = response.where((transaction) => transaction['type'] == 'expense').toList();
+
+      // Calculate total income
+      totalIncome.value = allIncomeTransactions.fold(
+          0.0, (double sum, transaction) => sum + double.parse(transaction['amount'].toString()));
+
+      // Calculate total expense
+      totalExpense.value = allExpenseTransactions.fold(
+          0.0, (double sum, transaction) => sum + double.parse(transaction['amount'].toString()));
+
+      // Set total balance as income - expense
+      totalBalance.value = totalIncome.value - totalExpense.value;
+      debugPrint("Total Balance: $totalBalance");
+    } catch (e) {
+      debugPrint('Error fetching total balance data: $e');
+    }
+  }
+
+  void toggleVisibility() {
+    isAmountVisible.value = !isAmountVisible.value;
   }
 }
