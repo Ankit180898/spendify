@@ -1,4 +1,5 @@
 ## Spendify Expense Tracker App
+![spendify_bg](https://github.com/user-attachments/assets/07e5c3c3-f463-4c25-8f2f-34820a92d602)
 
 ## Introduction
   This repository contains the source code for Spendify, an expense tracker app built using Flutter. 
