@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
@@ -6,7 +7,6 @@ import 'package:spendify/config/app_color.dart';
 import 'package:spendify/controller/home_controller/home_controller.dart';
 import 'package:spendify/widgets/categories_grid.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
-import 'package:flutter/cupertino.dart';
 
 class StatisticsScreen extends StatelessWidget {
   const StatisticsScreen({super.key});
@@ -69,8 +69,7 @@ class StatisticsScreen extends StatelessWidget {
                   ),
                   onSelectedItemChanged: (int selectedItem) {
                     controller.selectedYear.value = years[selectedItem];
-                    controller
-                        .filterTransactions(controller.selectedFilter.value);
+                    controller.filterTransactions(controller.selectedFilter.value);
                   },
                   children: years
                       .map((year) => Center(
@@ -99,8 +98,7 @@ class StatisticsScreen extends StatelessWidget {
                   ),
                   onPressed: () {
                     Navigator.of(context).pop();
-                    controller
-                        .filterTransactions(controller.selectedFilter.value);
+                    controller.filterTransactions(controller.selectedFilter.value);
                   },
                   child: const Text(
                     'Confirm',
@@ -146,8 +144,7 @@ class StatisticsScreen extends StatelessWidget {
               onTap: () => _showYearPicker(context, controller),
               child: Container(
                 margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
                   color: Colors.white.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
@@ -242,8 +239,7 @@ class StatisticsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildFilterButton(
-      HomeController controller, String label, String filterType) {
+  Widget _buildFilterButton(HomeController controller, String label, String filterType) {
     final isSelected = controller.selectedFilter.value == filterType;
     return GestureDetector(
       onTap: () {
@@ -291,6 +287,12 @@ class StatisticsScreen extends StatelessWidget {
         ),
         axisLine: const AxisLine(width: 0),
       ),
+      tooltipBehavior: TooltipBehavior(
+        enable: true,
+        color: AppColor.darkSurface,
+        borderColor: Colors.white,
+        textStyle: const TextStyle(color: Colors.white),
+      ),
       series: <CartesianSeries>[
         ColumnSeries<Map<String, dynamic>, String>(
           name: 'Income',
@@ -298,8 +300,7 @@ class StatisticsScreen extends StatelessWidget {
           dataSource: controller.filteredTransactions
               .where((transaction) =>
                   transaction['type'] == 'income' &&
-                  DateTime.parse(transaction['date']).year ==
-                      controller.selectedYear.value)
+                  DateTime.parse(transaction['date']).year == controller.selectedYear.value)
               .toList(),
           xValueMapper: (datum, _) {
             final date = DateTime.parse(datum['date']);
@@ -316,8 +317,7 @@ class StatisticsScreen extends StatelessWidget {
           dataSource: controller.filteredTransactions
               .where((transaction) =>
                   transaction['type'] == 'expense' &&
-                  DateTime.parse(transaction['date']).year ==
-                      controller.selectedYear.value)
+                  DateTime.parse(transaction['date']).year == controller.selectedYear.value)
               .toList(),
           xValueMapper: (datum, _) {
             final date = DateTime.parse(datum['date']);

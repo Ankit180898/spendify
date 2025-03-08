@@ -21,90 +21,193 @@ class HomeScreen extends StatelessWidget {
     // Set the status bar color
     SystemChrome.setSystemUIOverlayStyle(
       const SystemUiOverlayStyle(
-        statusBarColor: Color(0xFF2C3E50), // Dark blue-gray
+        statusBarColor: Colors.transparent, // Make status bar transparent
         statusBarIconBrightness: Brightness.light,
       ),
     );
 
-    return Container(
-      color: const Color(0xFF2C3E50), // Dark blue-gray
-      child: Scaffold(
-        resizeToAvoidBottomInset: false,
-        backgroundColor: AppColor.darkBackground,
-        body: SingleChildScrollView(
-          child: Column(
-            children: [
-              // Top Section with Gradient Background
-              Container(
-                decoration: const BoxDecoration(
-                  gradient: AppColor.darkGradientAlt,
-                  borderRadius: BorderRadius.only(
+    return Scaffold(
+      backgroundColor: const Color(0xFF121418), // Darker background for modern look
+      body: SafeArea(
+        child: CustomScrollView(
+          slivers: [
+            // App Bar with User Info
+            SliverToBoxAdapter(
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF2C3E50), Color(0xFF1A2533)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: const BorderRadius.only(
                     bottomLeft: Radius.circular(28),
                     bottomRight: Radius.circular(28),
                   ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.2),
+                      blurRadius: 10,
+                      offset: const Offset(0, 5),
+                    ),
+                  ],
                 ),
                 child: Column(
                   children: [
                     TopBarContents(),
-                    verticalSpace(8),
-                    UserInfoCard(size: displayHeight(context) * 0.10),
-                    verticalSpace(32),
+                    verticalSpace(16),
+                    // Enhanced user info card
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: UserInfoCard(size: displayHeight(context) * 0.12),
+                    ),
+                    verticalSpace(24),
                   ],
                 ),
               ),
+            ),
 
-              // Main Content Section
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Section Title (Optional)
-                  // Text(
-                  //   'Recent Transactions',
-                  //   style: TextStyle(
-                  //     fontSize: 18,
-                  //     fontWeight: FontWeight.bold,
-                  //     color: AppColor.secondary,
-                  //   ),
-                  // ),
-                  // verticalSpace(16),
+            // Summary Section
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 24, 20, 16),
+                child: Obx(() {
+                  // Using actual data from controller
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Overview',
+                        style: titleText(18, Colors.white),
+                      ),
+                      verticalSpace(16),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildSummaryCard(
+                              icon: Icons.arrow_upward_rounded,
+                              label: 'Income',
+                              amount: '₹${controller.totalIncome.value}',
+                              color: const Color(0xFF4CAF50),
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: _buildSummaryCard(
+                              icon: Icons.arrow_downward_rounded,
+                              label: 'Expenses',
+                              amount: '₹${controller.totalExpense.value}',
+                              color: const Color(0xFFF44336),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  );
+                }),
+              ),
+            ),
 
-                  // Transactions List
-                  SingleChildScrollView(
-                    child: Column(
-                      children: [
-                        const TransactionsContent(10), // Pass the initial limit
-                        verticalSpace(16),
+            // Transactions List
+           const  SliverToBoxAdapter(
+              child:  TransactionsContent(5), // Show fewer items by default
+            ),
 
-                        // Load More Button
-                        Obx(() => controller.transactions.length >=
-                                controller.limit.value
-                            ? ElevatedButton(
-                                onPressed: () => controller.loadMore(),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: AppColor.primary,
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 32, vertical: 12),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                ),
-                                child: const Text(
-                                  'Load More',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              )
-                            : const SizedBox()),
-                      ],
-                    ),
-                  ),
-                ],
+            // Load More Button
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
+                child: Obx(() => controller.transactions.length >= controller.limit.value
+                    ? ElevatedButton(
+                        onPressed: () => controller.loadMore(),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColor.primary,
+                          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          elevation: 4,
+                        ),
+                        child: const Text(
+                          'Load More',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                      )
+                    : const SizedBox()),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSummaryCard({
+    required IconData icon,
+    required String label,
+    required String amount,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1E2530),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  icon,
+                  color: color,
+                  size: 18,
+                ),
+              ),
+              const Spacer(),
+              Icon(
+                Icons.more_horiz,
+                color: Colors.white.withOpacity(0.7),
+                size: 18,
               ),
             ],
           ),
-        ),
+          const SizedBox(height: 16),
+          Text(
+            label,
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.7),
+              fontSize: 14,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            amount,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
       ),
     );
   }

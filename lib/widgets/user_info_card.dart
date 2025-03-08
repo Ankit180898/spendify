@@ -1,113 +1,154 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:spendify/config/app_color.dart';
 import 'package:spendify/controller/home_controller/home_controller.dart';
-import 'package:spendify/utils/image_constants.dart';
-import 'package:spendify/utils/size_helpers.dart';
-import 'package:spendify/utils/utils.dart';
 
 class UserInfoCard extends StatelessWidget {
-  const UserInfoCard({
-    super.key,
-    required this.size,
-  });
-
   final double size;
+
+  const UserInfoCard({Key? key, required this.size}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     final controller = Get.find<HomeController>();
-    return Obx(
-          () => Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 24.0),
-        child: Container(
-          width: displayWidth(context),
-          height: displayHeight(context) / 4,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(15),
-            gradient: AppColor.cardGradient
-           
-            
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF2E86C1), Color(0xFF1F618D)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.3),
+            blurRadius: 10,
+            offset: const Offset(0, 5),
           ),
-          child: Column(
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              verticalSpace(16),
-              Text(
-                "Balance",
-                style: normalText(16, AppColor.secondaryExtraSoft),
+              const Text(
+                'Total Balance',
+                style: TextStyle(
+                  color: Colors.white70,
+                  fontSize: 16,
+                ),
               ),
-              verticalSpace(8),
-              Text(
-                "₹${controller.totalBalance.value}",
-                style: titleText(40, AppColor.secondaryExtraSoft),
-              ),
-              verticalSpace(8),
-              _buildIncomeExpenseRow(controller),
+              Obx(() => GestureDetector(
+                    onTap: () => controller.toggleVisibility(),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            controller.isAmountVisible.value ? Icons.visibility : Icons.visibility_off,
+                            color: Colors.white,
+                            size: 16,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            controller.isAmountVisible.value ? 'Hide' : 'Show',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )),
             ],
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildIncomeExpenseRow(HomeController controller) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          _buildIncomeInfo(controller),
-          _buildExpenseInfo(controller),
+          const SizedBox(height: 12),
+          Obx(() {
+            return Text(
+              controller.isAmountVisible.value ? '₹${controller.totalBalance.value}' : '₹•••••',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 32,
+                fontWeight: FontWeight.bold,
+              ),
+            );
+          }),
+          const SizedBox(height: 20),
+          Obx(() => Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  _buildBalanceInfoItem(
+                    label: 'Income',
+                    value: controller.isAmountVisible.value ? '₹${controller.totalIncome.value}' : '₹•••••',
+                    iconData: Icons.arrow_upward_rounded,
+                    color: const Color(0xFF4CAF50),
+                  ),
+                  Container(
+                    height: 40,
+                    width: 1,
+                    color: Colors.white.withOpacity(0.3),
+                  ),
+                  _buildBalanceInfoItem(
+                    label: 'Expenses',
+                    value: controller.isAmountVisible.value ? '₹${controller.totalExpense.value}' : '₹•••••',
+                    iconData: Icons.arrow_downward_rounded,
+                    color: const Color(0xFFF44336),
+                  ),
+                ],
+              )),
         ],
       ),
     );
   }
 
-  Widget _buildIncomeInfo(HomeController controller) {
+  Widget _buildBalanceInfoItem({
+    required String label,
+    required String value,
+    required IconData iconData,
+    required Color color,
+  }) {
     return Row(
       children: [
-        ImageConstants(colors: AppColor.success).income,
-        horizontalSpace(8),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              "Income",
-              style: TextStyle(
-                color: AppColor.secondaryExtraSoft,
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            Text(
-              '+ ₹${controller.totalIncome.value}',
-              style: normalText(16, AppColor.secondaryExtraSoft),
-            ),
-          ],
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.2),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(
+            iconData,
+            color: Colors.white,
+            size: 16,
+          ),
         ),
-      ],
-    );
-  }
-
-  Widget _buildExpenseInfo(HomeController controller) {
-    return Row(
-      children: [
-        ImageConstants(colors: AppColor.warning).expense,
-        horizontalSpace(8),
+        const SizedBox(width: 8),
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              "Expense",
+              label,
               style: TextStyle(
-                color: AppColor.secondaryExtraSoft,
+                color: Colors.white.withOpacity(0.7),
+                fontSize: 12,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              value,
+              style: const TextStyle(
+                color: Colors.white,
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
               ),
-            ),
-            Text(
-              '- ₹${controller.totalExpense.value}',
-              style: normalText(16, AppColor.secondaryExtraSoft),
             ),
           ],
         ),

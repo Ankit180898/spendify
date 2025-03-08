@@ -25,12 +25,13 @@ class TransactionsContent extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Transactions',
+                'Recent Transactions',
                 style: titleText(18, Colors.white),
               ),
-              TextButton(
+              TextButton.icon(
                 onPressed: () => Get.to(() => const AllTransactionsScreen()),
-                child: Text(
+                icon: Icon(Icons.arrow_forward, size: 16, color: AppColor.primary),
+                label: Text(
                   'View All',
                   style: normalText(14, AppColor.primary),
                 ),
@@ -41,14 +42,49 @@ class TransactionsContent extends StatelessWidget {
         Obx(
           () {
             if (controller.isLoading.value) {
-              return const Center(child: CircularProgressIndicator());
+              return const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(40.0),
+                  child: CircularProgressIndicator(),
+                ),
+              );
             }
 
             if (controller.transactions.isEmpty) {
-              return const Center(
+              return Center(
                 child: Padding(
-                  padding: EdgeInsets.all(50.0),
-                  child: Text("No transactions"),
+                  padding: const EdgeInsets.all(50.0),
+                  child: Column(
+                    children: [
+                      Icon(
+                        Icons.receipt_long,
+                        size: 64,
+                        color: Colors.white.withOpacity(0.3),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        "No transactions yet",
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.7),
+                          fontSize: 16,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      ElevatedButton(
+                        onPressed: () {
+                          // Add your first transaction action
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColor.primary,
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Text("Add your first transaction"),
+                      ),
+                    ],
+                  ),
                 ),
               );
             }
@@ -63,27 +99,32 @@ class TransactionsContent extends StatelessWidget {
               itemCount: monthlyTransactions.keys.length,
               itemBuilder: (context, monthIndex) {
                 String month = monthlyTransactions.keys.elementAt(monthIndex);
-                List<Map<String, dynamic>> transactionsForMonth =
-                    monthlyTransactions[month] ?? [];
+                List<Map<String, dynamic>> transactionsForMonth = monthlyTransactions[month] ?? [];
 
                 // Apply limit to transactions for each month
                 if (limit > 0 && transactionsForMonth.length > limit) {
-                  transactionsForMonth =
-                      transactionsForMonth.take(limit).toList();
+                  transactionsForMonth = transactionsForMonth.take(limit).toList();
                 }
+
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 24.0, vertical: 8.0),
-                      child: Text(
-                        month,
-                        style: normalText(14, AppColor.secondarySoft),
+                      padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 12.0),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: AppColor.primary.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          month,
+                          style: normalText(14, AppColor.primary),
+                        ),
                       ),
                     ),
-                    ListView.separated(
-                      padding: const EdgeInsets.all(0),
+                    ListView.builder(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
                       itemCount: transactionsForMonth.length,
@@ -91,16 +132,10 @@ class TransactionsContent extends StatelessWidget {
                         return TransactionListItem(
                           key: ValueKey(transactionsForMonth[transactionIndex]),
                           transaction: transactionsForMonth,
-                          index: transactionIndex, categoryList: categoryList,
+                          index: transactionIndex,
+                          categoryList: categoryList,
                         );
                       },
-                      separatorBuilder: (context, index) => Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                        child: Divider(
-                          thickness: 0.2,
-                          color: AppColor.secondarySoft.withOpacity(0.6),
-                        ),
-                      ),
                     ),
                   ],
                 );

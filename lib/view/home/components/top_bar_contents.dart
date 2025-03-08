@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:spendify/config/app_color.dart';
 import 'package:spendify/controller/home_controller/home_controller.dart';
-import 'package:spendify/utils/utils.dart';
+import 'package:spendify/routes/app_pages.dart';
 
 class TopBarContents extends StatelessWidget {
   final HomeController controller = Get.find<HomeController>();
@@ -19,51 +19,65 @@ class TopBarContents extends StatelessWidget {
       if (userName.isNotEmpty) {
         List<String> nameParts = userName.split(' ');
         // Safely get initials, ensuring there are at least two parts
-        String firstInitial = nameParts.isNotEmpty && nameParts[0].isNotEmpty
-            ? nameParts[0][0]
-            : '';
-        String lastInitial = nameParts.length > 1 && nameParts.last.isNotEmpty
-            ? nameParts.last[0]
-            : '';
-        initials =
-            '$firstInitial$lastInitial'.toUpperCase(); // Combine initials
+        String firstInitial = nameParts.isNotEmpty && nameParts[0].isNotEmpty ? nameParts[0][0] : '';
+        String lastInitial = nameParts.length > 1 && nameParts.last.isNotEmpty ? nameParts.last[0] : '';
+        initials = '$firstInitial$lastInitial'.toUpperCase(); // Combine initials
       } else {
         initials = '??'; // Fallback text if userName is empty
       }
 
       return Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 24.0),
+        padding: const EdgeInsets.fromLTRB(24.0, 40.0, 24.0, 16.0),
         child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Row(
+            // Welcome text and user name
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // CircleAvatar(
-                //   backgroundColor: AppColor.secondary,
-                //   child: Text(
-                //     initials, // Use the calculated initials
-                //     style: const TextStyle(color: Colors.white),
-                //   ),
-                // ),
-                // const SizedBox(
-                //   width: 8,
-                // ),
-                RichText(
-                  textScaler: const TextScaler.linear(1),
-                  textAlign: TextAlign.start,
-                  text: TextSpan(
-                    text: 'Welcome Back,\n',
-                    style: normalText(
-                        16, AppColor.secondaryExtraSoft.withOpacity(0.5)),
-                    children: <TextSpan>[
-                      TextSpan(
-                          text: userName, // Use the userName variable
-                          style: titleText(24, AppColor.secondaryExtraSoft)),
-                    ],
+                Text(
+                  'Welcome back,',
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.7),
+                    fontSize: 16,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  userName,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
               ],
+            ),
+
+            // User Avatar
+            InkWell(
+              onTap: () => Get.toNamed(Routes.PROFILE),
+              child: Container(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: Colors.white.withOpacity(0.2),
+                    width: 2,
+                  ),
+                ),
+                child: CircleAvatar(
+                  radius: 24,
+                  backgroundColor: AppColor.primary,
+                  child: Text(
+                    initials,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                ),
+              ),
             ),
           ],
         ),
