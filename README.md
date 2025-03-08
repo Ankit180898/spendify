@@ -19,12 +19,6 @@
   State Management: GetX
   Deployment: Google Play Store, Apple App Store
 
-## Screenshots
-<img src ="https://github.com/user-attachments/assets/502a41b0-53ec-4c1a-a753-abc61be23014" width="150" height="350">
-<img src="https://github.com/user-attachments/assets/c2040411-b234-4e1d-a9ec-eb2415027eee" width="150" height="350">
-<img src="https://github.com/user-attachments/assets/08284d54-a899-4a66-bbc3-424bf1c3dcaf" width="150" height="350">
-
-
 ## Setup
   1) Clone the repository:
     - https://github.com/Ankit180898/spendify.git
