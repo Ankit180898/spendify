@@ -8,7 +8,7 @@ class TransactionController extends GetxController {
   final amountController = TextEditingController();
   var selectedCategory = ''.obs;
   final titleController = TextEditingController();
-  final selectedType = 'income'.obs;
+  final selectedType = 'expense'.obs;
   var isLoading = false.obs;
   var isSubmitted = false.obs;
   var selectedDate = DateTime.now().toIso8601String().obs;
@@ -67,13 +67,14 @@ class TransactionController extends GetxController {
 
       // Fetch complete balance data first (to fix the main issue)
       await homeC.fetchTotalBalanceData();
-      
+
       // Then get paginated transactions for display
       await homeC.getTransactions();
 
       // Clear form
       resetForm();
-      
+      selectedType.value = 'expense'; // Reset to default
+
       // Close the current screen
       Get.back();
 
@@ -82,7 +83,7 @@ class TransactionController extends GetxController {
     } catch (e) {
       // Log the error for debugging
       debugPrint("Error in addResource: $e");
-      
+
       // Show error message if transaction submission fails
       CustomToast.errorToast('Failure', "Failed to submit transaction");
     } finally {
@@ -100,25 +101,17 @@ class TransactionController extends GetxController {
 
   Future<void> updateBalance(double amount, String type) async {
     try {
-      final response = await supabaseC
-          .from("users")
-          .select('balance')
-          .eq('id', supabaseC.auth.currentUser!.id)
-          .single();
-      
-      final currentBalance = response['balance'] as double? ?? 0.0;
-      final newBalance = type == 'income' 
-          ? currentBalance + amount 
-          : currentBalance - amount;
+      final response =
+          await supabaseC.from("users").select('balance').eq('id', supabaseC.auth.currentUser!.id).single();
 
-      await supabaseC
-          .from("users")
-          .update({'balance': newBalance})
-          .eq('id', supabaseC.auth.currentUser!.id);
-      
+      final currentBalance = (response['balance'] as num).toDouble();
+      final newBalance = type == 'income' ? currentBalance + amount : currentBalance - amount;
+
+      await supabaseC.from("users").update({'balance': newBalance}).eq('id', supabaseC.auth.currentUser!.id);
+
       // Update local value
       homeC.totalBalance.value = newBalance;
-      
+
       debugPrint("User's balance updated successfully to: $newBalance");
     } catch (error) {
       debugPrint("Error updating user's balance: $error");
@@ -132,87 +125,80 @@ class TransactionController extends GetxController {
     // doesn't use the improved balance calculation logic
     await addResource();
   }
-Future<void> deleteTransaction(String transactionId) async {
-  try {
-    // Fetch the transaction to get its amount and type
-    final response = await supabaseC
-        .from('transactions')
-        .select()
-        .eq('id', transactionId)
-        .single();
 
-    final amount = response['amount'] as double;
-    final type = response['type'] as String;
+  Future<void> deleteTransaction(String transactionId) async {
+    try {
+      // Fetch the transaction to get its amount and type
+      final response = await supabaseC.from('transactions').select().eq('id', transactionId).single();
 
-    // Delete the transaction
-    await supabaseC.from('transactions').delete().eq('id', transactionId);
+      final amount = response['amount'] as double;
+      final type = response['type'] as String;
 
-    // Update the balance
-    final currentBalance = homeC.totalBalance.value;
-    if (type == 'income') {
-      homeC.totalBalance.value = currentBalance - amount; // Subtract income
-    } else {
-      homeC.totalBalance.value = currentBalance + amount; // Add back expense
+      // Delete the transaction
+      await supabaseC.from('transactions').delete().eq('id', transactionId);
+
+      // Update the balance
+      final currentBalance = homeC.totalBalance.value;
+      if (type == 'income') {
+        homeC.totalBalance.value = currentBalance - amount; // Subtract income
+      } else {
+        homeC.totalBalance.value = currentBalance + amount; // Add back expense
+      }
+
+      // Refresh transactions and balance
+      await homeC.getTransactions();
+      await homeC.fetchTotalBalanceData();
+
+      CustomToast.successToast("Success", "Transaction deleted successfully");
+      Get.back();
+    } catch (e) {
+      CustomToast.errorToast("Error", "Failed to delete transaction");
     }
-
-    // Refresh transactions and balance
-    await homeC.getTransactions();
-    await homeC.fetchTotalBalanceData();
-   
-    CustomToast.successToast("Success", "Transaction deleted successfully");
-    Get.back();
-  } catch (e) {
-    CustomToast.errorToast("Error", "Failed to delete transaction");
   }
-}
 
-Future<void> updateTransaction(String transactionId) async {
-  try {
-    // Fetch the old transaction to get its amount and type
-    final oldTransaction = await supabaseC
-        .from('transactions')
-        .select()
-        .eq('id', transactionId)
-        .single();
+  Future<void> updateTransaction(String transactionId) async {
+    try {
+      // Fetch the old transaction to get its amount and type
+      final oldTransaction = await supabaseC.from('transactions').select().eq('id', transactionId).single();
 
-    final oldAmount = oldTransaction['amount'] as double;
-    final oldType = oldTransaction['type'] as String;
+      final oldAmount = oldTransaction['amount'] as double;
+      final oldType = oldTransaction['type'] as String;
 
-    // Parse the new amount
-    final newAmount = double.tryParse(amountController.text) ?? 0.0;
-    final newType = selectedType.value;
+      // Parse the new amount
+      final newAmount = double.tryParse(amountController.text) ?? 0.0;
+      final newType = selectedType.value;
 
-    // Update the transaction
-    await supabaseC.from('transactions').update({
-      'amount': newAmount,
-      'description': titleController.text,
-      'category': selectedCategory.value,
-      'type': newType,
-      'date': selectedDate.value,
-    }).eq('id', transactionId);
+      // Update the transaction
+      await supabaseC.from('transactions').update({
+        'amount': newAmount,
+        'description': titleController.text,
+        'category': selectedCategory.value,
+        'type': newType,
+        'date': selectedDate.value,
+      }).eq('id', transactionId);
 
-    // Update the balance
-    final currentBalance = homeC.totalBalance.value;
+      // Update the balance
+      final currentBalance = homeC.totalBalance.value;
 
-    if (oldType == 'income') {
-      homeC.totalBalance.value = currentBalance - oldAmount; // Subtract old income
-    } else {
-      homeC.totalBalance.value = currentBalance + oldAmount; // Add back old expense
+      if (oldType == 'income') {
+        homeC.totalBalance.value = currentBalance - oldAmount; // Subtract old income
+      } else {
+        homeC.totalBalance.value = currentBalance + oldAmount; // Add back old expense
+      }
+
+      if (newType == 'income') {
+        homeC.totalBalance.value = currentBalance + newAmount; // Add new income
+      } else {
+        homeC.totalBalance.value = currentBalance - newAmount; // Subtract new expense
+      }
+
+      // Refresh transactions and balance
+      await homeC.getTransactions();
+      await homeC.fetchTotalBalanceData();
+
+      CustomToast.successToast("Success", "Transaction updated successfully");
+    } catch (e) {
+      CustomToast.errorToast("Error", "Failed to update transaction");
     }
-
-    if (newType == 'income') {
-      homeC.totalBalance.value = currentBalance + newAmount; // Add new income
-    } else {
-      homeC.totalBalance.value = currentBalance - newAmount; // Subtract new expense
-    }
-
-    // Refresh transactions and balance
-    await homeC.getTransactions();
-    await homeC.fetchTotalBalanceData();
-
-    CustomToast.successToast("Success", "Transaction updated successfully");
-  } catch (e) {
-    CustomToast.errorToast("Error", "Failed to update transaction");
   }
-}
 }
