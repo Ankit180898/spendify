@@ -13,7 +13,7 @@ class CommonBottomSheet extends StatefulWidget {
 
 class _CommonBottomSheetState extends State<CommonBottomSheet> {
   final controller = Get.find<TransactionController>();
-  final _transactionType = Transactions.expense.obs;
+  final _transactionType = Transactions.income.obs;
 
   // Enhanced category list with icons
   final List<CategoryItem> _categories = [
@@ -156,8 +156,11 @@ class _CommonBottomSheetState extends State<CommonBottomSheet> {
     bool isSelected = _transactionType.value == type;
     return GestureDetector(
       onTap: () {
-        _transactionType.value = type;
-        controller.selectedType.value = type == Transactions.income ? 'income' : 'expense';
+        debugPrint('Selected Type: $type');
+
+        _transactionType.value = type; // Update the local observable
+        controller.selectedType.value = type == Transactions.income ? 'income' : 'expense'; // Update the controller
+        debugPrint('Updated selectedType in controller: ${controller.selectedType.value}');
       },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 300),

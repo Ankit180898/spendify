@@ -5,7 +5,7 @@ import 'package:spendify/controller/home_controller/home_controller.dart';
 class UserInfoCard extends StatelessWidget {
   final double size;
 
-  const UserInfoCard({Key? key, required this.size}) : super(key: key);
+  const UserInfoCard({super.key, required this.size});
 
   @override
   Widget build(BuildContext context) {
