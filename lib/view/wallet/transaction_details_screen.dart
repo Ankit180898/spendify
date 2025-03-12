@@ -46,20 +46,24 @@ class TransactionDetailsScreen extends StatelessWidget {
         actions: [
           IconButton(
             icon: const Icon(Icons.edit, color: Colors.white),
-            onPressed: () {
-              // Navigate to edit transaction screen
-              Get.to(
+            onPressed: () async {
+              final result = await Get.to(
                 () => EditTransactionScreen(
                   transaction: transaction,
                   categoryList: categoryList,
                 ),
               );
+
+              // Refresh the transaction details if the transaction was updated
+              if (result == true) {
+                // Fetch updated transaction details
+                await controller.getTransactions();
+              }
             },
           ),
           IconButton(
             icon: const Icon(Icons.delete, color: Colors.red),
             onPressed: () async {
-              // Show confirmation dialog before deleting
               final confirm = await Get.dialog(
                 AlertDialog(
                   backgroundColor: AppColor.darkSurface,
@@ -93,7 +97,7 @@ class TransactionDetailsScreen extends StatelessWidget {
               if (confirm == true) {
                 // Delete the transaction
                 await transactionController.deleteTransaction(transaction['id'].toString());
-                Get.back(); // Go back to the previous screen
+                Get.back(); // Navigate back to the previous screen
               }
             },
           ),
