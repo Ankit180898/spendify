@@ -441,7 +441,7 @@ class StatisticsScreen extends StatelessWidget {
               crosshairBehavior: CrosshairBehavior(
                 enable: true,
                 lineType: CrosshairLineType.both,
-                lineDashArray: <double>[5, 5],
+                lineDashArray: const <double>[5, 5],
                 lineWidth: 1,
                 lineColor: Colors.white.withOpacity(0.5),
               ),
