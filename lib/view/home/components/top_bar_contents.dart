@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:spendify/config/app_color.dart';
+import 'package:spendify/config/app_theme.dart';
 import 'package:spendify/controller/home_controller/home_controller.dart';
 import 'package:spendify/routes/app_pages.dart';
 
@@ -12,69 +12,60 @@ class TopBarContents extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Obx(() {
-      // Ensure userName is not empty before accessing its characters
-      String initials = '';
-      String userName = controller.userName.value;
-
-      if (userName.isNotEmpty) {
-        List<String> nameParts = userName.split(' ');
-        // Safely get initials, ensuring there are at least two parts
-        String firstInitial = nameParts.isNotEmpty && nameParts[0].isNotEmpty ? nameParts[0][0] : '';
-        String lastInitial = nameParts.length > 1 && nameParts.last.isNotEmpty ? nameParts.last[0] : '';
-        initials = '$firstInitial$lastInitial'.toUpperCase(); // Combine initials
-      } else {
-        initials = '??'; // Fallback text if userName is empty
-      }
+      final name = controller.userName.value;
+      final firstName = name.split(' ').first;
+      final initials = _initials(name);
 
       return Padding(
-        padding: const EdgeInsets.fromLTRB(24.0, 40.0, 24.0, 16.0),
+        padding: const EdgeInsets.fromLTRB(
+          AppDimens.spaceXXL,
+          AppDimens.spaceHuge,
+          AppDimens.spaceXXL,
+          AppDimens.spaceLG,
+        ),
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            // Welcome text and user name
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Welcome back,',
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.7),
-                    fontSize: 16,
+            // Greeting
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Welcome back,',
+                    style: AppTypography.caption(
+                        Colors.white.withOpacity(0.65)),
                   ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  userName,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
+                  const SizedBox(height: AppDimens.spaceXXS),
+                  Text(
+                    firstName.isEmpty ? 'Friend' : firstName,
+                    style: AppTypography.heading2(Colors.white),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
 
-            // User Avatar
-            InkWell(
+            // Avatar — taps to profile
+            GestureDetector(
               onTap: () => Get.toNamed(Routes.PROFILE),
               child: Container(
+                width: 46,
+                height: 46,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFFA09AFF), Color(0xFF7C73FF)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
                   border: Border.all(
-                    color: Colors.white.withOpacity(0.2),
+                    color: Colors.white.withOpacity(0.25),
                     width: 2,
                   ),
                 ),
-                child: CircleAvatar(
-                  radius: 24,
-                  backgroundColor: AppColor.primary,
+                child: Center(
                   child: Text(
                     initials,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
+                    style: AppTypography.bodySemiBold(Colors.white),
                   ),
                 ),
               ),
@@ -83,5 +74,13 @@ class TopBarContents extends StatelessWidget {
         ),
       );
     });
+  }
+
+  String _initials(String name) {
+    if (name.isEmpty) return '?';
+    final parts = name.trim().split(' ');
+    final a = parts.first.isNotEmpty ? parts.first[0] : '';
+    final b = parts.length > 1 && parts.last.isNotEmpty ? parts.last[0] : '';
+    return '$a$b'.toUpperCase();
   }
 }

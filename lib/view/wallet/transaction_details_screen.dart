@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:spendify/config/app_color.dart';
+import 'package:spendify/config/app_theme.dart';
 import 'package:spendify/controller/home_controller/home_controller.dart';
 import 'package:spendify/controller/wallet_controller/wallet_controller.dart';
 import 'package:spendify/model/categories_model.dart';
@@ -22,30 +23,39 @@ class TransactionDetailsScreen extends StatelessWidget {
     final controller = Get.find<HomeController>();
     final transactionController = Get.find<TransactionController>();
     final isExpense = transaction['type'] == 'expense';
-    final category = transaction['category'];
+    final category = transaction['category'] as String? ?? '';
     final amount = transaction['amount'].toString();
     final date = DateTime.parse(transaction['date']);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final bg = isDark ? AppColor.darkBg : AppColor.lightBg;
+    final cardBg = isDark ? AppColor.darkCard : AppColor.lightSurface;
+    final textPrimary =
+        isDark ? AppColor.textPrimary : AppColor.lightTextPrimary;
+    final textSecondary =
+        isDark ? AppColor.textSecondary : AppColor.lightTextSecondary;
+    final borderColor = isDark ? AppColor.darkBorder : AppColor.lightBorder;
+    final catColor = AppColor.categoryColor(category);
+    final amountColor = isExpense ? AppColor.expense : AppColor.income;
 
     return Scaffold(
-      backgroundColor: AppColor.darkBackground,
+      backgroundColor: bg,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: const Text(
-          "Transaction Details",
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-          ),
+        title: Text(
+          'Transaction Details',
+          style: AppTypography.heading2(textPrimary),
         ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          icon: Icon(Icons.arrow_back_ios_new_rounded,
+              color: textPrimary, size: AppDimens.iconMD),
           onPressed: () => Get.back(),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.edit, color: Colors.white),
+            icon: Icon(Icons.edit_outlined,
+                color: textSecondary, size: AppDimens.iconMD),
             onPressed: () async {
               final result = await Get.to(
                 () => EditTransactionScreen(
@@ -53,153 +63,179 @@ class TransactionDetailsScreen extends StatelessWidget {
                   categoryList: categoryList,
                 ),
               );
-
-              // Refresh the transaction details if the transaction was updated
-              if (result == true) {
-                // Fetch updated transaction details
-                await controller.getTransactions();
-              }
+              if (result == true) await controller.getTransactions();
             },
           ),
           IconButton(
-            icon: const Icon(Icons.delete, color: Colors.red),
-            onPressed: () async {
-              final confirm = await Get.dialog(
-                AlertDialog(
-                  backgroundColor: AppColor.darkSurface,
-                  title: const Text(
-                    "Delete Transaction",
-                    style: TextStyle(color: Colors.white),
-                  ),
-                  content: const Text(
-                    "Are you sure you want to delete this transaction?",
-                    style: TextStyle(color: Colors.white),
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Get.back(result: false),
-                      child: const Text(
-                        "Cancel",
-                        style: TextStyle(color: Colors.white),
-                      ),
-                    ),
-                    TextButton(
-                      onPressed: () => Get.back(result: true),
-                      child: const Text(
-                        "Delete",
-                        style: TextStyle(color: Colors.red),
-                      ),
-                    ),
-                  ],
-                ),
-              );
-
-              if (confirm == true) {
-                // Delete the transaction
-                await transactionController.deleteTransaction(transaction['id'].toString());
-                Get.back(); // Navigate back to the previous screen
-              }
-            },
+            icon: Icon(Icons.delete_outline_rounded,
+                color: AppColor.expense, size: AppDimens.iconMD),
+            onPressed: () => _confirmDelete(
+                context, transactionController, isDark, textPrimary),
           ),
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(AppDimens.spaceLG),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Category Icon and Title
-            Center(
+            // Hero card
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(
+                vertical: AppDimens.spaceXXXL,
+                horizontal: AppDimens.spaceXXL,
+              ),
+              decoration: BoxDecoration(
+                color: cardBg,
+                borderRadius: BorderRadius.circular(AppDimens.radiusXXL),
+                border: Border.all(color: borderColor),
+              ),
               child: Column(
                 children: [
                   Container(
-                    height: 80,
-                    width: 80,
+                    width: 72,
+                    height: 72,
                     decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          _getCategoryColor(category, isExpense).withOpacity(0.2),
-                          _getCategoryColor(category, isExpense).withOpacity(0.1),
-                        ],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      borderRadius: BorderRadius.circular(20),
+                      color: catColor.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(AppDimens.radiusXL),
                     ),
                     child: Icon(
                       controller.getCategoryIcon(category, categoryList),
-                      color: _getCategoryColor(category, isExpense),
-                      size: 40,
+                      color: catColor,
+                      size: AppDimens.iconHero,
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: AppDimens.spaceLG),
                   Text(
-                    transaction['description'].toString(),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    transaction['description']?.toString() ?? '',
+                    style: AppTypography.heading2(textPrimary),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: AppDimens.spaceSM),
+                  Text(
+                    isExpense ? '-₹$amount' : '+₹$amount',
+                    style: AppTypography.amountDisplay(amountColor),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 32),
 
-            // Transaction Details
-            _buildDetailRow("Amount", isExpense ? "-₹$amount" : "+₹$amount"),
-            _buildDetailRow("Category", category),
-            _buildDetailRow("Type", isExpense ? "Expense" : "Income"),
-            _buildDetailRow("Date", DateFormat("MMM d, y").format(date)),
+            const SizedBox(height: AppDimens.spaceLG),
+
+            // Details list
+            Container(
+              decoration: BoxDecoration(
+                color: cardBg,
+                borderRadius: BorderRadius.circular(AppDimens.radiusXXL),
+                border: Border.all(color: borderColor),
+              ),
+              child: Column(
+                children: [
+                  _buildDetailRow(
+                    label: 'Category',
+                    value: category,
+                    textPrimary: textPrimary,
+                    textSecondary: textSecondary,
+                    borderColor: borderColor,
+                    showBorder: true,
+                  ),
+                  _buildDetailRow(
+                    label: 'Type',
+                    value: isExpense ? 'Expense' : 'Income',
+                    textPrimary: textPrimary,
+                    textSecondary: textSecondary,
+                    borderColor: borderColor,
+                    showBorder: true,
+                    valueColor: amountColor,
+                  ),
+                  _buildDetailRow(
+                    label: 'Date',
+                    value: DateFormat('MMMM d, yyyy').format(date),
+                    textPrimary: textPrimary,
+                    textSecondary: textSecondary,
+                    borderColor: borderColor,
+                    showBorder: false,
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildDetailRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 12),
+  Widget _buildDetailRow({
+    required String label,
+    required String value,
+    required Color textPrimary,
+    required Color textSecondary,
+    required Color borderColor,
+    required bool showBorder,
+    Color? valueColor,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppDimens.spaceXXL,
+        vertical: AppDimens.spaceLG,
+      ),
+      decoration: BoxDecoration(
+        border: showBorder
+            ? Border(bottom: BorderSide(color: borderColor, width: 1))
+            : null,
+      ),
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Expanded(
-            child: Text(
-              label,
-              style: TextStyle(
-                color: Colors.white.withOpacity(0.6),
-                fontSize: 16,
-              ),
-            ),
-          ),
+          Text(label, style: AppTypography.body(textSecondary)),
           Text(
             value,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-            ),
+            style: AppTypography.bodySemiBoldTabular(valueColor ?? textPrimary),
           ),
         ],
       ),
     );
   }
 
-  Color _getCategoryColor(String category, bool isExpense) {
-    if (!isExpense) {
-      return AppColor.success;
+  Future<void> _confirmDelete(
+    BuildContext context,
+    TransactionController transactionController,
+    bool isDark,
+    Color textPrimary,
+  ) async {
+    final confirm = await Get.dialog<bool>(
+      AlertDialog(
+        backgroundColor: isDark ? AppColor.darkCard : AppColor.lightSurface,
+        title: Text(
+          'Delete Transaction',
+          style: AppTypography.heading2(textPrimary),
+        ),
+        content: Text(
+          'Are you sure you want to delete this transaction?',
+          style: AppTypography.body(
+              isDark ? AppColor.textSecondary : AppColor.lightTextSecondary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(result: false),
+            child: Text('Cancel',
+                style: AppTypography.body(
+                    isDark ? AppColor.textSecondary : AppColor.lightTextSecondary)),
+          ),
+          TextButton(
+            onPressed: () => Get.back(result: true),
+            child: Text('Delete',
+                style: AppTypography.bodySemiBold(AppColor.expense)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      await transactionController
+          .deleteTransaction(transaction['id'].toString());
+      Get.back();
     }
-
-    final Map<String, Color> categoryColors = {
-      'food': Colors.orange,
-      'shopping': Colors.purple,
-      'transport': Colors.blue,
-      'entertainment': Colors.pink,
-      'bills': Colors.red,
-      'health': Colors.green,
-      'education': Colors.teal,
-      'other': AppColor.primary,
-    };
-
-    return categoryColors[category.toLowerCase()] ?? AppColor.primary;
   }
 }

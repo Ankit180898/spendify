@@ -1,14 +1,10 @@
-
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:spendify/config/app_color.dart';
+import 'package:spendify/config/app_theme.dart';
 import 'package:spendify/controller/auth_controller/register_controller.dart';
-import 'package:spendify/utils/size_helpers.dart';
-import 'package:spendify/utils/utils.dart';
-import 'package:spendify/widgets/custom_button.dart';
-
-import '../../routes/app_pages.dart';
+import 'package:spendify/routes/app_pages.dart';
 
 class RegisterScreen extends StatelessWidget {
   const RegisterScreen({super.key});
@@ -16,205 +12,196 @@ class RegisterScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final controller = Get.put(RegisterController());
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bg = isDark ? AppColor.darkBg : AppColor.lightBg;
+    final cardBg = isDark ? AppColor.darkSurface : AppColor.lightSurface;
+    final textPrimary =
+        isDark ? AppColor.textPrimary : AppColor.lightTextPrimary;
+    final textSecondary =
+        isDark ? AppColor.textSecondary : AppColor.lightTextSecondary;
+    final borderColor = isDark ? AppColor.darkBorder : AppColor.lightBorder;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: bg,
       resizeToAvoidBottomInset: true,
-      bottomSheet: Material(
-        color: Colors.white,
-        child: Padding(
-          padding: const EdgeInsets.all(8.0),
+      bottomNavigationBar: Container(
+        color: isDark ? AppColor.darkSurface : AppColor.lightSurface,
+        padding: const EdgeInsets.symmetric(
+          vertical: AppDimens.spaceMD,
+          horizontal: AppDimens.spaceLG,
+        ),
+        child: SafeArea(
+          top: false,
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
-                style: TextStyle(
-                    fontWeight: FontWeight.w500,
-                    color: AppColor.secondarySoft,
-                    fontSize: 16),
-                "Already have an account?",
+                'Already have an account?',
+                style: AppTypography.body(textSecondary),
               ),
               TextButton(
-                  onPressed: () {
-                    Get.toNamed(Routes.LOGIN);
-                  },
-                  child: Text(
-                    "Login",
-                    style: TextStyle(color: AppColor.primary, fontSize: 16),
-                  ))
+                onPressed: () => Get.toNamed(Routes.LOGIN),
+                child: Text(
+                  'Sign In',
+                  style: AppTypography.bodyLarge(AppColor.primary),
+                ),
+              ),
             ],
           ),
         ),
       ),
-      body: SizedBox(
-        height: displayHeight(context),
-        width: displayWidth(context),
-        child: ListView(
-          shrinkWrap: true,
-          children: [
-            Container(
-              height: MediaQuery.of(context).size.height,
-              width: MediaQuery.of(context).size.width,
-              color: Colors.white,
-              padding: const EdgeInsets.only(left: 24, right: 24, top: 36),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.start,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    margin: const EdgeInsets.only(bottom: 24),
-                    child: const Text(
-                      'Create an account',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontFamily: 'poppins',
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                  verticalSpace(16),
-                  // name
-                  Container(
-                    width: MediaQuery.of(context).size.width,
-                    padding: const EdgeInsets.only(left: 14, right: 14, top: 4),
-                    margin: const EdgeInsets.only(bottom: 16),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                          width: 1, color: AppColor.secondaryExtraSoft),
-                    ),
-                    child: TextField(
-                      controller: controller.nameC,
-                      style:
-                          const TextStyle(fontSize: 14, fontFamily: 'poppins'),
-                      maxLines: 1,
-                      decoration: InputDecoration(
-                        label: Text(
-                          "Name",
-                          style: TextStyle(
-                            color: AppColor.secondarySoft,
-                            fontSize: 14,
-                          ),
-                        ),
-                        floatingLabelBehavior: FloatingLabelBehavior.always,
-                        border: InputBorder.none,
-                        hintText: "John Doe",
-                        hintStyle: TextStyle(
-                          fontSize: 14,
-                          fontFamily: 'poppins',
-                          fontWeight: FontWeight.w500,
-                          color: AppColor.secondarySoft,
-                        ),
-                      ),
-                    ),
-                  ),
-                  verticalSpace(8),
-                  // email
-                  Container(
-                    width: MediaQuery.of(context).size.width,
-                    padding: const EdgeInsets.only(left: 14, right: 14, top: 4),
-                    margin: const EdgeInsets.only(bottom: 16),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                          width: 1, color: AppColor.secondaryExtraSoft),
-                    ),
-                    child: TextField(
-                      controller: controller.emailC,
-                      style:
-                          const TextStyle(fontSize: 14, fontFamily: 'poppins'),
-                      maxLines: 1,
-                      decoration: InputDecoration(
-                        label: Text(
-                          "Email",
-                          style: TextStyle(
-                            color: AppColor.secondarySoft,
-                            fontSize: 14,
-                          ),
-                        ),
-                        floatingLabelBehavior: FloatingLabelBehavior.always,
-                        border: InputBorder.none,
-                        hintText: "youremail@email.com",
-                        hintStyle: TextStyle(
-                          fontSize: 14,
-                          fontFamily: 'poppins',
-                          fontWeight: FontWeight.w500,
-                          color: AppColor.secondarySoft,
-                        ),
-                      ),
-                    ),
-                  ),
-                  verticalSpace(8),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: AppDimens.spaceXXL),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: AppDimens.spaceHuge),
 
-                  Container(
-                    width: MediaQuery.of(context).size.width,
-                    padding:
-                        const EdgeInsets.only(left: 14, right: 14, top: 4),
-                    margin: const EdgeInsets.only(bottom: 24),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                          width: 1, color: AppColor.secondaryExtraSoft),
-                    ),
-                    child: Obx(
-                      () => TextField(
-                        style: const TextStyle(
-                            fontSize: 14, fontFamily: 'poppins'),
-                        maxLines: 1,
-                        controller: controller.passwordC,
-                        obscureText: controller.isHidden.value,
-                        decoration: InputDecoration(
-                          label: Text(
-                            "Password",
-                            style: TextStyle(
-                              color: AppColor.secondarySoft,
-                              fontSize: 14,
-                            ),
-                          ),
-                          floatingLabelBehavior: FloatingLabelBehavior.always,
-                          border: InputBorder.none,
-                          hintText: "*************",
-                          suffixIcon: IconButton(
-                            icon: (controller.isHidden.value != false)
-                                ? const Icon(Iconsax.eye)
-                                : const Icon(Iconsax.eye_slash4),
-                            onPressed: () {
-                              controller.isHidden.value =
-                                  !(controller.isHidden.value);
-                            },
-                          ),
-                          hintStyle: TextStyle(
-                            fontSize: 14,
-                            fontFamily: 'poppins',
-                            fontWeight: FontWeight.w500,
-                            color: AppColor.secondarySoft,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  verticalSpace(16),
-                  Obx(() => CustomButton(
-                      text: controller.isLoading.isFalse
-                          ? "Register"
-                          : "...Loading",
-                      onPressed: () {
-                        if (controller.isLoading.isFalse) {
-                          // Then proceed with user registration
-                          controller.register();
-                        }
-                      },
-                      bgcolor: AppColor.primary,
-                      height: displayHeight(context) * 0.08,
-                      width: displayWidth(context),
-                      textSize: 16,
-                      textColor: Colors.white)),
-                ],
+              // Header icon
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  gradient: AppColor.primaryGradient,
+                  borderRadius: BorderRadius.circular(AppDimens.radiusMD),
+                ),
+                child: const Icon(
+                  Iconsax.wallet_3,
+                  color: Colors.white,
+                  size: AppDimens.iconLG,
+                ),
               ),
-            ),
-          ],
+              const SizedBox(height: AppDimens.spaceXXL),
+              Text(
+                'Create account',
+                style: AppTypography.heading1(textPrimary),
+              ),
+              const SizedBox(height: AppDimens.spaceXS),
+              Text(
+                'Start tracking your finances today',
+                style: AppTypography.body(textSecondary),
+              ),
+
+              const SizedBox(height: AppDimens.spaceXXXL),
+
+              // Name field
+              Text('Full Name', style: AppTypography.bodySemiBold(textPrimary)),
+              const SizedBox(height: AppDimens.spaceSM),
+              _buildTextField(
+                controller: controller.nameC,
+                hint: 'John Doe',
+                keyboardType: TextInputType.name,
+                cardBg: cardBg,
+                borderColor: borderColor,
+                textPrimary: textPrimary,
+                textSecondary: textSecondary,
+              ),
+
+              const SizedBox(height: AppDimens.spaceLG),
+
+              // Email field
+              Text('Email', style: AppTypography.bodySemiBold(textPrimary)),
+              const SizedBox(height: AppDimens.spaceSM),
+              _buildTextField(
+                controller: controller.emailC,
+                hint: 'youremail@example.com',
+                keyboardType: TextInputType.emailAddress,
+                cardBg: cardBg,
+                borderColor: borderColor,
+                textPrimary: textPrimary,
+                textSecondary: textSecondary,
+              ),
+
+              const SizedBox(height: AppDimens.spaceLG),
+
+              // Password field
+              Text('Password', style: AppTypography.bodySemiBold(textPrimary)),
+              const SizedBox(height: AppDimens.spaceSM),
+              Obx(() => _buildTextField(
+                    controller: controller.passwordC,
+                    hint: '••••••••••••',
+                    obscure: controller.isHidden.value,
+                    cardBg: cardBg,
+                    borderColor: borderColor,
+                    textPrimary: textPrimary,
+                    textSecondary: textSecondary,
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        controller.isHidden.value
+                            ? Iconsax.eye
+                            : Iconsax.eye_slash4,
+                        color: textSecondary,
+                        size: AppDimens.iconMD,
+                      ),
+                      onPressed: () => controller.isHidden.value =
+                          !controller.isHidden.value,
+                    ),
+                  )),
+
+              const SizedBox(height: AppDimens.spaceXXXL),
+
+              // Register button
+              Obx(() => SizedBox(
+                    width: double.infinity,
+                    height: AppDimens.buttonHeight,
+                    child: ElevatedButton(
+                      onPressed: controller.isLoading.isFalse
+                          ? () => controller.register()
+                          : null,
+                      child: controller.isLoading.isTrue
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
+                              ),
+                            )
+                          : Text(
+                              'Create Account',
+                              style: AppTypography.button(Colors.white),
+                            ),
+                    ),
+                  )),
+
+              const SizedBox(height: AppDimens.spaceXXL),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String hint,
+    required Color cardBg,
+    required Color borderColor,
+    required Color textPrimary,
+    required Color textSecondary,
+    bool obscure = false,
+    TextInputType? keyboardType,
+    Widget? suffixIcon,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: BorderRadius.circular(AppDimens.radiusMD),
+        border: Border.all(color: borderColor),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: AppDimens.spaceLG),
+      child: TextField(
+        controller: controller,
+        obscureText: obscure,
+        keyboardType: keyboardType,
+        style: AppTypography.body(textPrimary),
+        cursorColor: AppColor.primary,
+        decoration: InputDecoration(
+          border: InputBorder.none,
+          hintText: hint,
+          hintStyle: AppTypography.body(textSecondary),
+          suffixIcon: suffixIcon,
         ),
       ),
     );

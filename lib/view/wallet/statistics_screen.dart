@@ -1,1372 +1,725 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:spendify/config/app_color.dart';
+import 'package:spendify/config/app_theme.dart';
 import 'package:spendify/controller/home_controller/home_controller.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 
-class StatisticsScreen extends StatelessWidget {
+class StatisticsScreen extends StatefulWidget {
   const StatisticsScreen({super.key});
 
-  void _showYearPicker(BuildContext context, HomeController controller) {
-    final currentYear = DateTime.now().year;
-    final years = List.generate(5, (index) => currentYear - index);
+  @override
+  State<StatisticsScreen> createState() => _StatisticsScreenState();
+}
 
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (BuildContext context) {
-        return Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                AppColor.darkSurface.withOpacity(0.98),
-                AppColor.darkBackground.withOpacity(0.98),
-              ],
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-            ),
-            borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(28),
-              topRight: Radius.circular(28),
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.3),
-                blurRadius: 15,
-                spreadRadius: 5,
-              ),
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                margin: const EdgeInsets.only(top: 16),
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.4),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      'Select Year',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    IconButton(
-                      icon: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: const Icon(Icons.close, color: Colors.white),
-                      ),
-                      onPressed: () {
-                        HapticFeedback.lightImpact();
-                        Navigator.of(context).pop();
-                      },
-                    ),
-                  ],
-                ),
-              ),
-              SizedBox(
-                height: MediaQuery.of(context).size.height * 0.3, // Dynamic height based on screen size
-                child: CupertinoPicker(
-                  magnification: 1.3,
-                  squeeze: 1.2,
-                  useMagnifier: true,
-                  itemExtent: 50,
-                  scrollController: FixedExtentScrollController(
-                    initialItem: years.indexOf(controller.selectedYear.value),
-                  ),
-                  onSelectedItemChanged: (int selectedItem) {
-                    controller.selectedYear.value = years[selectedItem];
-                    controller.filterTransactions(controller.selectedFilter.value);
-                    HapticFeedback.selectionClick();
-                  },
-                  selectionOverlay: Container(
-                    decoration: BoxDecoration(
-                      border: Border(
-                        top: BorderSide(color: Colors.white.withOpacity(0.2), width: 1),
-                        bottom: BorderSide(color: Colors.white.withOpacity(0.2), width: 1),
-                      ),
-                    ),
-                  ),
-                  children: years
-                      .map((year) => Center(
-                            child: Text(
-                              year.toString(),
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 24,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ))
-                      .toList(),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColor.primary,
-                    foregroundColor: Colors.white,
-                    minimumSize: const Size(double.infinity, 58),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    elevation: 8,
-                    shadowColor: AppColor.primary.withOpacity(0.5),
-                  ),
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                    controller.filterTransactions(controller.selectedFilter.value);
-                    HapticFeedback.mediumImpact();
-                  },
-                  child: const Text(
-                    'Apply',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
+class _StatisticsScreenState extends State<StatisticsScreen> {
+  late DateTime _month;
+
+  @override
+  void initState() {
+    super.initState();
+    _month = DateTime(DateTime.now().year, DateTime.now().month);
+  }
+
+  void _prevMonth() {
+    HapticFeedback.lightImpact();
+    setState(() => _month = DateTime(_month.year, _month.month - 1));
+  }
+
+  void _nextMonth() {
+    final now = DateTime.now();
+    if (_month.year == now.year && _month.month == now.month) return;
+    HapticFeedback.lightImpact();
+    setState(() => _month = DateTime(_month.year, _month.month + 1));
+  }
+
+  // ── Data helpers ──────────────────────────────────────────────────────────
+
+  List<Map<String, dynamic>> _txForMonth(
+      List<Map<String, dynamic>> all, DateTime month) {
+    final start = DateTime(month.year, month.month, 1);
+    final end = DateTime(month.year, month.month + 1, 0, 23, 59, 59);
+    return all.where((t) {
+      final d = DateTime.parse(t['date']);
+      return !d.isBefore(start) && !d.isAfter(end);
+    }).toList();
+  }
+
+  double _sum(List<Map<String, dynamic>> list, String type) => list
+      .where((t) => t['type'] == type)
+      .fold(0.0, (s, t) => s + (t['amount'] as num).toDouble());
+
+  Map<String, double> _categoryTotals(List<Map<String, dynamic>> list) {
+    final Map<String, double> out = {};
+    for (final t in list) {
+      if (t['type'] != 'expense') continue;
+      final cat = t['category'] as String;
+      out[cat] = (out[cat] ?? 0) + (t['amount'] as num).toDouble();
+    }
+    return out;
+  }
+
+  /// Last 6 months including current, in chronological order.
+  List<DateTime> _last6Months() {
+    return List.generate(6, (i) {
+      final offset = 5 - i;
+      return DateTime(_month.year, _month.month - offset);
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     final controller = Get.find<HomeController>();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bg = isDark ? AppColor.darkBg : AppColor.lightBg;
+
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: const SystemUiOverlayStyle(
+      value: SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
-        systemNavigationBarColor: AppColor.darkBackground,
-        statusBarIconBrightness: Brightness.light,
-        systemNavigationBarIconBrightness: Brightness.light,
+        statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
       ),
       child: Scaffold(
-        backgroundColor: AppColor.darkBackground,
+        backgroundColor: bg,
         body: SafeArea(
-          child: Obx(() => CustomScrollView(
-                physics: const BouncingScrollPhysics(
-                  parent: AlwaysScrollableScrollPhysics(),
-                ),
-                slivers: [
-                  SliverAppBar(
-                    backgroundColor: AppColor.darkBackground,
-                    expandedHeight: MediaQuery.of(context).size.height * 0.15, // Dynamic height
-                    pinned: true,
-                    floating: true,
-                    stretch: true,
-                    flexibleSpace: FlexibleSpaceBar(
-                      title: const Text(
-                        "Financial Insights",
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 20,
-                        ),
-                      ),
-                      titlePadding: const EdgeInsets.only(left: 20, bottom: 16),
-                      background: Container(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              AppColor.darkBackground,
-                              AppColor.darkSurface.withOpacity(0.7),
-                            ],
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                          ),
-                        ),
-                        child: Align(
-                          alignment: Alignment.centerRight,
-                          child: Padding(
-                            padding: const EdgeInsets.only(right: 30),
-                            child: Icon(
-                              Icons.insights,
-                              color: Colors.white.withOpacity(0.15),
-                              size: 100,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    actions: [
-                      InkWell(
-                        onTap: () => _showYearPicker(context, controller),
-                        borderRadius: BorderRadius.circular(14),
-                        child: Container(
-                          margin: const EdgeInsets.only(right: 16, top: 8, bottom: 8),
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.12),
-                            borderRadius: BorderRadius.circular(14),
-                            border: Border.all(
-                              color: Colors.white.withOpacity(0.2),
-                              width: 1,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.2),
-                                blurRadius: 10,
-                                offset: const Offset(0, 3),
-                              ),
-                            ],
-                          ),
-                          child: Row(
-                            children: [
-                              Text(
-                                controller.selectedYear.value.toString(),
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              const SizedBox(width: 4),
-                              const Icon(
-                                Icons.keyboard_arrow_down,
-                                color: Colors.white,
-                                size: 20,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  SliverList(
-                    delegate: SliverChildListDelegate([
-                      AnimatedOpacity(
-                        opacity: 1.0,
-                        duration: const Duration(milliseconds: 800),
-                        child: _buildSummaryCards(controller),
-                      ),
-                      TweenAnimationBuilder<double>(
-                        tween: Tween<double>(begin: 0, end: 1),
-                        duration: const Duration(milliseconds: 800),
-                        curve: Curves.easeOutCubic,
-                        builder: (context, value, child) {
-                          return Transform.translate(
-                            offset: Offset(0, 20 * (1 - value)),
-                            child: Opacity(
-                              opacity: value,
-                              child: _buildFilterAndChartSection(controller, context),
-                            ),
-                          );
-                        },
-                      ),
-                      const SizedBox(height: 8),
-                      TweenAnimationBuilder<double>(
-                        tween: Tween<double>(begin: 0, end: 1),
-                        duration: const Duration(milliseconds: 800),
-                        curve: Curves.easeOutCubic,
-                        builder: (context, value, child) {
-                          return Transform.translate(
-                            offset: Offset(0, 20 * (1 - value)),
-                            child: Opacity(
-                              opacity: value,
-                              child: _buildSpendingBreakdown(controller, context),
-                            ),
-                          );
-                        },
-                      ),
-                      TweenAnimationBuilder<double>(
-                        tween: Tween<double>(begin: 0, end: 1),
-                        duration: const Duration(milliseconds: 800),
-                        curve: Curves.easeOutCubic,
-                        builder: (context, value, child) {
-                          return Transform.translate(
-                            offset: Offset(0, 20 * (1 - value)),
-                            child: Opacity(
-                              opacity: value,
-                              child: _buildTopCategories(controller, context),
-                            ),
-                          );
-                        },
-                      ),
-                      TweenAnimationBuilder<double>(
-                        tween: Tween<double>(begin: 0, end: 1),
-                        duration: const Duration(milliseconds: 800),
-                        curve: Curves.easeOutCubic,
-                        builder: (context, value, child) {
-                          return Transform.translate(
-                            offset: Offset(0, 20 * (1 - value)),
-                            child: Opacity(
-                              opacity: value,
-                              child: _buildMonthlyTrends(controller, context),
-                            ),
-                          );
-                        },
-                      ),
-                      const SizedBox(height: 24),
-                    ]),
-                  ),
-                ],
-              )),
-        ),
-      ),
-    );
-  }
+          bottom: false,
+          child: Obx(() {
+            final all = controller.transactions;
+            final monthTx = _txForMonth(all, _month);
+            final income = _sum(monthTx, 'income');
+            final spent = _sum(monthTx, 'expense');
+            final net = income - spent;
+            final cats = _categoryTotals(monthTx);
+            final sorted = cats.entries.toList()
+              ..sort((a, b) => b.value.compareTo(a.value));
 
-  Widget _buildMonthlyTrends(HomeController controller, BuildContext context) {
-    final monthlyTotals = controller.calculateMonthlyTotals();
-    final sortedMonths = monthlyTotals.keys.toList()
-      ..sort((a, b) => DateFormat('MMM yyyy').parse(a).compareTo(DateFormat('MMM yyyy').parse(b)));
+            return CustomScrollView(
+              physics: const BouncingScrollPhysics(
+                  parent: AlwaysScrollableScrollPhysics()),
+              slivers: [
+                // ── Month navigator ─────────────────────────────────────
+                SliverToBoxAdapter(
+                  child: _MonthNav(
+                    month: _month,
+                    isDark: isDark,
+                    onPrev: _prevMonth,
+                    onNext: _nextMonth,
+                    canGoNext: !(_month.year == DateTime.now().year &&
+                        _month.month == DateTime.now().month),
+                  ),
+                ),
 
-    final List<Map<String, dynamic>> monthlyData = sortedMonths.map((month) {
-      return {
-        'month': month,
-        'income': monthlyTotals[month]!['income'] ?? 0.0,
-        'expense': monthlyTotals[month]!['expense'] ?? 0.0,
-        'savings': monthlyTotals[month]!['savings'] ?? 0.0,
-      };
-    }).toList();
+                // ── Hero numbers ────────────────────────────────────────
+                SliverToBoxAdapter(
+                  child: _HeroNumbers(
+                    spent: spent,
+                    income: income,
+                    net: net,
+                    isDark: isDark,
+                  ),
+                ),
 
-    return Container(
-      margin: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            Colors.blueAccent.withOpacity(0.15),
-            Colors.blueAccent.withOpacity(0.05),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: Colors.blueAccent.withOpacity(0.2),
-          width: 1.5,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.25),
-            blurRadius: 12,
-            offset: const Offset(0, 5),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'Monthly Trends',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.insights,
-                      color: Colors.blueAccent.withOpacity(0.9),
-                      size: 16,
+                // ── Donut chart + category list ─────────────────────────
+                if (sorted.isNotEmpty) ...[
+                  SliverToBoxAdapter(
+                    child: _DonutSection(
+                      spent: spent,
+                      sorted: sorted,
+                      isDark: isDark,
+                      context: context,
                     ),
-                    const SizedBox(width: 6),
-                    const Text(
-                      'Analysis',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                      ),
+                  ),
+                  SliverToBoxAdapter(
+                    child: _CategoryList(
+                      sorted: sorted,
+                      total: spent,
+                      isDark: isDark,
                     ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          SizedBox(
-            height: MediaQuery.of(context).size.height * 0.4, // Dynamic height
-            child: SfCartesianChart(
-              margin: EdgeInsets.zero,
-              plotAreaBorderWidth: 0,
-              zoomPanBehavior: ZoomPanBehavior(
-                enablePinching: true,
-                enablePanning: true,
-                zoomMode: ZoomMode.x,
-              ),
-              primaryXAxis: CategoryAxis(
-                labelStyle: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 12),
-                majorGridLines: const MajorGridLines(width: 0),
-                majorTickLines: const MajorTickLines(size: 0),
-              ),
-              primaryYAxis: NumericAxis(
-                labelStyle: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 12),
-                majorGridLines: MajorGridLines(
-                  width: 1,
-                  color: Colors.white.withOpacity(0.1),
-                  dashArray: const <double>[5, 5],
-                ),
-                axisLine: const AxisLine(width: 0),
-                numberFormat: NumberFormat.compactCurrency(symbol: '\$'),
-                labelFormat: '{value}',
-              ),
-              crosshairBehavior: CrosshairBehavior(
-                enable: true,
-                lineType: CrosshairLineType.both,
-                lineDashArray: const <double>[5, 5],
-                lineWidth: 1,
-                lineColor: Colors.white.withOpacity(0.5),
-              ),
-              tooltipBehavior: TooltipBehavior(
-                enable: true,
-                duration: 2000,
-                canShowMarker: true,
-                color: AppColor.darkSurface,
-                borderColor: Colors.white.withOpacity(0.3),
-                borderWidth: 1,
-                textStyle: const TextStyle(color: Colors.white),
-              ),
-              legend: const Legend(
-                isVisible: true,
-                position: LegendPosition.bottom,
-                alignment: ChartAlignment.center,
-                itemPadding: 15,
-                textStyle: TextStyle(color: Colors.white, fontSize: 12),
-                iconHeight: 12,
-                iconWidth: 12,
-                toggleSeriesVisibility: true,
-              ),
-              series: <CartesianSeries>[
-                LineSeries<Map<String, dynamic>, String>(
-                  name: 'Income',
-                  dataSource: monthlyData,
-                  xValueMapper: (Map<String, dynamic> data, _) => data['month'],
-                  yValueMapper: (Map<String, dynamic> data, _) => data['income'],
-                  color: AppColor.success.withOpacity(0.9),
-                  width: 3,
-                  markerSettings: MarkerSettings(
-                    isVisible: true,
-                    shape: DataMarkerType.circle,
-                    height: 8,
-                    width: 8,
-                    color: AppColor.success,
-                    borderColor: Colors.white,
-                    borderWidth: 2,
                   ),
-                  animationDuration: 1800,
-                  enableTooltip: true,
-                ),
-                LineSeries<Map<String, dynamic>, String>(
-                  name: 'Expenses',
-                  dataSource: monthlyData,
-                  xValueMapper: (Map<String, dynamic> data, _) => data['month'],
-                  yValueMapper: (Map<String, dynamic> data, _) => data['expense'],
-                  color: AppColor.error.withOpacity(0.9),
-                  width: 3,
-                  markerSettings: MarkerSettings(
-                    isVisible: true,
-                    shape: DataMarkerType.circle,
-                    height: 8,
-                    width: 8,
-                    color: AppColor.error,
-                    borderColor: Colors.white,
-                    borderWidth: 2,
+                ] else
+                  SliverToBoxAdapter(
+                    child: _EmptyMonth(isDark: isDark),
                   ),
-                  animationDuration: 1800,
-                  animationDelay: 500,
-                  enableTooltip: true,
-                ),
-                AreaSeries<Map<String, dynamic>, String>(
-                  name: 'Savings',
-                  dataSource: monthlyData,
-                  xValueMapper: (Map<String, dynamic> data, _) => data['month'],
-                  yValueMapper: (Map<String, dynamic> data, _) => data['savings'],
-                  gradient: LinearGradient(
-                    colors: [
-                      Colors.blue.withOpacity(0.7),
-                      Colors.blue.withOpacity(0.05),
-                    ],
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
+
+                // ── 6-month bar trend ───────────────────────────────────
+                SliverToBoxAdapter(
+                  child: _TrendChart(
+                    all: all,
+                    months: _last6Months(),
+                    isDark: isDark,
+                    context: context,
                   ),
-                  borderColor: Colors.blue,
-                  borderWidth: 2,
-                  animationDuration: 1800,
-                  animationDelay: 1000,
-                  enableTooltip: true,
+                ),
+
+                // Spacer for nav bar
+                const SliverToBoxAdapter(
+                  child: SizedBox(
+                      height: AppDimens.spaceHuge + AppDimens.spaceLG),
                 ),
               ],
-              onTooltipRender: (TooltipArgs args) {
-                args.header = args.dataPoints![0].point['month'];
-              },
-            ),
-          ),
-          const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.08),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: Colors.white.withOpacity(0.1),
-                width: 1,
-              ),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: Colors.blue.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(
-                    Icons.trending_up,
-                    color: Colors.blue.withOpacity(0.9),
-                    size: 20,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        "Your savings are trending upward",
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        "You've improved your savings rate by ${controller.calculateSavingsChange().toStringAsFixed(0)}% compared to last month",
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.7),
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSummaryCards(HomeController controller) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Padding(
-            padding: EdgeInsets.only(left: 8, bottom: 12, top: 8),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.pie_chart,
-                  color: Colors.white70,
-                  size: 20,
-                ),
-                SizedBox(width: 8),
-                Text(
-                  'Summary',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Row(
-            children: [
-              Expanded(
-                // Replaced Flexible with Expanded
-                child: _buildSummaryCard(
-                  'Income',
-                  controller.isAmountVisible.value
-                      ? NumberFormat.currency(symbol: '₹').format(controller.totalIncome.value)
-                      : '******',
-                  Icons.arrow_upward,
-                  AppColor.success,
-                  () => controller.toggleVisibility(),
-                  controller,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                // Replaced Flexible with Expanded
-                child: _buildSummaryCard(
-                  'Expenses',
-                  controller.isAmountVisible.value
-                      ? NumberFormat.currency(symbol: '₹').format(controller.totalExpense.value)
-                      : '******',
-                  Icons.arrow_downward,
-                  AppColor.error,
-                  () => controller.toggleVisibility(),
-                  controller,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          _buildBalanceCard(controller),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSummaryCard(
-      String title, String amount, IconData icon, Color color, VoidCallback onTap, HomeController controller) {
-    double percentChange = 0.0;
-    if (title == 'Income') {
-      percentChange = controller.calculateIncomeChange();
-    } else if (title == 'Expenses') {
-      percentChange = controller.calculateExpenseChange();
-    }
-
-    String changeText =
-        percentChange >= 0 ? '+${percentChange.toStringAsFixed(1)}%' : '${percentChange.toStringAsFixed(1)}%';
-    bool isPositiveTrend = (title == 'Income' && percentChange >= 0) || (title == 'Expenses' && percentChange < 0);
-
-    return GestureDetector(
-      onTap: () {
-        onTap();
-        HapticFeedback.lightImpact();
-      },
-      child: MouseRegion(
-        cursor: SystemMouseCursors.click,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 300),
-          margin: const EdgeInsets.symmetric(horizontal: 4),
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                color.withOpacity(0.25),
-                color.withOpacity(0.1),
-              ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: color.withOpacity(0.4),
-              width: 1.5,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: color.withOpacity(0.15),
-                blurRadius: 12,
-                spreadRadius: 1,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: color.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Icon(
-                      icon,
-                      color: color,
-                      size: 16,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    title,
-                    style: TextStyle(
-                      color: Colors.white.withOpacity(0.9),
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Text(
-                amount,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Icon(
-                    isPositiveTrend ? Icons.trending_up : Icons.trending_down,
-                    color: isPositiveTrend ? AppColor.success : AppColor.error,
-                    size: 14,
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    changeText,
-                    style: TextStyle(
-                      color: isPositiveTrend ? AppColor.success : AppColor.error,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
+            );
+          }),
         ),
       ),
     );
-  }
-
-  Widget _buildBalanceCard(HomeController controller) {
-    final isPositive = controller.totalBalance.value >= 0;
-    final balanceColor = isPositive ? AppColor.success : AppColor.error;
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [
-            Color(0xFF2A2D3E),
-            Color(0xFF1F1D36),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: Colors.white.withOpacity(0.15),
-          width: 1.5,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.25),
-            blurRadius: 12,
-            spreadRadius: 1,
-            offset: const Offset(0, 5),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'Current Balance',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              GestureDetector(
-                onTap: () {
-                  controller.toggleVisibility();
-                  HapticFeedback.selectionClick();
-                },
-                child: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(
-                    controller.isAmountVisible.value ? Icons.visibility_outlined : Icons.visibility_off_outlined,
-                    color: Colors.white.withOpacity(0.8),
-                    size: 20,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: balanceColor.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Icon(
-                  isPositive ? Icons.account_balance_wallet : Icons.warning_rounded,
-                  color: balanceColor,
-                  size: 28,
-                ),
-              ),
-              const SizedBox(width: 20),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    controller.isAmountVisible.value
-                        ? NumberFormat.currency(symbol: '₹').format(controller.totalBalance.value.abs())
-                        : '******',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 26,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: isPositive ? AppColor.success.withOpacity(0.2) : AppColor.error.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          isPositive ? 'Available to spend' : 'Negative balance',
-                          style: TextStyle(
-                            color: isPositive ? AppColor.success : AppColor.error,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFilterAndChartSection(HomeController controller, BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            Colors.white.withOpacity(0.1),
-            Colors.white.withOpacity(0.05),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: Colors.white.withOpacity(0.1),
-          width: 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.2),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Obx(
-        () => Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Padding(
-              padding: EdgeInsets.only(left: 20, top: 20),
-              child: Text(
-                'Income vs Expenses',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 16.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  _buildFilterButton(
-                    controller,
-                    'Weekly',
-                    'weekly',
-                  ),
-                  _buildFilterButton(
-                    controller,
-                    'Monthly',
-                    'monthly',
-                  ),
-                ],
-              ),
-            ),
-            SizedBox(
-              height: MediaQuery.of(context).size.height * 0.35, // Dynamic height
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                child: TweenAnimationBuilder<double>(
-                  tween: Tween<double>(begin: 0, end: 1),
-                  duration: const Duration(milliseconds: 800),
-                  curve: Curves.easeOutCubic,
-                  builder: (context, value, child) {
-                    return Transform.scale(
-                      scale: value,
-                      child: Opacity(
-                        opacity: value,
-                        child: _buildTransactionChart(controller),
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  _buildLegendItem('Income', AppColor.success.withOpacity(0.7)),
-                  const SizedBox(width: 24),
-                  _buildLegendItem('Expenses', AppColor.error.withOpacity(0.7)),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildLegendItem(String label, Color color) {
-    return Row(
-      children: [
-        Container(
-          width: 16,
-          height: 16,
-          decoration: BoxDecoration(
-            color: color,
-            borderRadius: BorderRadius.circular(4),
-          ),
-        ),
-        const SizedBox(width: 8),
-        Text(
-          label,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildFilterButton(HomeController controller, String label, String filterType) {
-    final isSelected = controller.selectedFilter.value == filterType;
-    return GestureDetector(
-      onTap: () {
-        controller.selectedFilter.value = filterType;
-        controller.filterTransactions(filterType);
-        HapticFeedback.lightImpact();
-      },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 300),
-        margin: const EdgeInsets.symmetric(horizontal: 8),
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-        decoration: BoxDecoration(
-          color: isSelected ? AppColor.darkBackground : Colors.transparent,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: isSelected ? AppColor.darkCard : Colors.white.withOpacity(0.3),
-            width: 1.5,
-          ),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: AppColor.darkBackground.withOpacity(0.3),
-                    blurRadius: 8,
-                    spreadRadius: 1,
-                  ),
-                ]
-              : [],
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: isSelected ? Colors.white : Colors.white.withOpacity(0.7),
-            fontWeight: FontWeight.w600,
-            fontSize: 16,
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTransactionChart(HomeController controller) {
-    return SfCartesianChart(
-      margin: const EdgeInsets.all(0),
-      plotAreaBorderWidth: 0,
-      primaryXAxis: CategoryAxis(
-        labelStyle: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 12),
-        majorGridLines: const MajorGridLines(width: 0),
-        labelRotation: 0,
-        labelAlignment: LabelAlignment.center,
-        labelPosition: ChartDataLabelPosition.outside,
-      ),
-      primaryYAxis: NumericAxis(
-        labelStyle: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 12),
-        majorGridLines: MajorGridLines(
-          width: 1,
-          color: Colors.white.withOpacity(0.1),
-          dashArray: const <double>[5, 5],
-        ),
-        axisLine: const AxisLine(width: 0),
-        numberFormat: NumberFormat.compact(),
-      ),
-      tooltipBehavior: TooltipBehavior(
-        enable: true,
-        duration: 3000,
-        color: AppColor.darkSurface,
-        borderColor: Colors.white,
-        textStyle: const TextStyle(color: Colors.white),
-      ),
-      series: <CartesianSeries>[
-        ColumnSeries<Map<String, dynamic>, String>(
-          name: 'Income',
-          color: AppColor.success.withOpacity(0.7),
-          dataSource: controller.filteredTransactions
-              .where((transaction) =>
-                  transaction['type'] == 'income' &&
-                  DateTime.parse(transaction['date']).year == controller.selectedYear.value)
-              .toList(),
-          xValueMapper: (datum, _) {
-            final date = DateTime.parse(datum['date']);
-            return controller.selectedFilter.value == 'weekly'
-                ? DateFormat('EEE').format(date)
-                : DateFormat('MMM').format(date);
-          },
-          yValueMapper: (datum, _) => double.parse(datum['amount'].toString()),
-          enableTooltip: true,
-        ),
-        ColumnSeries<Map<String, dynamic>, String>(
-          name: 'Expense',
-          color: AppColor.error.withOpacity(0.7),
-          dataSource: controller.filteredTransactions
-              .where((transaction) =>
-                  transaction['type'] == 'expense' &&
-                  DateTime.parse(transaction['date']).year == controller.selectedYear.value)
-              .toList(),
-          xValueMapper: (datum, _) {
-            final date = DateTime.parse(datum['date']);
-            return controller.selectedFilter.value == 'weekly'
-                ? DateFormat('EEE').format(date)
-                : DateFormat('MMM').format(date);
-          },
-          yValueMapper: (datum, _) => double.parse(datum['amount'].toString()),
-          enableTooltip: true,
-        ),
-      ],
-      onTooltipRender: (TooltipArgs args) {
-        if (args.dataPoints != null && args.dataPoints!.isNotEmpty) {
-          final dataPoint = args.dataPoints![0];
-          args.header = dataPoint.x;
-          args.text = '₹${dataPoint.y}';
-        }
-      },
-    );
-  }
-
-  Widget _buildSpendingBreakdown(HomeController controller, BuildContext context) {
-    Map<String, double> categoryTotals = controller.calculateTotalsByCategory();
-    List<PieData> pieData = categoryTotals.entries.map((entry) => PieData(entry.key, entry.value)).toList();
-    pieData.sort((a, b) => b.amount.compareTo(a.amount));
-
-    return Container(
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            Colors.white.withOpacity(0.1),
-            Colors.white.withOpacity(0.05),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: Colors.white.withOpacity(0.1),
-          width: 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.2),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Spending Breakdown',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 16),
-          SizedBox(
-            height: MediaQuery.of(context).size.height * 0.35, // Dynamic height
-            child: Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: SfCircularChart(
-                margin: EdgeInsets.zero,
-                legend: const Legend(
-                  isVisible: true,
-                  overflowMode: LegendItemOverflowMode.wrap,
-                  position: LegendPosition.bottom,
-                  textStyle: TextStyle(color: Colors.white, fontSize: 12),
-                ),
-                tooltipBehavior: TooltipBehavior(
-                  enable: true,
-                  format: 'point.x: \$point.y',
-                  color: AppColor.darkSurface,
-                ),
-                series: <CircularSeries>[
-                  DoughnutSeries<PieData, String>(
-                    dataSource: pieData,
-                    xValueMapper: (PieData data, _) => data.category,
-                    yValueMapper: (PieData data, _) => data.amount,
-                    dataLabelMapper: (PieData data, _) => '${data.category}\n${NumberFormat.compactCurrency(
-                      symbol: '\$',
-                    ).format(data.amount)}',
-                    dataLabelSettings: const DataLabelSettings(
-                      isVisible: true,
-                      labelPosition: ChartDataLabelPosition.inside,
-                      textStyle: TextStyle(
-                        color: Colors.white,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w500,
-                      ),
-                      connectorLineSettings: ConnectorLineSettings(
-                        type: ConnectorType.curve,
-                        length: '20%',
-                      ),
-                    ),
-                    radius: '80%',
-                    innerRadius: '50%',
-                    explode: true,
-                    explodeIndex: 0,
-                    explodeOffset: '10%',
-                    animationDuration: 1500,
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTopCategories(HomeController controller, BuildContext context) {
-    Map<String, double> categoryTotals = controller.calculateTotalsByCategory();
-    List<MapEntry<String, double>> sortedCategories = categoryTotals.entries.toList()
-      ..sort((a, b) => b.value.compareTo(a.value));
-    List<MapEntry<String, double>> topCategories = sortedCategories.take(5).toList();
-    double totalAmount = sortedCategories.fold(0, (sum, item) => sum + item.value);
-
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            Colors.white.withOpacity(0.1),
-            Colors.white.withOpacity(0.05),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: Colors.white.withOpacity(0.1),
-          width: 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.2),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Top Categories',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 20),
-          ...topCategories.map((category) => _buildCategoryProgressBar(
-                category.key,
-                category.value,
-                totalAmount,
-                getCategoryColor(category.key),
-              )),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCategoryProgressBar(String category, double amount, double total, Color color) {
-    final percentage = total > 0 ? (amount / total * 100) : 0;
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16), // Note: 'bottom' should replace 'custom'
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                category,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              Text(
-                NumberFormat.currency(symbol: '\$').format(amount),
-                style: TextStyle(
-                  color: Colors.white.withOpacity(0.8),
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Stack(
-            children: [
-              Container(
-                height: 10,
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(5),
-                ),
-              ),
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 1000),
-                height: 10,
-                width: percentage.isFinite ? (percentage * (MediaQuery.of(Get.context!).size.width - 72) / 100) : 0,
-                decoration: BoxDecoration(
-                  color: color,
-                  borderRadius: BorderRadius.circular(5),
-                  boxShadow: [
-                    BoxShadow(
-                      color: color.withOpacity(0.5),
-                      blurRadius: 5,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Text(
-            '${percentage.toStringAsFixed(1)}%',
-            style: TextStyle(
-              color: Colors.white.withOpacity(0.7),
-              fontSize: 12,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Color getCategoryColor(String category) {
-    final Map<String, Color> categoryColors = {
-      'Food & Drink': Colors.orange,
-      'Bills & Fees': Colors.pinkAccent,
-      'Shopping': Colors.purple,
-      'Housing': Colors.blue,
-      'Transportation': Colors.green,
-      'Health': Colors.red,
-      'Entertainment': Colors.teal,
-      'Personal': Colors.amber,
-      'Education': Colors.indigo,
-      'Travel': Colors.pink,
-      'Utilities': Colors.cyan,
-      'Groceries': Colors.deepOrange,
-      'Investments': Colors.lightBlue,
-      'Salary': AppColor.success,
-      'Business': Colors.lightGreen,
-    };
-    return categoryColors[category] ?? Color((category.hashCode & 0xFFFFFF).toInt()).withOpacity(1.0);
   }
 }
 
+// ── Month navigator ───────────────────────────────────────────────────────────
+
+class _MonthNav extends StatelessWidget {
+  final DateTime month;
+  final bool isDark;
+  final VoidCallback onPrev;
+  final VoidCallback onNext;
+  final bool canGoNext;
+
+  const _MonthNav({
+    required this.month,
+    required this.isDark,
+    required this.onPrev,
+    required this.onNext,
+    required this.canGoNext,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final textPrimary =
+        isDark ? AppColor.textPrimary : AppColor.lightTextPrimary;
+    final textSecondary =
+        isDark ? AppColor.textSecondary : AppColor.lightTextSecondary;
+    final btnBg = isDark ? AppColor.darkCard : AppColor.lightSurface;
+    final border = isDark ? AppColor.darkBorder : AppColor.lightBorder;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(AppDimens.spaceLG, AppDimens.spaceLG,
+          AppDimens.spaceLG, 0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          // Title
+          Text('Analytics', style: AppTypography.heading2(textPrimary)),
+
+          // Month nav pill
+          Container(
+            decoration: BoxDecoration(
+              color: btnBg,
+              borderRadius: BorderRadius.circular(AppDimens.radiusCircle),
+              border: Border.all(color: border),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _NavBtn(icon: Icons.chevron_left, onTap: onPrev),
+                Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: AppDimens.spaceSM),
+                  child: Text(
+                    DateFormat('MMM yyyy').format(month),
+                    style: AppTypography.captionSemiBold(textSecondary),
+                  ),
+                ),
+                _NavBtn(
+                  icon: Icons.chevron_right,
+                  onTap: canGoNext ? onNext : null,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _NavBtn extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback? onTap;
+  const _NavBtn({required this.icon, this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.all(8),
+        child: Icon(
+          icon,
+          size: 18,
+          color: onTap != null ? AppColor.primary : AppColor.textTertiary,
+        ),
+      ),
+    );
+  }
+}
+
+// ── Hero numbers ──────────────────────────────────────────────────────────────
+
+class _HeroNumbers extends StatelessWidget {
+  final double spent;
+  final double income;
+  final double net;
+  final bool isDark;
+
+  const _HeroNumbers({
+    required this.spent,
+    required this.income,
+    required this.net,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final fmt = NumberFormat('#,##0', 'en_IN');
+    final textPrimary =
+        isDark ? AppColor.textPrimary : AppColor.lightTextPrimary;
+    final textSecondary =
+        isDark ? AppColor.textSecondary : AppColor.lightTextSecondary;
+    final isPositive = net >= 0;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(AppDimens.spaceLG, AppDimens.spaceXXL,
+          AppDimens.spaceLG, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Total spent', style: AppTypography.caption(textSecondary)),
+          const SizedBox(height: 4),
+          Text(
+            '₹${fmt.format(spent)}',
+            style: AppTypography.amountDisplay(textPrimary),
+          ),
+          const SizedBox(height: AppDimens.spaceMD),
+          Row(
+            children: [
+              _MiniStat(
+                  label: 'Income',
+                  value: '₹${fmt.format(income)}',
+                  color: AppColor.income,
+                  textSecondary: textSecondary),
+              const SizedBox(width: AppDimens.spaceXXL),
+              _MiniStat(
+                  label: 'Saved',
+                  value: '${isPositive ? '+' : ''}₹${fmt.format(net.abs())}',
+                  color: isPositive ? AppColor.income : AppColor.expense,
+                  textSecondary: textSecondary),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MiniStat extends StatelessWidget {
+  final String label;
+  final String value;
+  final Color color;
+  final Color textSecondary;
+
+  const _MiniStat(
+      {required this.label,
+      required this.value,
+      required this.color,
+      required this.textSecondary});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          width: 8,
+          height: 8,
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+        ),
+        const SizedBox(width: 6),
+        Text(label, style: AppTypography.caption(textSecondary)),
+        const SizedBox(width: 4),
+        Text(value, style: AppTypography.captionSemiBold(color)),
+      ],
+    );
+  }
+}
+
+// ── Donut chart ───────────────────────────────────────────────────────────────
+
+class _DonutSection extends StatelessWidget {
+  final double spent;
+  final List<MapEntry<String, double>> sorted;
+  final bool isDark;
+  final BuildContext context;
+
+  const _DonutSection({
+    required this.spent,
+    required this.sorted,
+    required this.isDark,
+    required this.context,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final textPrimary =
+        isDark ? AppColor.textPrimary : AppColor.lightTextPrimary;
+    final textSecondary =
+        isDark ? AppColor.textSecondary : AppColor.lightTextSecondary;
+    final fmt = NumberFormat('#,##0', 'en_IN');
+
+    final pieColors = sorted
+        .map((e) => AppColor.categoryColor(e.key))
+        .toList();
+
+    final pieData = sorted
+        .map((e) => _PieData(e.key, e.value, AppColor.categoryColor(e.key)))
+        .toList();
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(AppDimens.spaceLG, AppDimens.spaceXXL,
+          AppDimens.spaceLG, 0),
+      child: SizedBox(
+        height: 220,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            SfCircularChart(
+              margin: EdgeInsets.zero,
+              series: <CircularSeries>[
+                DoughnutSeries<_PieData, String>(
+                  dataSource: pieData,
+                  xValueMapper: (d, _) => d.category,
+                  yValueMapper: (d, _) => d.amount,
+                  pointColorMapper: (d, _) => d.color,
+                  innerRadius: '68%',
+                  radius: '100%',
+                  animationDuration: 800,
+                  enableTooltip: false,
+                ),
+              ],
+            ),
+            // Center label
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('spent', style: AppTypography.label(textSecondary)),
+                Text('₹${fmt.format(spent)}',
+                    style: AppTypography.bodySemiBold(textPrimary)),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Category flat list ────────────────────────────────────────────────────────
+
+class _CategoryList extends StatelessWidget {
+  final List<MapEntry<String, double>> sorted;
+  final double total;
+  final bool isDark;
+
+  const _CategoryList({
+    required this.sorted,
+    required this.total,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final textPrimary =
+        isDark ? AppColor.textPrimary : AppColor.lightTextPrimary;
+    final textSecondary =
+        isDark ? AppColor.textSecondary : AppColor.lightTextSecondary;
+    final divider = isDark ? AppColor.darkBorder : AppColor.lightBorder;
+    final fmt = NumberFormat('#,##0', 'en_IN');
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+          AppDimens.spaceLG, AppDimens.spaceLG, AppDimens.spaceLG, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Section header
+          Padding(
+            padding: const EdgeInsets.only(bottom: AppDimens.spaceMD),
+            child: Text('By Category',
+                style: AppTypography.captionSemiBold(textSecondary)),
+          ),
+          // Flat rows with dividers
+          ...sorted.asMap().entries.map((entry) {
+            final i = entry.key;
+            final cat = entry.value;
+            final pct = total > 0 ? cat.value / total : 0.0;
+            final color = AppColor.categoryColor(cat.key);
+
+            return Column(
+              children: [
+                if (i > 0) Divider(height: 1, thickness: 1, color: divider),
+                Padding(
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 12),
+                  child: Row(
+                    children: [
+                      // Color dot
+                      Container(
+                        width: 10,
+                        height: 10,
+                        decoration: BoxDecoration(
+                            color: color, shape: BoxShape.circle),
+                      ),
+                      const SizedBox(width: 12),
+                      // Name
+                      Expanded(
+                        flex: 3,
+                        child: Text(
+                          cat.key,
+                          style: AppTypography.body(textPrimary),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      // Bar
+                      Expanded(
+                        flex: 4,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(3),
+                            child: LinearProgressIndicator(
+                              value: pct,
+                              minHeight: 4,
+                              backgroundColor: color.withOpacity(0.1),
+                              valueColor:
+                                  AlwaysStoppedAnimation<Color>(color),
+                            ),
+                          ),
+                        ),
+                      ),
+                      // Amount
+                      Text(
+                        '₹${fmt.format(cat.value)}',
+                        style: AppTypography.captionSemiBold(textPrimary),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            );
+          }),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Empty state ───────────────────────────────────────────────────────────────
+
+class _EmptyMonth extends StatelessWidget {
+  final bool isDark;
+  const _EmptyMonth({required this.isDark});
+
+  @override
+  Widget build(BuildContext context) {
+    final textSecondary =
+        isDark ? AppColor.textSecondary : AppColor.lightTextSecondary;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 64),
+      child: Center(
+        child: Column(
+          children: [
+            Icon(Icons.bar_chart_rounded,
+                size: 48, color: textSecondary.withOpacity(0.3)),
+            const SizedBox(height: 12),
+            Text('No transactions this month',
+                style: AppTypography.body(textSecondary)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── 6-month bar trend ─────────────────────────────────────────────────────────
+
+class _TrendChart extends StatelessWidget {
+  final List<Map<String, dynamic>> all;
+  final List<DateTime> months;
+  final bool isDark;
+  final BuildContext context;
+
+  const _TrendChart({
+    required this.all,
+    required this.months,
+    required this.isDark,
+    required this.context,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final textPrimary =
+        isDark ? AppColor.textPrimary : AppColor.lightTextPrimary;
+    final textSecondary =
+        isDark ? AppColor.textSecondary : AppColor.lightTextSecondary;
+    final bg = isDark ? AppColor.darkCard : AppColor.lightSurface;
+    final border = isDark ? AppColor.darkBorder : AppColor.lightBorder;
+    final axisColor = isDark ? AppColor.textSecondary : AppColor.lightTextSecondary;
+    final gridColor =
+        isDark ? Colors.white.withOpacity(0.06) : AppColor.lightBorder;
+
+    // Build chart data
+    final data = months.map((m) {
+      final start = DateTime(m.year, m.month, 1);
+      final end = DateTime(m.year, m.month + 1, 0, 23, 59, 59);
+      final txs = all.where((t) {
+        final d = DateTime.parse(t['date']);
+        return !d.isBefore(start) && !d.isAfter(end);
+      }).toList();
+      return _BarData(
+        label: DateFormat('MMM').format(m),
+        income: txs
+            .where((t) => t['type'] == 'income')
+            .fold(0.0, (s, t) => s + (t['amount'] as num).toDouble()),
+        expense: txs
+            .where((t) => t['type'] == 'expense')
+            .fold(0.0, (s, t) => s + (t['amount'] as num).toDouble()),
+      );
+    }).toList();
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(AppDimens.spaceLG, AppDimens.spaceXXL,
+          AppDimens.spaceLG, 0),
+      child: Container(
+        padding: const EdgeInsets.all(AppDimens.spaceLG),
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: BorderRadius.circular(AppDimens.radiusXL),
+          border: Border.all(color: border),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('6-Month Trend',
+                    style: AppTypography.bodySemiBold(textPrimary)),
+                Row(
+                  children: [
+                    _Dot(color: AppColor.income, label: 'In'),
+                    const SizedBox(width: AppDimens.spaceMD),
+                    _Dot(color: AppColor.expense, label: 'Out'),
+                  ],
+                ),
+              ],
+            ),
+            const SizedBox(height: AppDimens.spaceLG),
+            SizedBox(
+              height: 180,
+              child: SfCartesianChart(
+                margin: EdgeInsets.zero,
+                plotAreaBorderWidth: 0,
+                primaryXAxis: CategoryAxis(
+                  labelStyle: TextStyle(color: axisColor, fontSize: 11),
+                  majorGridLines: const MajorGridLines(width: 0),
+                  majorTickLines: const MajorTickLines(size: 0),
+                  axisLine: const AxisLine(width: 0),
+                ),
+                primaryYAxis: NumericAxis(
+                  labelStyle: TextStyle(color: axisColor, fontSize: 11),
+                  majorGridLines: MajorGridLines(
+                      width: 1,
+                      color: gridColor,
+                      dashArray: const [4, 4]),
+                  axisLine: const AxisLine(width: 0),
+                  majorTickLines: const MajorTickLines(size: 0),
+                  numberFormat: NumberFormat.compact(),
+                ),
+                tooltipBehavior: TooltipBehavior(
+                  enable: true,
+                  color: isDark ? AppColor.darkElevated : AppColor.lightSurface,
+                  borderColor: border,
+                  textStyle: TextStyle(color: textPrimary, fontSize: 12),
+                ),
+                series: <CartesianSeries>[
+                  ColumnSeries<_BarData, String>(
+                    name: 'Income',
+                    color: AppColor.income.withOpacity(0.85),
+                    borderRadius:
+                        const BorderRadius.vertical(top: Radius.circular(5)),
+                    dataSource: data,
+                    xValueMapper: (d, _) => d.label,
+                    yValueMapper: (d, _) => d.income,
+                    enableTooltip: true,
+                  ),
+                  ColumnSeries<_BarData, String>(
+                    name: 'Expense',
+                    color: AppColor.expense.withOpacity(0.85),
+                    borderRadius:
+                        const BorderRadius.vertical(top: Radius.circular(5)),
+                    dataSource: data,
+                    xValueMapper: (d, _) => d.label,
+                    yValueMapper: (d, _) => d.expense,
+                    enableTooltip: true,
+                  ),
+                ],
+                onTooltipRender: (TooltipArgs args) {
+                  if (args.dataPoints != null && args.dataPoints!.isNotEmpty) {
+                    args.text =
+                        '₹${NumberFormat('#,##0').format(args.dataPoints![0].y)}';
+                  }
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _Dot extends StatelessWidget {
+  final Color color;
+  final String label;
+  const _Dot({required this.color, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final ts = isDark ? AppColor.textSecondary : AppColor.lightTextSecondary;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+        const SizedBox(width: 4),
+        Text(label, style: AppTypography.label(ts)),
+      ],
+    );
+  }
+}
+
+// ── Data models ───────────────────────────────────────────────────────────────
+
+class _PieData {
+  final String category;
+  final double amount;
+  final Color color;
+  _PieData(this.category, this.amount, this.color);
+}
+
+class _BarData {
+  final String label;
+  final double income;
+  final double expense;
+  _BarData({required this.label, required this.income, required this.expense});
+}
+
+// Keep for any external references
 class PieData {
   final String category;
   final double amount;
-
   PieData(this.category, this.amount);
 }

@@ -5,10 +5,18 @@ import 'package:spendify/routes/app_pages.dart';
 import 'package:spendify/widgets/bottom_navigation.dart';
 
 class SplashController extends GetxController {
+  Timer? _splashTimer;
+
   @override
   void onInit() {
     super.onInit();
-    Timer(const Duration(seconds: 2), () => _checkAuthentication());
+    _splashTimer = Timer(const Duration(seconds: 2), () => _checkAuthentication());
+  }
+
+  @override
+  void onClose() {
+    _splashTimer?.cancel();
+    super.onClose();
   }
 
   Future<void> _checkAuthentication() async {

@@ -13,7 +13,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../routes/app_pages.dart';
 
 class HomeController extends GetxController {
-  var transactionController = Get.put(TransactionController);
   var userEmail = ''.obs;
   var userName = ''.obs;
   var totalBalance = 0.0.obs;
@@ -45,8 +44,8 @@ class HomeController extends GetxController {
   var selectedYear = DateTime.now().year.obs;
 
   // Cache computed values
-  final _transactionsByYear = <int, List<Map<String, dynamic>>>{}.obs;
-  final _transactionsByMonth = <String, List<Map<String, dynamic>>>{}.obs;
+  final _transactionsByYear = <int, List<Map<String, dynamic>>>{};
+  final _transactionsByMonth = <String, List<Map<String, dynamic>>>{};
   RxBool isAmountVisible = true.obs;
   var currentPeriodName = ''.obs;
   var previousPeriodName = ''.obs;
@@ -276,6 +275,10 @@ class HomeController extends GetxController {
     Map<String, double> categoryTotals = {};
 
     for (var transaction in transactions) {
+      // Filter by selected year
+      final date = DateTime.parse(transaction['date']);
+      if (date.year != selectedYear.value) continue;
+
       String category = transaction['category'];
       double amount = double.parse(transaction['amount'].toString());
 
@@ -373,6 +376,8 @@ class HomeController extends GetxController {
 
     for (var transaction in transactions) {
       final date = DateTime.parse(transaction['date']);
+      // Filter by selected year
+      if (date.year != selectedYear.value) continue;
       final monthKey = DateFormat('MMM yyyy').format(date);
 
       if (!monthlyTotals.containsKey(monthKey)) {

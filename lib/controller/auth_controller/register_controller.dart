@@ -34,6 +34,7 @@ class RegisterController extends GetxController {
     emailC.dispose();
     passwordC.dispose();
     nameC.dispose();
+    balanceKeypad.dispose();
   }
 
   // Future pickImage() async {
@@ -76,18 +77,26 @@ class RegisterController extends GetxController {
         nameC.text.isNotEmpty) {
       isLoading.value = true;
       try {
-        AuthResponse res = await supabaseC.auth
-            .signUp(password: passwordC.text, email: emailC.text);
+        AuthResponse res = await supabaseC.auth.signUp(
+            password: passwordC.text,
+            email: emailC.text,
+            data: {'name': nameC.text});
 
-        if (res.user != null) {
-          await supabaseC.from("users").insert({
-            "id": res.user!.id, // Use the user ID returned from auth
+        if (res.user != null && res.session != null) {
+          // Email confirmation is disabled — user is immediately active
+          await supabaseC.from("users").upsert({
+            "id": res.user!.id,
             "name": nameC.text,
             "email": emailC.text,
-            "balance": 0.0, // Use a double value for balance
+            "balance": 0.0,
             "url": ""
           });
           Get.offAll(const BottomNav());
+        } else if (res.user != null) {
+          // Email confirmation required — trigger will create the users row.
+          // Update the name after confirmation via auth state listener.
+          CustomToast.successToast(
+              "Check your email", "A confirmation link has been sent to ${emailC.text}");
         }
         isLoading.value = false;
       } catch (e) {
