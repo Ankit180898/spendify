@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:spendify/controller/goals_controller/goals_controller.dart';
 import 'package:spendify/controller/home_controller/home_controller.dart';
 import 'package:spendify/main.dart';
 import 'package:spendify/widgets/toast/custom_toast.dart';
@@ -8,7 +9,7 @@ class TransactionController extends GetxController {
   final amountController = TextEditingController();
   var selectedCategory = ''.obs;
   final titleController = TextEditingController();
-  final selectedType = 'expense'.obs;
+  final selectedType = 'income'.obs;
   var isLoading = false.obs;
   var isSubmitted = false.obs;
   var selectedDate = DateTime.now().toIso8601String().obs;
@@ -49,6 +50,8 @@ class TransactionController extends GetxController {
         amount = double.parse(amountController.text);
       } catch (e) {
         CustomToast.errorToast('Error', 'Please enter a valid amount');
+        isLoading.value = false;
+        isSubmitted.value = false;
         return;
       }
 
@@ -71,9 +74,15 @@ class TransactionController extends GetxController {
       // Then get paginated transactions for display
       await homeC.getTransactions();
 
+      // Check spending goals if this was an expense
+      if (selectedType.value == 'expense') {
+        final goalsC = Get.find<GoalsController>();
+        goalsC.checkAndAlert();
+      }
+
       // Clear form
       resetForm();
-      selectedType.value = 'expense'; // Reset to default
+      selectedType.value = 'income'; // Reset to default
 
       // Close the current screen
       Get.back();
@@ -117,13 +126,6 @@ class TransactionController extends GetxController {
       debugPrint("Error updating user's balance: $error");
       CustomToast.errorToast('Error', 'Failed to update balance');
     }
-  }
-
-  // This method is redundant with addResource and should be removed or merged
-  Future<void> addTransaction() async {
-    // Recommend removing this method as it duplicates functionality and
-    // doesn't use the improved balance calculation logic
-    await addResource();
   }
 
   Future<void> deleteTransaction(String transactionId) async {
@@ -177,20 +179,22 @@ class TransactionController extends GetxController {
         'date': selectedDate.value,
       }).eq('id', transactionId);
 
-      // Update the balance
-      final currentBalance = homeC.totalBalance.value;
+      // Update the balance: reverse old transaction then apply new one
+      double updatedBalance = homeC.totalBalance.value;
 
       if (oldType == 'income') {
-        homeC.totalBalance.value = currentBalance - oldAmount; // Subtract old income
+        updatedBalance -= oldAmount; // Reverse old income
       } else {
-        homeC.totalBalance.value = currentBalance + oldAmount; // Add back old expense
+        updatedBalance += oldAmount; // Reverse old expense
       }
 
       if (newType == 'income') {
-        homeC.totalBalance.value = currentBalance + newAmount; // Add new income
+        updatedBalance += newAmount; // Apply new income
       } else {
-        homeC.totalBalance.value = currentBalance - newAmount; // Subtract new expense
+        updatedBalance -= newAmount; // Apply new expense
       }
+
+      homeC.totalBalance.value = updatedBalance;
 
       // Refresh transactions and balance
       await homeC.getTransactions();

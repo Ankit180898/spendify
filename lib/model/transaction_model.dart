@@ -17,7 +17,7 @@ class TransactionModel {
 
   factory TransactionModel.fromJson(Map<String, dynamic> json) {
     return TransactionModel(
-      userId: json['id'],
+      userId: json['user_id'],
       amount: json['amount'],
       description: json['description'],
       type: json['type'],

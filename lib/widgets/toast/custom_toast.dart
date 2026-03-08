@@ -1,89 +1,70 @@
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
 import 'package:iconsax/iconsax.dart';
+import 'package:spendify/main.dart';
 
 import '../../config/app_color.dart';
+import '../../config/app_theme.dart';
 
 class CustomToast {
-  static errorToast(String? title, String? message) {
-    Get.rawSnackbar(
-      duration: const Duration(seconds: 4),
-      dismissDirection: DismissDirection.horizontal,
-      messageText: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          const Icon(Iconsax.info_circle),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  margin: const EdgeInsets.only(bottom: 4),
-                  child: Text(
-                    title ?? "error",
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w500,
-                      fontFamily: 'poppins',
-                    ),
-                  ),
-                ),
-                Text(
-                  message ?? "Add your error message here",
-                  style: const TextStyle(color: Colors.white),
-                ),
-              ],
+  static void _show({
+    required Widget icon,
+    required String title,
+    required String message,
+    required Color backgroundColor,
+  }) {
+    final messenger = scaffoldMessengerKey.currentState;
+    if (messenger == null) return;
+
+    messenger.hideCurrentSnackBar();
+    messenger.showSnackBar(
+      SnackBar(
+        duration: const Duration(seconds: 4),
+        dismissDirection: DismissDirection.horizontal,
+        backgroundColor: backgroundColor,
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppDimens.radiusMD)),
+        padding: const EdgeInsets.symmetric(
+            horizontal: AppDimens.spaceLG, vertical: AppDimens.spaceMD),
+        content: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            icon,
+            const SizedBox(width: AppDimens.spaceLG),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(title,
+                      style: AppTypography.bodySemiBold(Colors.white)),
+                  const SizedBox(height: 2),
+                  Text(message, style: AppTypography.caption(Colors.white)),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
-      backgroundColor: AppColor.error,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      borderRadius: 8,
-      snackPosition: SnackPosition.TOP,
     );
   }
 
-  static successToast(String? title, String? message) {
-    Get.rawSnackbar(
-      duration: const Duration(seconds: 4),
-      dismissDirection: DismissDirection.horizontal,
-      messageText: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-           Icon(Iconsax.chart_success,color: AppColor.primary,),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  margin: const EdgeInsets.only(bottom: 4),
-                  child: Text(
-                    title ?? "Success",
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w500,
-                      fontFamily: 'poppins',
-                    ),
-                  ),
-                ),
-                Text(
-                  message ?? "Add your success message here",
-                  style: const TextStyle(color: Colors.white),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-      backgroundColor: AppColor.success,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      borderRadius: 8,
-      snackPosition: SnackPosition.TOP,
+  static void errorToast(String? title, String? message) {
+    _show(
+      icon: const Icon(Iconsax.info_circle, color: Colors.white),
+      title: title ?? 'Error',
+      message: message ?? 'Something went wrong',
+      backgroundColor: AppColor.expense,
+    );
+  }
+
+  static void successToast(String? title, String? message) {
+    _show(
+      icon: Icon(Iconsax.chart_success, color: AppColor.primary),
+      title: title ?? 'Success',
+      message: message ?? '',
+      backgroundColor: AppColor.darkCard,
     );
   }
 }

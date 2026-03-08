@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:get/get.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:spendify/config/app_color.dart';
+import 'package:spendify/config/app_theme.dart';
+import 'package:spendify/controller/goals_controller/goals_controller.dart';
+import 'package:spendify/controller/savings_controller/savings_controller.dart';
+import 'package:spendify/view/goals/goals_screen.dart';
 import 'package:spendify/view/home/home_screen.dart';
+import 'package:spendify/view/profile/profile_screen.dart';
 import 'package:spendify/view/wallet/statistics_screen.dart';
 import 'package:spendify/widgets/common_bottom_sheet.dart';
-
-import '../utils/utils.dart';
 
 class BottomNav extends StatefulWidget {
   const BottomNav({super.key});
@@ -15,79 +20,190 @@ class BottomNav extends StatefulWidget {
 }
 
 class _BottomNavState extends State<BottomNav> {
-  int currentIndex = 0;
-  final bool _isVisible = true;
+  int _current = 0;
+
   final List<Widget> _screens = const [
     HomeScreen(),
     StatisticsScreen(),
+    GoalsScreen(),
+    ProfileScreen(),
   ];
 
-  void _onNavTapped(int index) {
-    setState(() {
-      currentIndex = index;
-    });
+  @override
+  void initState() {
+    super.initState();
+    if (!Get.isRegistered<GoalsController>()) Get.put(GoalsController());
+    if (!Get.isRegistered<SavingsController>()) Get.put(SavingsController());
+  }
+
+  void _openAddSheet() {
+    HapticFeedback.mediumImpact();
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => const CommonBottomSheet(),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: Scaffold(
-        body: IndexedStack(
-          index: currentIndex,
-          children: _screens,
-        ), // Display the selected screen
-        floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-        floatingActionButton: _buildFloatingActionButton(),
-        bottomNavigationBar: _buildBottomNavigationBar(),
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Scaffold(
+      extendBody: true,
+      body: IndexedStack(index: _current, children: _screens),
+      bottomNavigationBar: _NavBar(
+        current: _current,
+        isDark: isDark,
+        onTap: (i) => setState(() => _current = i),
+        onAdd: _openAddSheet,
       ),
     );
   }
+}
 
-  Widget _buildFloatingActionButton() {
-    return Visibility(
-      visible: _isVisible,
-      child: FloatingActionButton(
-        onPressed: () {
-          showModalBottomSheet(
-            isScrollControlled: true,
-            context: context,
-            builder: (context) => const CommonBottomSheet(),
-          );
-        },
-        backgroundColor: Colors.indigo[50],
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.circular(20)),
-        ),
-        child: const Icon(
-          Iconsax.add,
-          size: 36,
-          color: AppColor.darkCard,
+// ── Nav bar ───────────────────────────────────────────────────────────────────
+
+class _NavBar extends StatelessWidget {
+  final int current;
+  final bool isDark;
+  final ValueChanged<int> onTap;
+  final VoidCallback onAdd;
+
+  const _NavBar({
+    required this.current,
+    required this.isDark,
+    required this.onTap,
+    required this.onAdd,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final bg = isDark ? AppColor.darkSurface : AppColor.lightSurface;
+    final border = isDark ? AppColor.darkBorder : AppColor.lightBorder;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: bg,
+        border: Border(top: BorderSide(color: border, width: 1)),
+      ),
+      child: SafeArea(
+        top: false,
+        child: SizedBox(
+          height: AppDimens.navBarHeight,
+          child: Row(
+            children: [
+              // Home
+              Expanded(
+                child: _NavItem(
+                  icon: Iconsax.home,
+                  label: 'Home',
+                  isActive: current == 0,
+                  onTap: () => onTap(0),
+                ),
+              ),
+              // Stats
+              Expanded(
+                child: _NavItem(
+                  icon: Iconsax.chart_square,
+                  label: 'Stats',
+                  isActive: current == 1,
+                  onTap: () => onTap(1),
+                ),
+              ),
+              // ── Centre + button ──
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: AppDimens.spaceLG, vertical: AppDimens.spaceSM),
+                child: GestureDetector(
+                  onTap: onAdd,
+                  child: Container(
+                    width: 52,
+                    height: 52,
+                    decoration: BoxDecoration(
+                      gradient: AppColor.primaryGradient,
+                      borderRadius: BorderRadius.circular(AppDimens.radiusLG),
+                      boxShadow: AppShadows.primaryStrong,
+                    ),
+                    child: const Icon(
+                      Iconsax.add,
+                      color: Colors.white,
+                      size: AppDimens.iconXL,
+                    ),
+                  ),
+                ),
+              ),
+              // Goals
+              Expanded(
+                child: _NavItem(
+                  icon: Iconsax.wallet_check,
+                  label: 'Goals',
+                  isActive: current == 2,
+                  onTap: () => onTap(2),
+                ),
+              ),
+              // Profile
+              Expanded(
+                child: _NavItem(
+                  icon: Iconsax.user,
+                  label: 'Profile',
+                  isActive: current == 3,
+                  onTap: () => onTap(3),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
+}
 
-  Widget _buildBottomNavigationBar() {
-    return BottomNavigationBar(
-      type: BottomNavigationBarType.fixed,
-      currentIndex: currentIndex,
-      onTap: _onNavTapped,
-      items: const [
-        BottomNavigationBarItem(
-          icon: Icon(Iconsax.home, size: 30),
-          label: 'Home',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Iconsax.chart_square, size: 30),
-          label: 'Stats',
-        ),
-      ],
-      selectedLabelStyle: normalText(16, AppColor.primarySoft),
-      unselectedLabelStyle: normalText(12, AppColor.secondarySoft),
-      selectedItemColor: Colors.white,
-      unselectedItemColor: AppColor.secondarySoft,
-      backgroundColor: AppColor.darkBackground, // Set background color
-      elevation: 0, // Optional: remove shadow
+// ── Nav item ──────────────────────────────────────────────────────────────────
+
+class _NavItem extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final bool isActive;
+  final VoidCallback onTap;
+
+  const _NavItem({
+    required this.icon,
+    required this.label,
+    required this.isActive,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final color = isActive ? AppColor.primary : AppColor.textTertiary;
+
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.selectionClick();
+        onTap();
+      },
+      behavior: HitTestBehavior.opaque,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            padding: const EdgeInsets.symmetric(
+                horizontal: AppDimens.spaceMD, vertical: AppDimens.spaceXS),
+            decoration: BoxDecoration(
+              color: isActive
+                  ? AppColor.primary.withOpacity(0.12)
+                  : Colors.transparent,
+              borderRadius: BorderRadius.circular(AppDimens.radiusCircle),
+            ),
+            child: Icon(icon, color: color, size: AppDimens.iconLG),
+          ),
+          const SizedBox(height: AppDimens.spaceXXS),
+          Text(label, style: AppTypography.label(color)),
+        ],
+      ),
     );
   }
 }

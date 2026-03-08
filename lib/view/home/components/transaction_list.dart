@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:spendify/config/app_color.dart';
+import 'package:spendify/config/app_theme.dart';
 import 'package:spendify/controller/home_controller/home_controller.dart';
 import 'package:spendify/utils/utils.dart';
 import 'package:spendify/view/wallet/all_transaction_screen.dart';
@@ -14,6 +15,9 @@ class TransactionsContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final controller = Get.find<HomeController>();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textPrimary = isDark ? AppColor.textPrimary : AppColor.lightTextPrimary;
+    final textSecondary = isDark ? AppColor.textSecondary : AppColor.lightTextSecondary;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -26,7 +30,7 @@ class TransactionsContent extends StatelessWidget {
             children: [
               Text(
                 'Recent Transactions',
-                style: titleText(18, Colors.white),
+                style: AppTypography.heading3(textPrimary),
               ),
               TextButton.icon(
                 onPressed: () => Get.to(() => const AllTransactionsScreen()),
@@ -59,15 +63,12 @@ class TransactionsContent extends StatelessWidget {
                       Icon(
                         Icons.receipt_long,
                         size: 64,
-                        color: Colors.white.withOpacity(0.3),
+                        color: textSecondary.withOpacity(0.4),
                       ),
                       const SizedBox(height: 16),
                       Text(
                         "No transactions yet",
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.7),
-                          fontSize: 16,
-                        ),
+                        style: AppTypography.body(textSecondary),
                       ),
                       const SizedBox(height: 8),
                       ElevatedButton(
@@ -112,14 +113,14 @@ class TransactionsContent extends StatelessWidget {
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 12.0),
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                         decoration: BoxDecoration(
-                          color: AppColor.primary.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(12),
+                          color: AppColor.primary.withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
                           month,
-                          style: normalText(14, AppColor.primary),
+                          style: AppTypography.captionSemiBold(AppColor.primary),
                         ),
                       ),
                     ),

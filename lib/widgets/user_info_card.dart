@@ -1,107 +1,99 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:iconsax/iconsax.dart';
+import 'package:intl/intl.dart';
+import 'package:spendify/config/app_color.dart';
+import 'package:spendify/config/app_theme.dart';
 import 'package:spendify/controller/home_controller/home_controller.dart';
 
+// ─────────────────────────────────────────────────────────────────────────────
+// USER INFO CARD  — hero balance card shown at the top of the home screen.
+// Inspired by Copilot's deep-navy gradient card with coloured stat tiles.
+// ─────────────────────────────────────────────────────────────────────────────
 class UserInfoCard extends StatelessWidget {
-  final double size;
+  final double size; // kept for API compatibility
 
   const UserInfoCard({super.key, required this.size});
 
   @override
   Widget build(BuildContext context) {
     final controller = Get.find<HomeController>();
+    final fmt = NumberFormat('#,##0.00', 'en_IN');
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(AppDimens.spaceXXL),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF2E86C1), Color(0xFF1F618D)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.3),
-            blurRadius: 10,
-            offset: const Offset(0, 5),
-          ),
-        ],
+        gradient: AppColor.balanceCardGradient,
+        borderRadius: BorderRadius.circular(AppDimens.radiusXXL),
+        boxShadow: AppShadows.primaryStrong,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // ── Label row ──────────────────────────────
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 'Total Balance',
-                style: TextStyle(
-                  color: Colors.white70,
-                  fontSize: 16,
+                style: AppTypography.captionSemiBold(
+                  Colors.white.withOpacity(0.65),
                 ),
               ),
-              Obx(() => GestureDetector(
-                    onTap: () => controller.toggleVisibility(),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            controller.isAmountVisible.value ? Icons.visibility : Icons.visibility_off,
-                            color: Colors.white,
-                            size: 16,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            controller.isAmountVisible.value ? 'Hide' : 'Show',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+              Obx(() => _VisibilityChip(
+                    isVisible: controller.isAmountVisible.value,
+                    onTap: controller.toggleVisibility,
                   )),
             ],
           ),
-          const SizedBox(height: 12),
-          Obx(() {
-            return Text(
-              controller.isAmountVisible.value ? '₹${controller.totalBalance.value}' : '₹•••••',
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 32,
-                fontWeight: FontWeight.bold,
-              ),
-            );
-          }),
-          const SizedBox(height: 20),
+
+          const SizedBox(height: AppDimens.spaceSM),
+
+          // ── Balance amount ──────────────────────────
+          Obx(() => AnimatedSwitcher(
+                duration: const Duration(milliseconds: 300),
+                child: Text(
+                  key: ValueKey(controller.isAmountVisible.value),
+                  controller.isAmountVisible.value
+                      ? '₹${fmt.format(controller.totalBalance.value)}'
+                      : '₹ ••••••',
+                  style: AppTypography.amountDisplay(Colors.white),
+                ),
+              )),
+
+          const SizedBox(height: AppDimens.spaceXXL),
+
+          // ── Income / Expense tiles ──────────────────
           Obx(() => Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  _buildBalanceInfoItem(
-                    label: 'Income',
-                    value: controller.isAmountVisible.value ? '₹${controller.totalIncome.value}' : '₹•••••',
-                    iconData: Icons.arrow_upward_rounded,
-                    color: const Color(0xFF4CAF50),
+                  Expanded(
+                    child: _StatTile(
+                      label: 'Income',
+                      value: controller.isAmountVisible.value
+                          ? '₹${fmt.format(controller.totalIncome.value)}'
+                          : '₹ •••••',
+                      icon: Iconsax.arrow_up_3,
+                      iconColor: AppColor.income,
+                    ),
                   ),
+                  // divider
                   Container(
-                    height: 40,
                     width: 1,
-                    color: Colors.white.withOpacity(0.3),
+                    height: 40,
+                    margin: const EdgeInsets.symmetric(
+                        horizontal: AppDimens.spaceXL),
+                    color: Colors.white.withOpacity(0.15),
                   ),
-                  _buildBalanceInfoItem(
-                    label: 'Expenses',
-                    value: controller.isAmountVisible.value ? '₹${controller.totalExpense.value}' : '₹•••••',
-                    iconData: Icons.arrow_downward_rounded,
-                    color: const Color(0xFFF44336),
+                  Expanded(
+                    child: _StatTile(
+                      label: 'Expenses',
+                      value: controller.isAmountVisible.value
+                          ? '₹${fmt.format(controller.totalExpense.value)}'
+                          : '₹ •••••',
+                      icon: Iconsax.arrow_down,
+                      iconColor: AppColor.expense,
+                    ),
                   ),
                 ],
               )),
@@ -109,47 +101,80 @@ class UserInfoCard extends StatelessWidget {
       ),
     );
   }
+}
 
-  Widget _buildBalanceInfoItem({
-    required String label,
-    required String value,
-    required IconData iconData,
-    required Color color,
-  }) {
+// ── Private sub-widgets ────────────────────────────────────────────────────
+
+class _VisibilityChip extends StatelessWidget {
+  final bool isVisible;
+  final VoidCallback onTap;
+  const _VisibilityChip({required this.isVisible, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppDimens.spaceMD,
+          vertical: AppDimens.spaceXS + 2,
+        ),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.15),
+          borderRadius: BorderRadius.circular(AppDimens.radiusCircle),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              isVisible ? Iconsax.eye : Iconsax.eye_slash,
+              color: Colors.white,
+              size: AppDimens.iconSM,
+            ),
+            const SizedBox(width: AppDimens.spaceXS),
+            Text(
+              isVisible ? 'Hide' : 'Show',
+              style: AppTypography.caption(Colors.white),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _StatTile extends StatelessWidget {
+  final String label;
+  final String value;
+  final IconData icon;
+  final Color iconColor;
+  const _StatTile(
+      {required this.label,
+      required this.value,
+      required this.icon,
+      required this.iconColor});
+
+  @override
+  Widget build(BuildContext context) {
     return Row(
       children: [
         Container(
-          padding: const EdgeInsets.all(8),
+          width: 34,
+          height: 34,
           decoration: BoxDecoration(
-            color: color.withOpacity(0.2),
-            borderRadius: BorderRadius.circular(12),
+            color: iconColor.withOpacity(0.2),
+            borderRadius: BorderRadius.circular(AppDimens.radiusSM),
           ),
-          child: Icon(
-            iconData,
-            color: Colors.white,
-            size: 16,
-          ),
+          child: Icon(icon, color: iconColor, size: AppDimens.iconSM),
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: AppDimens.spaceSM),
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              label,
-              style: TextStyle(
-                color: Colors.white.withOpacity(0.7),
-                fontSize: 12,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              value,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
+            Text(label,
+                style: AppTypography.caption(Colors.white.withOpacity(0.6))),
+            const SizedBox(height: 1),
+            Text(value, style: AppTypography.amountSmall(Colors.white)),
           ],
         ),
       ],
