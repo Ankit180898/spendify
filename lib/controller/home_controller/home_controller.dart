@@ -19,6 +19,7 @@ class HomeController extends GetxController {
   RxDouble newBalance = RxDouble(0.0);
   var imageUrl = ''.obs;
   var transactions = <Map<String, dynamic>>[].obs;
+  var allTransactions = <Map<String, dynamic>>[].obs; // All transactions without pagination limit
   var transactionsList = <TransactionModel>[].obs;
   var incomeTransactions = <Map<String, dynamic>>[];
   var expenseTransactions = <Map<String, dynamic>>[];
@@ -282,13 +283,8 @@ class HomeController extends GetxController {
       String category = transaction['category'];
       double amount = double.parse(transaction['amount'].toString());
 
-      // Check if the category exists in the predefined category list
-      if (categoryList.any((element) => element.name == category)) {
-        if (!categoryTotals.containsKey(category)) {
-          categoryTotals[category] = 0.0;
-        }
-        categoryTotals[category] = categoryTotals[category]! + amount;
-      }
+      if (category.isEmpty) continue;
+      categoryTotals[category] = (categoryTotals[category] ?? 0) + amount;
     }
 
     return categoryTotals;
@@ -344,7 +340,22 @@ class HomeController extends GetxController {
   Future<void> fetchTotalBalanceData() async {
     try {
       // Get all transactions for balance calculation without pagination
-      final response = await supabaseC.from("transactions").select().eq('user_id', supabaseC.auth.currentUser!.id);
+      final response = await supabaseC
+          .from("transactions")
+          .select()
+          .eq('user_id', supabaseC.auth.currentUser!.id)
+          .order('date', ascending: false);
+
+      // Store all transactions for stats screen (no pagination limit)
+      allTransactions.value = response
+          .map((transaction) {
+            final parsedDate = DateTime.tryParse(transaction['date']);
+            if (parsedDate == null) return null;
+            transaction['parsedDate'] = parsedDate;
+            return transaction;
+          })
+          .whereType<Map<String, dynamic>>()
+          .toList();
 
       // Split into income and expense
       final allIncomeTransactions = response.where((transaction) => transaction['type'] == 'income').toList();

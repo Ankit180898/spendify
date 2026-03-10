@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
-import 'package:iconsax/iconsax.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:spendify/config/app_color.dart';
 import 'package:spendify/config/app_theme.dart';
 import 'package:spendify/controller/goals_controller/goals_controller.dart';
@@ -97,7 +97,7 @@ class _NavBar extends StatelessWidget {
               // Home
               Expanded(
                 child: _NavItem(
-                  icon: Iconsax.home,
+                  icon: PhosphorIconsLight.house,
                   label: 'Home',
                   isActive: current == 0,
                   onTap: () => onTap(0),
@@ -106,7 +106,7 @@ class _NavBar extends StatelessWidget {
               // Stats
               Expanded(
                 child: _NavItem(
-                  icon: Iconsax.chart_square,
+                  icon: PhosphorIconsLight.chartBar,
                   label: 'Stats',
                   isActive: current == 1,
                   onTap: () => onTap(1),
@@ -126,8 +126,8 @@ class _NavBar extends StatelessWidget {
                       borderRadius: BorderRadius.circular(AppDimens.radiusLG),
                       boxShadow: AppShadows.primaryStrong,
                     ),
-                    child: const Icon(
-                      Iconsax.add,
+                    child: const PhosphorIcon(
+                      PhosphorIconsRegular.plus,
                       color: Colors.white,
                       size: AppDimens.iconXL,
                     ),
@@ -137,7 +137,7 @@ class _NavBar extends StatelessWidget {
               // Goals
               Expanded(
                 child: _NavItem(
-                  icon: Iconsax.wallet_check,
+                  icon: PhosphorIconsLight.wallet,
                   label: 'Goals',
                   isActive: current == 2,
                   onTap: () => onTap(2),
@@ -146,7 +146,7 @@ class _NavBar extends StatelessWidget {
               // Profile
               Expanded(
                 child: _NavItem(
-                  icon: Iconsax.user,
+                  icon: PhosphorIconsLight.user,
                   label: 'Profile',
                   isActive: current == 3,
                   onTap: () => onTap(3),
@@ -163,7 +163,7 @@ class _NavBar extends StatelessWidget {
 // ── Nav item ──────────────────────────────────────────────────────────────────
 
 class _NavItem extends StatelessWidget {
-  final IconData icon;
+  final PhosphorIconData icon;
   final String label;
   final bool isActive;
   final VoidCallback onTap;
@@ -198,7 +198,7 @@ class _NavItem extends StatelessWidget {
                   : Colors.transparent,
               borderRadius: BorderRadius.circular(AppDimens.radiusCircle),
             ),
-            child: Icon(icon, color: color, size: AppDimens.iconLG),
+            child: PhosphorIcon(icon, color: color, size: AppDimens.iconLG),
           ),
           const SizedBox(height: AppDimens.spaceXXS),
           Text(label, style: AppTypography.label(color)),

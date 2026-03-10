@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
-import 'package:iconsax/iconsax.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:spendify/config/app_color.dart';
 import 'package:spendify/config/app_theme.dart';
@@ -11,7 +11,6 @@ import 'package:spendify/controller/savings_controller/savings_controller.dart';
 import 'package:spendify/controller/wallet_controller/wallet_controller.dart';
 import 'package:spendify/routes/app_pages.dart';
 import 'package:spendify/view/home/components/transaction_list.dart';
-import 'package:spendify/widgets/user_info_card.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -22,9 +21,9 @@ class HomeScreen extends StatelessWidget {
     Get.put(TransactionController());
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
+    SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
-      statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+      statusBarIconBrightness: Brightness.light,
     ));
 
     return Scaffold(
@@ -32,23 +31,14 @@ class HomeScreen extends StatelessWidget {
       body: CustomScrollView(
         physics: const BouncingScrollPhysics(),
         slivers: [
-          // Flat header — greeting + avatar
+          // Unified hero section — greeting + balance + income/expense
           SliverToBoxAdapter(
-            child: _HomeHeader(isDark: isDark),
+            child: _HeroSection(isDark: isDark, controller: controller),
           ),
 
           // Alert strip
           SliverToBoxAdapter(
             child: _AlertStrip(isDark: isDark),
-          ),
-
-          // Balance card
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(
-                  AppDimens.spaceLG, 0, AppDimens.spaceLG, 0),
-              child: UserInfoCard(size: 0),
-            ),
           ),
 
           // Budget health section
@@ -87,76 +77,262 @@ class HomeScreen extends StatelessWidget {
   }
 }
 
-// ── Flat header ───────────────────────────────────────────────────────────────
+// ── Unified hero section ───────────────────────────────────────────────────────
 
-class _HomeHeader extends StatelessWidget {
+class _HeroSection extends StatelessWidget {
   final bool isDark;
-  const _HomeHeader({required this.isDark});
+  final HomeController controller;
+  const _HeroSection({required this.isDark, required this.controller});
 
   @override
   Widget build(BuildContext context) {
-    final controller = Get.find<HomeController>();
-    final textPrimary =
-        isDark ? AppColor.textPrimary : AppColor.lightTextPrimary;
-    final textSecondary =
-        isDark ? AppColor.textSecondary : AppColor.lightTextSecondary;
+    final heroBg =
+        isDark ? AppColor.darkCard : const Color(0xFF1E1B4B);
+    final fmt = NumberFormat('#,##0.00', 'en_IN');
     final now = DateTime.now();
     final monthYear = DateFormat('MMMM yyyy').format(now);
 
-    return SafeArea(
-      bottom: false,
-      child: Obx(() {
-        final name = controller.userName.value;
-        final firstName = name.split(' ').first;
-        final initials = _initials(name);
+    return Container(
+      decoration: BoxDecoration(
+        color: heroBg,
+        borderRadius: const BorderRadius.only(
+          bottomLeft: Radius.circular(28),
+          bottomRight: Radius.circular(28),
+        ),
+      ),
+      child: SafeArea(
+        bottom: false,
+        child: Obx(() {
+          final name = controller.userName.value;
+          final firstName = name.split(' ').first;
+          final initials = _initials(name);
+          final isVisible = controller.isAmountVisible.value;
 
-        return Padding(
-          padding: const EdgeInsets.fromLTRB(AppDimens.spaceLG,
-              AppDimens.spaceLG, AppDimens.spaceLG, AppDimens.spaceXXL),
-          child: Row(
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+              // ── Top row: month/greeting + avatar ──────────────────────
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+                child: Row(
                   children: [
-                    Text(
-                      monthYear,
-                      style: AppTypography.caption(textSecondary),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            monthYear,
+                            style: AppTypography.caption(
+                                Colors.white.withOpacity(0.70)),
+                          ),
+                          const SizedBox(height: AppDimens.spaceXXS),
+                          Text(
+                            'Hello, ${firstName.isEmpty ? 'there' : firstName}',
+                            style: AppTypography.heading2(Colors.white),
+                          ),
+                        ],
+                      ),
                     ),
-                    const SizedBox(height: AppDimens.spaceXXS),
-                    Text(
-                      'Hello, ${firstName.isEmpty ? 'there' : firstName}',
-                      style: AppTypography.heading2(textPrimary),
+                    // Avatar circle
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: AppColor.primaryGradient,
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.25),
+                          width: 2,
+                        ),
+                      ),
+                      child: Center(
+                        child: Text(
+                          initials,
+                          style: AppTypography.bodySemiBold(Colors.white),
+                        ),
+                      ),
                     ),
                   ],
                 ),
               ),
 
-              // Avatar
-              GestureDetector(
-                child: Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: AppColor.primaryGradient,
-                    border: Border.all(
-                      color: AppColor.primary.withOpacity(0.3),
-                      width: 2,
+              // ── Balance area ───────────────────────────────────────────
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Total Balance',
+                      style: AppTypography.caption(
+                          Colors.white.withOpacity(0.55)),
                     ),
-                  ),
-                  child: Center(
-                    child: Text(
-                      initials,
-                      style: AppTypography.bodySemiBold(Colors.white),
+                    const SizedBox(height: AppDimens.spaceXS),
+                    AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 300),
+                      child: Text(
+                        key: ValueKey(isVisible),
+                        isVisible
+                            ? '₹${fmt.format(controller.totalBalance.value)}'
+                            : '₹ ••••••',
+                        style: AppTypography.amountDisplay(Colors.white),
+                      ),
                     ),
-                  ),
+                    const SizedBox(height: AppDimens.spaceSM),
+                    // Hide/show button row
+                    GestureDetector(
+                      onTap: controller.toggleVisibility,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: AppDimens.spaceMD,
+                            vertical: AppDimens.spaceXS + 2),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.12),
+                          borderRadius:
+                              BorderRadius.circular(AppDimens.radiusCircle),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            PhosphorIcon(
+                              isVisible
+                                  ? PhosphorIconsLight.eye
+                                  : PhosphorIconsLight.eyeSlash,
+                              color: Colors.white,
+                              size: AppDimens.iconSM,
+                            ),
+                            const SizedBox(width: AppDimens.spaceXS),
+                            Text(
+                              isVisible ? 'Hide' : 'Show',
+                              style: AppTypography.caption(Colors.white),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // ── Income / Expense row ───────────────────────────────────
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                child: Row(
+                  children: [
+                    // Income tile
+                    Expanded(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: AppDimens.spaceMD,
+                            vertical: AppDimens.spaceMD),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.10),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 32,
+                              height: 32,
+                              decoration: BoxDecoration(
+                                color: AppColor.income.withOpacity(0.25),
+                                borderRadius: BorderRadius.circular(
+                                    AppDimens.radiusSM),
+                              ),
+                              child: const PhosphorIcon(
+                                PhosphorIconsLight.arrowUp,
+                                color: AppColor.income,
+                                size: AppDimens.iconSM,
+                              ),
+                            ),
+                            const SizedBox(width: AppDimens.spaceSM),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Income',
+                                    style: AppTypography.caption(
+                                        Colors.white.withOpacity(0.65)),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    isVisible
+                                        ? '₹${fmt.format(controller.totalIncome.value)}'
+                                        : '₹ •••••',
+                                    style: AppTypography.amountSmall(
+                                        Colors.white),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: AppDimens.spaceSM),
+                    // Expense tile
+                    Expanded(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: AppDimens.spaceMD,
+                            vertical: AppDimens.spaceMD),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.10),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 32,
+                              height: 32,
+                              decoration: BoxDecoration(
+                                color: AppColor.expense.withOpacity(0.25),
+                                borderRadius: BorderRadius.circular(
+                                    AppDimens.radiusSM),
+                              ),
+                              child: const PhosphorIcon(
+                                PhosphorIconsLight.arrowDown,
+                                color: AppColor.expense,
+                                size: AppDimens.iconSM,
+                              ),
+                            ),
+                            const SizedBox(width: AppDimens.spaceSM),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Expenses',
+                                    style: AppTypography.caption(
+                                        Colors.white.withOpacity(0.65)),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    isVisible
+                                        ? '₹${fmt.format(controller.totalExpense.value)}'
+                                        : '₹ •••••',
+                                    style: AppTypography.amountSmall(
+                                        Colors.white),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
-          ),
-        );
-      }),
+          );
+        }),
+      ),
     );
   }
 
@@ -197,13 +373,13 @@ class _AlertStrip extends StatelessWidget {
 
         if (pct >= 1.0) {
           alerts.add(_Alert(
-            icon: Iconsax.warning_2,
+            icon: PhosphorIconsLight.warning,
             message: '$label limit exceeded',
             color: AppColor.expense,
           ));
         } else if (pct >= 0.85) {
           alerts.add(_Alert(
-            icon: Iconsax.danger,
+            icon: PhosphorIconsFill.warning,
             message: '$label at ${(pct * 100).toStringAsFixed(0)}%',
             color: AppColor.warning,
           ));
@@ -220,7 +396,7 @@ class _AlertStrip extends StatelessWidget {
             : 0.0;
         if (days >= 0 && days <= 30 && progress < 1.0) {
           alerts.add(_Alert(
-            icon: Iconsax.clock,
+            icon: PhosphorIconsLight.clock,
             message: '${goal.name}: $days day${days == 1 ? '' : 's'} left',
             color: AppColor.primary,
           ));
@@ -250,7 +426,7 @@ class _AlertStrip extends StatelessWidget {
 }
 
 class _Alert {
-  final IconData icon;
+  final PhosphorIconData icon;
   final String message;
   final Color color;
   const _Alert(
@@ -274,7 +450,7 @@ class _AlertChip extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(alert.icon, size: 12, color: alert.color),
+          PhosphorIcon(alert.icon, size: 12, color: alert.color),
           const SizedBox(width: AppDimens.spaceXS),
           Text(alert.message, style: AppTypography.label(alert.color)),
         ],
@@ -351,8 +527,8 @@ class _BudgetHealthSection extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      Icon(
-                        Iconsax.chart,
+                      PhosphorIcon(
+                        PhosphorIconsLight.chartPie,
                         size: AppDimens.iconSM,
                         color: barColor,
                       ),

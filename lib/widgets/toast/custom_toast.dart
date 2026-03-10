@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:iconsax/iconsax.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:spendify/main.dart';
 
 import '../../config/app_color.dart';
@@ -52,7 +52,7 @@ class CustomToast {
 
   static void errorToast(String? title, String? message) {
     _show(
-      icon: const Icon(Iconsax.info_circle, color: Colors.white),
+      icon: const PhosphorIcon(PhosphorIconsFill.info, color: Colors.white),
       title: title ?? 'Error',
       message: message ?? 'Something went wrong',
       backgroundColor: AppColor.expense,
@@ -61,7 +61,7 @@ class CustomToast {
 
   static void successToast(String? title, String? message) {
     _show(
-      icon: Icon(Iconsax.chart_success, color: AppColor.primary),
+      icon: const PhosphorIcon(PhosphorIconsFill.checkCircle, color: AppColor.primary),
       title: title ?? 'Success',
       message: message ?? '',
       backgroundColor: AppColor.darkCard,

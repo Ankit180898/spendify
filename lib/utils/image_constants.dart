@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:iconsax/iconsax.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 class ImageConstants {
   final Color colors;
@@ -8,20 +8,19 @@ class ImageConstants {
   ImageConstants({required this.colors});
 
   // Define static icons and set their color based on the 'colors' property
-  Icon get success => Icon(Iconsax.tick_circle, color: colors);
-  Icon get failure => Icon(Iconsax.info_circle, color: colors);
+  PhosphorIcon get success => PhosphorIcon(PhosphorIconsFill.checkCircle, color: colors);
+  PhosphorIcon get failure => PhosphorIcon(PhosphorIconsFill.info, color: colors);
   Icon get settings => Icon(Icons.settings, color: colors);
-  Icon get home => Icon(Iconsax.home, color: colors);
-  Icon get profile => Icon(Iconsax.profile, color: colors);
-  Icon get search => Icon(Iconsax.search_normal, color: colors);
-  Icon get trash => Icon(Iconsax.trash, color: colors);
+  PhosphorIcon get home => PhosphorIcon(PhosphorIconsLight.house, color: colors);
+  PhosphorIcon get profile => PhosphorIcon(PhosphorIconsLight.user, color: colors);
+  PhosphorIcon get search => PhosphorIcon(PhosphorIconsLight.magnifyingGlass, color: colors);
+  PhosphorIcon get trash => PhosphorIcon(PhosphorIconsLight.trash, color: colors);
   Icon get income => Icon(Icons.arrow_upward_rounded, color: colors);
   Icon get expense => Icon(Icons.arrow_downward_rounded, color: colors);
   Icon get avatar => Icon(Icons.camera, color: colors);
-  Icon get leftArrow => Icon(Iconsax.arrow_left, color: colors);
-  Icon get rightArrow => Icon(Iconsax.arrow_right, color: colors);
-  Icon get plus => Icon(Iconsax.add, color: colors);
-  Icon get close => Icon(Iconsax.clipboard_close, color: colors);
-    Icon get wallet => Icon(Iconsax.wallet, color: colors);
-
+  PhosphorIcon get leftArrow => PhosphorIcon(PhosphorIconsLight.arrowLeft, color: colors);
+  PhosphorIcon get rightArrow => PhosphorIcon(PhosphorIconsLight.arrowRight, color: colors);
+  PhosphorIcon get plus => PhosphorIcon(PhosphorIconsRegular.plus, color: colors);
+  PhosphorIcon get close => PhosphorIcon(PhosphorIconsLight.x, color: colors);
+  PhosphorIcon get wallet => PhosphorIcon(PhosphorIconsLight.wallet, color: colors);
 }

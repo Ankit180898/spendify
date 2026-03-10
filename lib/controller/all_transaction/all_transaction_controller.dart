@@ -9,6 +9,16 @@ class AllTransactionsController extends GetxController {
   var isLoading = false.obs; // Loading state
   var isSelected = false.obs; // State for category selection
 
+  /// All unique categories that appear in the user's actual transactions.
+  List<String> get uniqueCategories {
+    final seen = <String>{};
+    for (final t in homeController.transactions) {
+      final cat = t['category'];
+      if (cat is String && cat.isNotEmpty) seen.add(cat);
+    }
+    return seen.toList()..sort();
+  }
+
   @override
   void onInit() {
     super.onInit();

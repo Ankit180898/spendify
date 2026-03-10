@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:iconsax/iconsax.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:spendify/config/app_color.dart';
 import 'package:spendify/config/app_theme.dart';
 import 'package:spendify/controller/auth_controller/register_controller.dart';
@@ -66,8 +66,8 @@ class RegisterScreen extends StatelessWidget {
                   gradient: AppColor.primaryGradient,
                   borderRadius: BorderRadius.circular(AppDimens.radiusMD),
                 ),
-                child: const Icon(
-                  Iconsax.wallet_3,
+                child: const PhosphorIcon(
+                  PhosphorIconsLight.wallet,
                   color: Colors.white,
                   size: AppDimens.iconLG,
                 ),
@@ -127,10 +127,10 @@ class RegisterScreen extends StatelessWidget {
                     textPrimary: textPrimary,
                     textSecondary: textSecondary,
                     suffixIcon: IconButton(
-                      icon: Icon(
+                      icon: PhosphorIcon(
                         controller.isHidden.value
-                            ? Iconsax.eye
-                            : Iconsax.eye_slash4,
+                            ? PhosphorIconsLight.eye
+                            : PhosphorIconsLight.eyeSlash,
                         color: textSecondary,
                         size: AppDimens.iconMD,
                       ),
