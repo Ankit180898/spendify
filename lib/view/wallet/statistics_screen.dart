@@ -153,9 +153,12 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                 ),
 
                 // Spacer for nav bar
-                const SliverToBoxAdapter(
+                SliverToBoxAdapter(
                   child: SizedBox(
-                      height: AppDimens.spaceHuge + AppDimens.spaceLG),
+                    height: MediaQuery.of(context).padding.bottom +
+                        AppDimens.navBarHeight +
+                        AppDimens.spaceLG,
+                  ),
                 ),
               ],
             );
@@ -300,8 +303,8 @@ class _HeroNumbers extends StatelessWidget {
                   textSecondary: textSecondary),
               const SizedBox(width: AppDimens.spaceXXL),
               _MiniStat(
-                  label: 'Saved',
-                  value: '${isPositive ? '+' : ''}₹${fmt.format(net.abs())}',
+                  label: isPositive ? 'Saved' : 'Over budget',
+                  value: '${isPositive ? '+' : '-'}₹${fmt.format(net.abs())}',
                   color: isPositive ? AppColor.income : AppColor.expense,
                   textSecondary: textSecondary),
             ],
@@ -642,24 +645,60 @@ class _TrendChart extends StatelessWidget {
                   textStyle: TextStyle(color: textPrimary, fontSize: 12),
                 ),
                 series: <CartesianSeries>[
-                  ColumnSeries<_BarData, String>(
+                  SplineAreaSeries<_BarData, String>(
                     name: 'Income',
-                    color: AppColor.income.withOpacity(0.85),
-                    borderRadius:
-                        const BorderRadius.vertical(top: Radius.circular(5)),
                     dataSource: data,
                     xValueMapper: (d, _) => d.label,
                     yValueMapper: (d, _) => d.income,
+                    splineType: SplineType.monotonic,
+                    color: AppColor.income.withOpacity(0.12),
+                    borderColor: AppColor.income,
+                    borderWidth: 2.0,
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        AppColor.income.withOpacity(0.25),
+                        AppColor.income.withOpacity(0.0),
+                      ],
+                    ),
+                    markerSettings: MarkerSettings(
+                      isVisible: true,
+                      height: 6,
+                      width: 6,
+                      shape: DataMarkerType.circle,
+                      borderWidth: 2,
+                      borderColor: AppColor.income,
+                      color: isDark ? AppColor.darkCard : AppColor.lightSurface,
+                    ),
                     enableTooltip: true,
                   ),
-                  ColumnSeries<_BarData, String>(
+                  SplineAreaSeries<_BarData, String>(
                     name: 'Expense',
-                    color: AppColor.expense.withOpacity(0.85),
-                    borderRadius:
-                        const BorderRadius.vertical(top: Radius.circular(5)),
                     dataSource: data,
                     xValueMapper: (d, _) => d.label,
                     yValueMapper: (d, _) => d.expense,
+                    splineType: SplineType.monotonic,
+                    color: AppColor.expense.withOpacity(0.12),
+                    borderColor: AppColor.expense,
+                    borderWidth: 2.0,
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        AppColor.expense.withOpacity(0.25),
+                        AppColor.expense.withOpacity(0.0),
+                      ],
+                    ),
+                    markerSettings: MarkerSettings(
+                      isVisible: true,
+                      height: 6,
+                      width: 6,
+                      shape: DataMarkerType.circle,
+                      borderWidth: 2,
+                      borderColor: AppColor.expense,
+                      color: isDark ? AppColor.darkCard : AppColor.lightSurface,
+                    ),
                     enableTooltip: true,
                   ),
                 ],

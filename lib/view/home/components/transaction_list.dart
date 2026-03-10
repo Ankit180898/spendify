@@ -6,6 +6,7 @@ import 'package:spendify/controller/home_controller/home_controller.dart';
 import 'package:spendify/utils/utils.dart';
 import 'package:spendify/view/wallet/all_transaction_screen.dart';
 import 'package:spendify/view/wallet/transaction_list_item.dart';
+import 'package:spendify/widgets/common_bottom_sheet.dart';
 
 class TransactionsContent extends StatelessWidget {
   final int limit;
@@ -73,7 +74,12 @@ class TransactionsContent extends StatelessWidget {
                       const SizedBox(height: 8),
                       ElevatedButton(
                         onPressed: () {
-                          // Add your first transaction action
+                          showModalBottomSheet(
+                            context: context,
+                            isScrollControlled: true,
+                            backgroundColor: Colors.transparent,
+                            builder: (_) => const CommonBottomSheet(),
+                          );
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColor.primary,

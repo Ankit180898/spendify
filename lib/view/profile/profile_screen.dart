@@ -30,11 +30,7 @@ class ProfileScreen extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: IconButton(
-          onPressed: () => Get.back(),
-          icon: Icon(Icons.arrow_back_ios_new_rounded,
-              color: textPrimary, size: AppDimens.iconMD),
-        ),
+        automaticallyImplyLeading: false,
         title: Text('Profile', style: AppTypography.heading2(textPrimary)),
       ),
       body: SingleChildScrollView(
@@ -90,7 +86,11 @@ class ProfileScreen extends StatelessWidget {
               ),
             ),
 
-            const SizedBox(height: AppDimens.spaceXXL),
+            SizedBox(
+              height: MediaQuery.of(context).padding.bottom +
+                  AppDimens.navBarHeight +
+                  AppDimens.spaceLG,
+            ),
           ],
         ),
       ),

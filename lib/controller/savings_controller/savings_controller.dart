@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:spendify/main.dart';
 import 'package:spendify/model/savings_goal_model.dart';
+import 'package:spendify/services/notification_service.dart';
 import 'package:spendify/widgets/toast/custom_toast.dart';
 
 class SavingsController extends GetxController {
@@ -49,6 +50,18 @@ class SavingsController extends GetxController {
           'target_date': targetDate.toIso8601String().substring(0, 10),
       });
       await fetchGoals();
+      // Schedule deadline reminders if a target date was set
+      if (targetDate != null) {
+        final created = goals.firstWhereOrNull((g) =>
+            g.name == name && g.targetAmount == targetAmount);
+        if (created != null) {
+          await NotificationService.scheduleSavingsReminder(
+            goalId: created.id,
+            goalName: created.name,
+            targetDate: targetDate,
+          );
+        }
+      }
       CustomToast.successToast('Goal created', 'Savings goal added');
     } catch (e) {
       debugPrint('Error adding savings goal: $e');
@@ -81,6 +94,7 @@ class SavingsController extends GetxController {
     try {
       await supabaseC.from('savings_goals').delete().eq('id', goalId);
       goals.removeWhere((g) => g.id == goalId);
+      await NotificationService.cancelSavingsReminder(goalId);
       CustomToast.successToast('Deleted', 'Savings goal removed');
     } catch (e) {
       debugPrint('Error deleting savings goal: $e');

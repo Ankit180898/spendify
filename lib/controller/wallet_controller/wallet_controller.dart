@@ -133,7 +133,7 @@ class TransactionController extends GetxController {
       // Fetch the transaction to get its amount and type
       final response = await supabaseC.from('transactions').select().eq('id', transactionId).single();
 
-      final amount = response['amount'] as double;
+      final amount = (response['amount'] as num).toDouble();
       final type = response['type'] as String;
 
       // Delete the transaction
@@ -142,9 +142,9 @@ class TransactionController extends GetxController {
       // Update the balance
       final currentBalance = homeC.totalBalance.value;
       if (type == 'income') {
-        homeC.totalBalance.value = currentBalance - amount; // Subtract income
+        homeC.totalBalance.value = currentBalance - amount;
       } else {
-        homeC.totalBalance.value = currentBalance + amount; // Add back expense
+        homeC.totalBalance.value = currentBalance + amount;
       }
 
       // Refresh transactions and balance
@@ -152,7 +152,6 @@ class TransactionController extends GetxController {
       await homeC.fetchTotalBalanceData();
 
       CustomToast.successToast("Success", "Transaction deleted successfully");
-      Get.back();
     } catch (e) {
       CustomToast.errorToast("Error", "Failed to delete transaction");
     }
@@ -163,7 +162,7 @@ class TransactionController extends GetxController {
       // Fetch the old transaction to get its amount and type
       final oldTransaction = await supabaseC.from('transactions').select().eq('id', transactionId).single();
 
-      final oldAmount = oldTransaction['amount'] as double;
+      final oldAmount = (oldTransaction['amount'] as num).toDouble();
       final oldType = oldTransaction['type'] as String;
 
       // Parse the new amount
@@ -201,6 +200,7 @@ class TransactionController extends GetxController {
       await homeC.fetchTotalBalanceData();
 
       CustomToast.successToast("Success", "Transaction updated successfully");
+      Get.back(result: true);
     } catch (e) {
       CustomToast.errorToast("Error", "Failed to update transaction");
     }

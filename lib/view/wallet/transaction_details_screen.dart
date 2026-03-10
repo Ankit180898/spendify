@@ -63,7 +63,10 @@ class TransactionDetailsScreen extends StatelessWidget {
                   categoryList: categoryList,
                 ),
               );
-              if (result == true) await controller.getTransactions();
+              if (result == true) {
+                await controller.getTransactions();
+                Get.back();
+              }
             },
           ),
           IconButton(

@@ -7,6 +7,7 @@ import 'package:spendify/config/app_color.dart';
 import 'package:spendify/config/app_theme.dart';
 import 'package:spendify/controller/goals_controller/goals_controller.dart';
 import 'package:spendify/controller/home_controller/home_controller.dart';
+import 'package:spendify/controller/savings_controller/savings_controller.dart';
 import 'package:spendify/controller/wallet_controller/wallet_controller.dart';
 import 'package:spendify/routes/app_pages.dart';
 import 'package:spendify/view/home/components/transaction_list.dart';
@@ -34,6 +35,11 @@ class HomeScreen extends StatelessWidget {
           // Flat header — greeting + avatar
           SliverToBoxAdapter(
             child: _HomeHeader(isDark: isDark),
+          ),
+
+          // Alert strip
+          SliverToBoxAdapter(
+            child: _AlertStrip(isDark: isDark),
           ),
 
           // Balance card
@@ -128,7 +134,6 @@ class _HomeHeader extends StatelessWidget {
 
               // Avatar
               GestureDetector(
-                onTap: () => Get.toNamed(Routes.PROFILE),
                 child: Container(
                   width: 44,
                   height: 44,
@@ -161,6 +166,120 @@ class _HomeHeader extends StatelessWidget {
     final a = parts.first.isNotEmpty ? parts.first[0] : '';
     final b = parts.length > 1 && parts.last.isNotEmpty ? parts.last[0] : '';
     return '$a$b'.toUpperCase();
+  }
+}
+
+// ── Alert strip ───────────────────────────────────────────────────────────────
+
+class _AlertStrip extends StatelessWidget {
+  final bool isDark;
+  const _AlertStrip({required this.isDark});
+
+  @override
+  Widget build(BuildContext context) {
+    if (!Get.isRegistered<GoalsController>() ||
+        !Get.isRegistered<SavingsController>()) {
+      return const SizedBox.shrink();
+    }
+
+    final goalsC = Get.find<GoalsController>();
+    final savingsC = Get.find<SavingsController>();
+
+    return Obx(() {
+      final alerts = <_Alert>[];
+
+      // Budget alerts
+      for (final goal in goalsC.goals) {
+        final spent = goalsC.currentSpending(goal);
+        final pct = goal.limitAmount > 0 ? spent / goal.limitAmount : 0.0;
+        final label =
+            goal.category == 'All' ? 'Total spending' : goal.category;
+
+        if (pct >= 1.0) {
+          alerts.add(_Alert(
+            icon: Iconsax.warning_2,
+            message: '$label limit exceeded',
+            color: AppColor.expense,
+          ));
+        } else if (pct >= 0.85) {
+          alerts.add(_Alert(
+            icon: Iconsax.danger,
+            message: '$label at ${(pct * 100).toStringAsFixed(0)}%',
+            color: AppColor.warning,
+          ));
+        }
+      }
+
+      // Savings deadline alerts (due within 30 days, not yet complete)
+      final now = DateTime.now();
+      for (final goal in savingsC.goals) {
+        if (goal.targetDate == null) continue;
+        final days = goal.targetDate!.difference(now).inDays;
+        final progress = goal.targetAmount > 0
+            ? goal.savedAmount / goal.targetAmount
+            : 0.0;
+        if (days >= 0 && days <= 30 && progress < 1.0) {
+          alerts.add(_Alert(
+            icon: Iconsax.clock,
+            message: '${goal.name}: $days day${days == 1 ? '' : 's'} left',
+            color: AppColor.primary,
+          ));
+        }
+      }
+
+      if (alerts.isEmpty) return const SizedBox.shrink();
+
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(
+            AppDimens.spaceLG, 0, AppDimens.spaceLG, AppDimens.spaceMD),
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: alerts
+                .map((a) => Padding(
+                      padding:
+                          const EdgeInsets.only(right: AppDimens.spaceSM),
+                      child: _AlertChip(alert: a),
+                    ))
+                .toList(),
+          ),
+        ),
+      );
+    });
+  }
+}
+
+class _Alert {
+  final IconData icon;
+  final String message;
+  final Color color;
+  const _Alert(
+      {required this.icon, required this.message, required this.color});
+}
+
+class _AlertChip extends StatelessWidget {
+  final _Alert alert;
+  const _AlertChip({required this.alert});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+          horizontal: AppDimens.spaceMD, vertical: AppDimens.spaceXS),
+      decoration: BoxDecoration(
+        color: alert.color.withOpacity(0.10),
+        borderRadius: BorderRadius.circular(AppDimens.radiusCircle),
+        border: Border.all(color: alert.color.withOpacity(0.3)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(alert.icon, size: 12, color: alert.color),
+          const SizedBox(width: AppDimens.spaceXS),
+          Text(alert.message, style: AppTypography.label(alert.color)),
+        ],
+      ),
+    );
   }
 }
 

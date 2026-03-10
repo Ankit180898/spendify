@@ -181,6 +181,8 @@ class LoginScreen extends StatelessWidget {
         cursorColor: AppColor.primary,
         decoration: InputDecoration(
           border: InputBorder.none,
+          enabledBorder: InputBorder.none,
+          focusedBorder: InputBorder.none,
           hintText: hint,
           hintStyle: AppTypography.body(textSecondary),
           suffixIcon: suffixIcon,
