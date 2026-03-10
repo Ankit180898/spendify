@@ -29,8 +29,10 @@ class EditTransactionScreen extends StatefulWidget {
 class _EditTransactionScreenState extends State<EditTransactionScreen> {
   late final TransactionController controller;
   late final RxString _selectedType;
+  final _isOthers = false.obs;
+  final _customCategoryController = TextEditingController();
 
-  final List<_CategoryItem> _categories = const [
+  static const List<_CategoryItem> _predefined = [
     _CategoryItem('Investments', Iconsax.chart_2),
     _CategoryItem('Health', Iconsax.heart),
     _CategoryItem('Bills & Fees', Iconsax.receipt_2),
@@ -39,7 +41,10 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
     _CategoryItem('Groceries', Iconsax.shop),
     _CategoryItem('Gifts', Iconsax.gift),
     _CategoryItem('Transport', Iconsax.bus),
+    _CategoryItem('Others', Iconsax.category_2),
   ];
+
+  List<_CategoryItem> get _categories => _predefined;
 
   @override
   void initState() {
@@ -49,13 +54,29 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
         widget.transaction['amount'].toString();
     controller.titleController.text =
         widget.transaction['description'] ?? '';
-    controller.selectedCategory.value =
-        widget.transaction['category'] ?? '';
     controller.selectedType.value =
         widget.transaction['type'] ?? 'expense';
     controller.selectedDate.value = widget.transaction['date'] ??
         DateTime.now().toIso8601String();
     _selectedType = controller.selectedType;
+
+    // Detect if the saved category is custom (not in predefined list)
+    final currentCat = widget.transaction['category'] as String? ?? '';
+    final isPredefined =
+        _predefined.any((c) => c.name == currentCat || c.name == 'Others');
+    if (!isPredefined && currentCat.isNotEmpty) {
+      _isOthers.value = true;
+      _customCategoryController.text = currentCat;
+      controller.selectedCategory.value = currentCat;
+    } else {
+      controller.selectedCategory.value = currentCat;
+    }
+  }
+
+  @override
+  void dispose() {
+    _customCategoryController.dispose();
+    super.dispose();
   }
 
   @override
@@ -250,17 +271,79 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
   // ── Category grid ───────────────────────────────────────────────────────────
 
   Widget _buildCategoryGrid(bool isDark) {
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 4,
-        crossAxisSpacing: AppDimens.spaceMD,
-        mainAxisSpacing: AppDimens.spaceMD,
-        childAspectRatio: 0.78,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 4,
+            crossAxisSpacing: AppDimens.spaceMD,
+            mainAxisSpacing: AppDimens.spaceMD,
+            childAspectRatio: 0.78,
+          ),
+          itemCount: _categories.length,
+          itemBuilder: (_, i) => _buildCategoryCell(_categories[i], isDark),
+        ),
+        Obx(() => _isOthers.value
+            ? _buildCustomCategoryInput(isDark)
+            : const SizedBox.shrink()),
+      ],
+    );
+  }
+
+  Widget _buildCustomCategoryInput(bool isDark) {
+    final bg = isDark ? AppColor.darkCard : AppColor.lightBg;
+    final textPrimary =
+        isDark ? AppColor.textPrimary : AppColor.lightTextPrimary;
+    final textSecondary =
+        isDark ? AppColor.textSecondary : AppColor.lightTextSecondary;
+
+    return Container(
+      margin: const EdgeInsets.only(top: AppDimens.spaceMD),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(AppDimens.radiusLG),
+        border: Border.all(color: AppColor.primary, width: 1.5),
       ),
-      itemCount: _categories.length,
-      itemBuilder: (_, i) => _buildCategoryCell(_categories[i], isDark),
+      child: Row(
+        children: [
+          const SizedBox(width: AppDimens.spaceLG),
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: AppColor.primary.withOpacity(0.10),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Iconsax.edit_2,
+                color: AppColor.primary, size: AppDimens.iconMD),
+          ),
+          const SizedBox(width: AppDimens.spaceMD),
+          Expanded(
+            child: TextField(
+              controller: _customCategoryController,
+              autofocus: true,
+              style: AppTypography.bodyLarge(textPrimary),
+              cursorColor: AppColor.primary,
+              onChanged: (val) => controller.selectedCategory.value = val,
+              decoration: InputDecoration(
+                hintText: 'Enter custom category…',
+                hintStyle: AppTypography.bodyLarge(
+                    textSecondary.withOpacity(0.6)),
+                border: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                focusedBorder: InputBorder.none,
+                contentPadding: const EdgeInsets.symmetric(
+                    vertical: AppDimens.spaceMD),
+                filled: false,
+              ),
+            ),
+          ),
+          const SizedBox(width: AppDimens.spaceLG),
+        ],
+      ),
     );
   }
 
@@ -272,11 +355,21 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
     final border = isDark ? AppColor.darkBorder : AppColor.lightBorder;
 
     return Obx(() {
-      final isSelected = controller.selectedCategory.value == cat.name;
+      final isSelected = cat.name == 'Others'
+          ? _isOthers.value
+          : (!_isOthers.value &&
+              controller.selectedCategory.value == cat.name);
       return GestureDetector(
         onTap: () {
           HapticFeedback.selectionClick();
-          controller.selectedCategory.value = cat.name;
+          if (cat.name == 'Others') {
+            _isOthers.value = true;
+            controller.selectedCategory.value =
+                _customCategoryController.text;
+          } else {
+            _isOthers.value = false;
+            controller.selectedCategory.value = cat.name;
+          }
         },
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
@@ -447,8 +540,7 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
             : () async {
                 HapticFeedback.mediumImpact();
                 await controller.updateTransaction(
-                    widget.transaction['id']);
-                Get.back();
+                    widget.transaction['id'].toString());
               },
         child: AnimatedOpacity(
           duration: const Duration(milliseconds: 200),

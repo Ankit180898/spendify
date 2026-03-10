@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:spendify/config/app_theme.dart';
 import 'package:spendify/controller/theme_controller.dart';
 import 'package:spendify/routes/app_pages.dart';
+import 'package:spendify/services/notification_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart' as dotenv;
 
@@ -12,6 +13,7 @@ Future<void> main() async {
   GoogleFonts.config.allowRuntimeFetching = true;
 
   await dotenv.dotenv.load(fileName: '.env');
+  await NotificationService.initialize();
   final supaUri = dotenv.dotenv.env['SUPABASE_URL'];
   final supaAnon = dotenv.dotenv.env['SUPABASE_ANONKEY'];
   await Supabase.initialize(

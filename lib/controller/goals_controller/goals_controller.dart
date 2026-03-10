@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:spendify/controller/home_controller/home_controller.dart';
 import 'package:spendify/main.dart';
 import 'package:spendify/model/spending_goal_model.dart';
+import 'package:spendify/services/notification_service.dart';
 import 'package:spendify/widgets/toast/custom_toast.dart';
 
 class GoalsController extends GetxController {
@@ -104,15 +105,17 @@ class GoalsController extends GetxController {
       final label = goal.category == 'All' ? 'Total spending' : goal.category;
 
       if (pct >= 1.0) {
-        CustomToast.errorToast(
-          'Limit exceeded!',
-          '$label has crossed your ₹${goal.limitAmount.toStringAsFixed(0)} ${goal.period} limit',
-        );
+        final title = 'Limit exceeded!';
+        final body =
+            '$label has crossed your ₹${goal.limitAmount.toStringAsFixed(0)} ${goal.period} limit';
+        CustomToast.errorToast(title, body);
+        NotificationService.showBudgetAlert(title: title, body: body);
       } else if (pct >= 0.9) {
-        CustomToast.errorToast(
-          'Approaching limit',
-          '$label is at ${(pct * 100).toStringAsFixed(0)}% of your ₹${goal.limitAmount.toStringAsFixed(0)} ${goal.period} limit',
-        );
+        final title = 'Approaching limit';
+        final body =
+            '$label is at ${(pct * 100).toStringAsFixed(0)}% of your ₹${goal.limitAmount.toStringAsFixed(0)} ${goal.period} limit';
+        CustomToast.errorToast(title, body);
+        NotificationService.showBudgetAlert(title: title, body: body);
       }
     }
   }

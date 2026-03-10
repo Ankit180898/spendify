@@ -25,12 +25,20 @@ class CommonBottomSheet extends StatefulWidget {
 class _CommonBottomSheetState extends State<CommonBottomSheet> {
   final controller = Get.find<TransactionController>();
   final _transactionType = Transactions.income.obs;
+  final _isOthers = false.obs;
+  final _customCategoryController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
-    // Keep controller in sync with the UI default (income)
+    controller.resetForm();
     controller.selectedType.value = 'income';
+  }
+
+  @override
+  void dispose() {
+    _customCategoryController.dispose();
+    super.dispose();
   }
 
   final List<_CategoryItem> _categories = const [
@@ -42,6 +50,7 @@ class _CommonBottomSheetState extends State<CommonBottomSheet> {
     _CategoryItem('Groceries', Iconsax.shop),
     _CategoryItem('Gifts', Iconsax.gift),
     _CategoryItem('Transport', Iconsax.bus),
+    _CategoryItem('Others', Iconsax.category_2),
   ];
 
   @override
@@ -49,6 +58,13 @@ class _CommonBottomSheetState extends State<CommonBottomSheet> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bg = isDark ? AppColor.darkSurface : AppColor.lightSurface;
     final handleColor = isDark ? AppColor.darkBorder : AppColor.lightBorder;
+
+    final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
+    final screenHeight = MediaQuery.of(context).size.height;
+    final bottomPadding = MediaQuery.of(context).padding.bottom;
+    // Leave at least 20% of screen as tappable barrier above the sheet
+    final maxContentHeight =
+        screenHeight * 0.78 - keyboardHeight - bottomPadding;
 
     return Container(
       decoration: BoxDecoration(
@@ -58,61 +74,69 @@ class _CommonBottomSheetState extends State<CommonBottomSheet> {
           topRight: Radius.circular(AppDimens.radiusXXXL),
         ),
       ),
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom,
-      ),
       child: SafeArea(
         top: false,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(
-            AppDimens.spaceLG,
-            AppDimens.spaceSM,
-            AppDimens.spaceLG,
-            AppDimens.spaceXXL,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Drag handle
-              Container(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Drag handle — always visible, never scrolls away
+            GestureDetector(
+              onVerticalDragUpdate: (d) {
+                if (d.primaryDelta != null && d.primaryDelta! > 8) {
+                  Navigator.of(context).pop();
+                }
+              },
+              child: Container(
                 width: 40,
                 height: 4,
-                margin: const EdgeInsets.only(bottom: AppDimens.spaceXXL),
+                margin:
+                    const EdgeInsets.symmetric(vertical: AppDimens.spaceLG),
                 decoration: BoxDecoration(
                   color: handleColor,
-                  borderRadius:
-                      BorderRadius.circular(AppDimens.radiusCircle),
+                  borderRadius: BorderRadius.circular(AppDimens.radiusCircle),
                 ),
               ),
+            ),
 
-              // Title
-              _SectionLabel('Add Transaction', isDark),
-              const SizedBox(height: AppDimens.spaceXXL),
+            // Scrollable content — capped so sheet never fills full screen
+            ConstrainedBox(
+              constraints: BoxConstraints(
+                maxHeight: maxContentHeight.clamp(200.0, screenHeight * 0.78),
+              ),
+              child: SingleChildScrollView(
+                padding: EdgeInsets.fromLTRB(
+                  AppDimens.spaceLG,
+                  AppDimens.spaceSM,
+                  AppDimens.spaceLG,
+                  AppDimens.spaceXXL,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _SectionLabel('Add Transaction', isDark),
+                    const SizedBox(height: AppDimens.spaceXXL),
 
-              // Type selector
-              _buildTypeSelector(isDark),
-              const SizedBox(height: AppDimens.spaceXXL),
+                    _buildTypeSelector(isDark),
+                    const SizedBox(height: AppDimens.spaceXXL),
 
-              // Amount hero input
-              _buildAmountInput(isDark),
-              const SizedBox(height: AppDimens.spaceXXL),
+                    _buildAmountInput(isDark),
+                    const SizedBox(height: AppDimens.spaceXXL),
 
-              // Category grid
-              _buildCategoryGrid(isDark),
-              const SizedBox(height: AppDimens.spaceXL),
+                    _buildCategoryGrid(isDark),
+                    const SizedBox(height: AppDimens.spaceXL),
 
-              // Date row
-              _buildDateRow(isDark),
-              const SizedBox(height: AppDimens.spaceMD),
+                    _buildDateRow(isDark),
+                    const SizedBox(height: AppDimens.spaceMD),
 
-              // Description input
-              _buildDescriptionInput(isDark),
-              const SizedBox(height: AppDimens.spaceXXL),
+                    _buildDescriptionInput(isDark),
+                    const SizedBox(height: AppDimens.spaceXXL),
 
-              // Submit
-              _buildSubmitButton(),
-            ],
-          ),
+                    _buildSubmitButton(),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -245,8 +269,6 @@ class _CommonBottomSheetState extends State<CommonBottomSheet> {
   // ── Category grid ───────────────────────────────────────────────────────────
 
   Widget _buildCategoryGrid(bool isDark) {
-    final textSecondary =
-        isDark ? AppColor.textSecondary : AppColor.lightTextSecondary;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -264,7 +286,62 @@ class _CommonBottomSheetState extends State<CommonBottomSheet> {
           itemCount: _categories.length,
           itemBuilder: (_, i) => _buildCategoryCell(_categories[i], isDark),
         ),
+        Obx(() => _isOthers.value
+            ? _buildCustomCategoryInput(isDark)
+            : const SizedBox.shrink()),
       ],
+    );
+  }
+
+  Widget _buildCustomCategoryInput(bool isDark) {
+    final bg = isDark ? AppColor.darkCard : AppColor.lightBg;
+    final textPrimary = isDark ? AppColor.textPrimary : AppColor.lightTextPrimary;
+    final textSecondary = isDark ? AppColor.textSecondary : AppColor.lightTextSecondary;
+
+    return Container(
+      margin: const EdgeInsets.only(top: AppDimens.spaceMD),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(AppDimens.radiusLG),
+        border: Border.all(color: AppColor.primary, width: 1.5),
+      ),
+      child: Row(
+        children: [
+          const SizedBox(width: AppDimens.spaceLG),
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: AppColor.primary.withOpacity(0.10),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Iconsax.edit_2,
+                color: AppColor.primary, size: AppDimens.iconMD),
+          ),
+          const SizedBox(width: AppDimens.spaceMD),
+          Expanded(
+            child: TextField(
+              controller: _customCategoryController,
+              autofocus: true,
+              style: AppTypography.bodyLarge(textPrimary),
+              cursorColor: AppColor.primary,
+              onChanged: (val) => controller.selectedCategory.value = val,
+              decoration: InputDecoration(
+                hintText: 'Enter custom category…',
+                hintStyle:
+                    AppTypography.bodyLarge(textSecondary.withOpacity(0.6)),
+                border: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                focusedBorder: InputBorder.none,
+                contentPadding: const EdgeInsets.symmetric(
+                    vertical: AppDimens.spaceMD),
+                filled: false,
+              ),
+            ),
+          ),
+          const SizedBox(width: AppDimens.spaceLG),
+        ],
+      ),
     );
   }
 
@@ -276,11 +353,21 @@ class _CommonBottomSheetState extends State<CommonBottomSheet> {
     final border = isDark ? AppColor.darkBorder : AppColor.lightBorder;
 
     return Obx(() {
-      final isSelected = controller.selectedCategory.value == cat.name;
+      final isSelected = cat.name == 'Others'
+          ? _isOthers.value
+          : (!_isOthers.value &&
+              controller.selectedCategory.value == cat.name);
       return GestureDetector(
         onTap: () {
           HapticFeedback.selectionClick();
-          controller.selectedCategory.value = cat.name;
+          if (cat.name == 'Others') {
+            _isOthers.value = true;
+            controller.selectedCategory.value =
+                _customCategoryController.text;
+          } else {
+            _isOthers.value = false;
+            controller.selectedCategory.value = cat.name;
+          }
         },
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),

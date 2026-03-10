@@ -23,34 +23,45 @@ class AllTransactionsController extends GetxController {
     isLoading.value = false;
   }
 
-  // Method to filter transactions
+  // Method to filter transactions by period
   void filterTransactions(String filter) {
     selectedFilter.value = filter;
-    if (filter == 'all') {
-      filteredTransactions.value = homeController.transactions; // Show all transactions
-    } else if (filter == 'weekly') {
-      // Filter for weekly transactions
-      filteredTransactions.value = homeController.transactions.where((trans) {
-        final String dateString = trans['date'];
-        final DateTime transactionDate = DateTime.parse(dateString); // Convert String to DateTime
-        return transactionDate.isAfter(DateTime.now().subtract(const Duration(days: 7)));
-      }).toList();
-    } else if (filter == 'monthly') {
-      // Filter for monthly transactions
-      filteredTransactions.value = homeController.transactions.where((trans) {
-        final String dateString = trans['date'];
-        final DateTime transactionDate = DateTime.parse(dateString); // Convert String to DateTime
-        return transactionDate.isAfter(DateTime.now().subtract(const Duration(days: 30)));
-      }).toList();
-    }
+    _applyFilters();
   }
 
   // Method to filter transactions by category
   void filterTransactionsByCategory(String category) {
     isSelected.value = true;
     selectedChip.value = category;
-    filteredTransactions.value = homeController.transactions.where((trans) {
-      return trans['category'] == category; // Assuming each transaction has a 'category' field
-    }).toList();
+    _applyFilters();
+  }
+
+  // Applies both period and category filters together
+  void _applyFilters() {
+    final now = DateTime.now();
+    final filter = selectedFilter.value;
+
+    // Step 1: period filter
+    List<Map<String, dynamic>> result;
+    if (filter == 'weekly') {
+      result = homeController.transactions.where((t) {
+        final date = DateTime.parse(t['date']);
+        return date.isAfter(now.subtract(const Duration(days: 7)));
+      }).toList();
+    } else if (filter == 'monthly') {
+      result = homeController.transactions.where((t) {
+        final date = DateTime.parse(t['date']);
+        return date.isAfter(now.subtract(const Duration(days: 30)));
+      }).toList();
+    } else {
+      result = List.from(homeController.transactions);
+    }
+
+    // Step 2: category filter (if active)
+    if (isSelected.value && selectedChip.value.isNotEmpty) {
+      result = result.where((t) => t['category'] == selectedChip.value).toList();
+    }
+
+    filteredTransactions.value = result;
   }
 }
