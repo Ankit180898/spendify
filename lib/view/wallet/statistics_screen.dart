@@ -55,7 +55,8 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
     final Map<String, double> out = {};
     for (final t in list) {
       if (t['type'] != 'expense') continue;
-      final cat = t['category'] as String;
+      final cat = t['category'];
+      if (cat == null || (cat as String).isEmpty) continue;
       out[cat] = (out[cat] ?? 0) + (t['amount'] as num).toDouble();
     }
     return out;
@@ -85,7 +86,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
         body: SafeArea(
           bottom: false,
           child: Obx(() {
-            final all = controller.transactions;
+            final all = controller.allTransactions;
             final monthTx = _txForMonth(all, _month);
             final income = _sum(monthTx, 'income');
             final spent = _sum(monthTx, 'expense');
@@ -394,7 +395,7 @@ class _DonutSection extends StatelessWidget {
                   pointColorMapper: (d, _) => d.color,
                   innerRadius: '68%',
                   radius: '100%',
-                  animationDuration: 800,
+                  animationDuration: 0,
                   enableTooltip: false,
                 ),
               ],
@@ -566,9 +567,11 @@ class _TrendChart extends StatelessWidget {
         isDark ? AppColor.textSecondary : AppColor.lightTextSecondary;
     final bg = isDark ? AppColor.darkCard : AppColor.lightSurface;
     final border = isDark ? AppColor.darkBorder : AppColor.lightBorder;
-    final axisColor = isDark ? AppColor.textSecondary : AppColor.lightTextSecondary;
+    final axisColor = isDark
+        ? AppColor.textTertiary
+        : AppColor.lightTextTertiary;
     final gridColor =
-        isDark ? Colors.white.withOpacity(0.06) : AppColor.lightBorder;
+        isDark ? Colors.white.withOpacity(0.05) : const Color(0xFFF0EEF8);
 
     // Build chart data
     final data = months.map((m) {
@@ -593,56 +596,77 @@ class _TrendChart extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(AppDimens.spaceLG, AppDimens.spaceXXL,
           AppDimens.spaceLG, 0),
       child: Container(
-        padding: const EdgeInsets.all(AppDimens.spaceLG),
+        padding: const EdgeInsets.fromLTRB(
+            AppDimens.spaceLG, AppDimens.spaceLG,
+            AppDimens.spaceSM, AppDimens.spaceMD),
         decoration: BoxDecoration(
           color: bg,
           borderRadius: BorderRadius.circular(AppDimens.radiusXL),
           border: Border.all(color: border),
+          boxShadow: isDark
+              ? null
+              : [
+                  BoxShadow(
+                    color: AppColor.primary.withOpacity(0.06),
+                    blurRadius: 20,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text('6-Month Trend',
-                    style: AppTypography.bodySemiBold(textPrimary)),
-                Row(
-                  children: [
-                    _Dot(color: AppColor.income, label: 'In'),
-                    const SizedBox(width: AppDimens.spaceMD),
-                    _Dot(color: AppColor.expense, label: 'Out'),
-                  ],
-                ),
-              ],
+            Padding(
+              padding: const EdgeInsets.only(right: AppDimens.spaceSM),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('6-Month Trend',
+                      style: AppTypography.bodySemiBold(textPrimary)),
+                  const Row(
+                    children: [
+                      _LegendLine(color: AppColor.income, label: 'Income'),
+                      SizedBox(width: AppDimens.spaceLG),
+                      _LegendLine(color: AppColor.expense, label: 'Expenses'),
+                    ],
+                  ),
+                ],
+              ),
             ),
-            const SizedBox(height: AppDimens.spaceLG),
+            const SizedBox(height: AppDimens.spaceMD),
             SizedBox(
-              height: 180,
+              height: 210,
               child: SfCartesianChart(
-                margin: EdgeInsets.zero,
+                margin: const EdgeInsets.only(right: 8),
                 plotAreaBorderWidth: 0,
                 primaryXAxis: CategoryAxis(
-                  labelStyle: TextStyle(color: axisColor, fontSize: 11),
+                  labelStyle: TextStyle(
+                      color: axisColor,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500),
                   majorGridLines: const MajorGridLines(width: 0),
                   majorTickLines: const MajorTickLines(size: 0),
                   axisLine: const AxisLine(width: 0),
+                  labelPlacement: LabelPlacement.onTicks,
                 ),
                 primaryYAxis: NumericAxis(
-                  labelStyle: TextStyle(color: axisColor, fontSize: 11),
+                  isVisible: false,
                   majorGridLines: MajorGridLines(
-                      width: 1,
-                      color: gridColor,
-                      dashArray: const [4, 4]),
-                  axisLine: const AxisLine(width: 0),
-                  majorTickLines: const MajorTickLines(size: 0),
-                  numberFormat: NumberFormat.compact(),
+                      width: 1, color: gridColor, dashArray: const [4, 4]),
                 ),
                 tooltipBehavior: TooltipBehavior(
                   enable: true,
-                  color: isDark ? AppColor.darkElevated : AppColor.lightSurface,
+                  color: isDark ? AppColor.darkElevated : Colors.white,
                   borderColor: border,
-                  textStyle: TextStyle(color: textPrimary, fontSize: 12),
+                  borderWidth: 1,
+                  elevation: 4,
+                  shadowColor: Colors.black26,
+                  textStyle: TextStyle(
+                      color: textPrimary,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600),
+                  header: '',
+                  format: 'point.x: point.y',
                 ),
                 series: <CartesianSeries>[
                   SplineAreaSeries<_BarData, String>(
@@ -650,62 +674,62 @@ class _TrendChart extends StatelessWidget {
                     dataSource: data,
                     xValueMapper: (d, _) => d.label,
                     yValueMapper: (d, _) => d.income,
+                    animationDuration: 0,
                     splineType: SplineType.monotonic,
-                    color: AppColor.income.withOpacity(0.12),
                     borderColor: AppColor.income,
-                    borderWidth: 2.0,
+                    borderWidth: 2.5,
                     gradient: LinearGradient(
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
                       colors: [
-                        AppColor.income.withOpacity(0.25),
-                        AppColor.income.withOpacity(0.0),
+                        AppColor.income.withOpacity(0.30),
+                        AppColor.income.withOpacity(0.03),
                       ],
                     ),
                     markerSettings: MarkerSettings(
                       isVisible: true,
-                      height: 6,
-                      width: 6,
+                      height: 8,
+                      width: 8,
                       shape: DataMarkerType.circle,
-                      borderWidth: 2,
+                      borderWidth: 2.5,
                       borderColor: AppColor.income,
-                      color: isDark ? AppColor.darkCard : AppColor.lightSurface,
+                      color: isDark ? AppColor.darkCard : Colors.white,
                     ),
                     enableTooltip: true,
                   ),
                   SplineAreaSeries<_BarData, String>(
-                    name: 'Expense',
+                    name: 'Expenses',
                     dataSource: data,
                     xValueMapper: (d, _) => d.label,
                     yValueMapper: (d, _) => d.expense,
+                    animationDuration: 0,
                     splineType: SplineType.monotonic,
-                    color: AppColor.expense.withOpacity(0.12),
                     borderColor: AppColor.expense,
-                    borderWidth: 2.0,
+                    borderWidth: 2.5,
                     gradient: LinearGradient(
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
                       colors: [
                         AppColor.expense.withOpacity(0.25),
-                        AppColor.expense.withOpacity(0.0),
+                        AppColor.expense.withOpacity(0.03),
                       ],
                     ),
                     markerSettings: MarkerSettings(
                       isVisible: true,
-                      height: 6,
-                      width: 6,
+                      height: 8,
+                      width: 8,
                       shape: DataMarkerType.circle,
-                      borderWidth: 2,
+                      borderWidth: 2.5,
                       borderColor: AppColor.expense,
-                      color: isDark ? AppColor.darkCard : AppColor.lightSurface,
+                      color: isDark ? AppColor.darkCard : Colors.white,
                     ),
                     enableTooltip: true,
                   ),
                 ],
                 onTooltipRender: (TooltipArgs args) {
                   if (args.dataPoints != null && args.dataPoints!.isNotEmpty) {
-                    args.text =
-                        '₹${NumberFormat('#,##0').format(args.dataPoints![0].y)}';
+                    final val = args.dataPoints![0].y as num;
+                    args.text = '₹${NumberFormat('#,##0').format(val)}';
                   }
                 },
               ),
@@ -717,10 +741,11 @@ class _TrendChart extends StatelessWidget {
   }
 }
 
-class _Dot extends StatelessWidget {
+class _LegendLine extends StatelessWidget {
   final Color color;
   final String label;
-  const _Dot({required this.color, required this.label});
+  const _LegendLine({required this.color, required this.label});
+
 
   @override
   Widget build(BuildContext context) {
@@ -729,11 +754,33 @@ class _Dot extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Container(
-            width: 8,
-            height: 8,
-            decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
-        const SizedBox(width: 4),
+        // Short line with center dot — mimics the chart line style
+        SizedBox(
+          width: 20,
+          height: 12,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              Container(
+                height: 2,
+                decoration: BoxDecoration(
+                  color: color,
+                  borderRadius: BorderRadius.circular(1),
+                ),
+              ),
+              Container(
+                width: 7,
+                height: 7,
+                decoration: BoxDecoration(
+                  color: isDark ? AppColor.darkCard : Colors.white,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: color, width: 2),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 5),
         Text(label, style: AppTypography.label(ts)),
       ],
     );

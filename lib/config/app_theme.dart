@@ -72,7 +72,7 @@ class AppDimens {
 class AppTypography {
   AppTypography._();
 
-  static TextStyle hero(Color color) => GoogleFonts.dmSans(
+  static TextStyle hero(Color color) => GoogleFonts.plusJakartaSans(
         fontSize: AppDimens.fontHero,
         fontWeight: FontWeight.w700,
         color: color,
@@ -80,7 +80,7 @@ class AppTypography {
         height: 1.1,
       );
 
-  static TextStyle display(Color color) => GoogleFonts.dmSans(
+  static TextStyle display(Color color) => GoogleFonts.plusJakartaSans(
         fontSize: AppDimens.fontDisplay,
         fontWeight: FontWeight.w700,
         color: color,
@@ -88,7 +88,7 @@ class AppTypography {
         height: 1.2,
       );
 
-  static TextStyle heading1(Color color) => GoogleFonts.dmSans(
+  static TextStyle heading1(Color color) => GoogleFonts.plusJakartaSans(
         fontSize: AppDimens.fontXXXL,
         fontWeight: FontWeight.w700,
         color: color,
@@ -96,7 +96,7 @@ class AppTypography {
         height: 1.3,
       );
 
-  static TextStyle heading2(Color color) => GoogleFonts.dmSans(
+  static TextStyle heading2(Color color) => GoogleFonts.plusJakartaSans(
         fontSize: AppDimens.fontXXL,
         fontWeight: FontWeight.w600,
         color: color,
@@ -104,42 +104,42 @@ class AppTypography {
         height: 1.3,
       );
 
-  static TextStyle heading3(Color color) => GoogleFonts.dmSans(
+  static TextStyle heading3(Color color) => GoogleFonts.plusJakartaSans(
         fontSize: AppDimens.fontXL,
         fontWeight: FontWeight.w600,
         color: color,
         height: 1.4,
       );
 
-  static TextStyle bodyLarge(Color color) => GoogleFonts.dmSans(
+  static TextStyle bodyLarge(Color color) => GoogleFonts.plusJakartaSans(
         fontSize: AppDimens.fontLG,
         fontWeight: FontWeight.w500,
         color: color,
         height: 1.5,
       );
 
-  static TextStyle body(Color color) => GoogleFonts.dmSans(
+  static TextStyle body(Color color) => GoogleFonts.plusJakartaSans(
         fontSize: AppDimens.fontMD,
         fontWeight: FontWeight.w400,
         color: color,
         height: 1.5,
       );
 
-  static TextStyle bodySemiBold(Color color) => GoogleFonts.dmSans(
+  static TextStyle bodySemiBold(Color color) => GoogleFonts.plusJakartaSans(
         fontSize: AppDimens.fontMD,
         fontWeight: FontWeight.w600,
         color: color,
         height: 1.5,
       );
 
-  static TextStyle caption(Color color) => GoogleFonts.dmSans(
+  static TextStyle caption(Color color) => GoogleFonts.plusJakartaSans(
         fontSize: AppDimens.fontSM,
         fontWeight: FontWeight.w400,
         color: color,
         height: 1.4,
       );
 
-  static TextStyle captionSemiBold(Color color) => GoogleFonts.dmSans(
+  static TextStyle captionSemiBold(Color color) => GoogleFonts.plusJakartaSans(
         fontSize: AppDimens.fontSM,
         fontWeight: FontWeight.w600,
         color: color,
@@ -147,7 +147,7 @@ class AppTypography {
         height: 1.4,
       );
 
-  static TextStyle label(Color color) => GoogleFonts.dmSans(
+  static TextStyle label(Color color) => GoogleFonts.plusJakartaSans(
         fontSize: AppDimens.fontXS,
         fontWeight: FontWeight.w600,
         color: color,
@@ -155,7 +155,7 @@ class AppTypography {
         height: 1.3,
       );
 
-  static TextStyle button(Color color) => GoogleFonts.dmSans(
+  static TextStyle button(Color color) => GoogleFonts.plusJakartaSans(
         fontSize: AppDimens.fontLG,
         fontWeight: FontWeight.w600,
         color: color,
@@ -165,7 +165,7 @@ class AppTypography {
   // ── Amount styles — tabular figures prevent digit-width jitter ──────────────
   static const List<FontFeature> _tabular = [FontFeature.tabularFigures()];
 
-  static TextStyle amountHero(Color color) => GoogleFonts.dmSans(
+  static TextStyle amountHero(Color color) => GoogleFonts.plusJakartaSans(
         fontSize: AppDimens.fontHero,
         fontWeight: FontWeight.w700,
         color: color,
@@ -174,7 +174,7 @@ class AppTypography {
         fontFeatures: _tabular,
       );
 
-  static TextStyle amountDisplay(Color color) => GoogleFonts.dmSans(
+  static TextStyle amountDisplay(Color color) => GoogleFonts.plusJakartaSans(
         fontSize: AppDimens.fontDisplay,
         fontWeight: FontWeight.w700,
         color: color,
@@ -183,7 +183,7 @@ class AppTypography {
         fontFeatures: _tabular,
       );
 
-  static TextStyle amountMedium(Color color) => GoogleFonts.dmSans(
+  static TextStyle amountMedium(Color color) => GoogleFonts.plusJakartaSans(
         fontSize: AppDimens.fontXXL,
         fontWeight: FontWeight.w700,
         color: color,
@@ -191,14 +191,14 @@ class AppTypography {
         fontFeatures: _tabular,
       );
 
-  static TextStyle amountSmall(Color color) => GoogleFonts.dmSans(
+  static TextStyle amountSmall(Color color) => GoogleFonts.plusJakartaSans(
         fontSize: AppDimens.fontLG,
         fontWeight: FontWeight.w600,
         color: color,
         fontFeatures: _tabular,
       );
 
-  static TextStyle bodySemiBoldTabular(Color color) => GoogleFonts.dmSans(
+  static TextStyle bodySemiBoldTabular(Color color) => GoogleFonts.plusJakartaSans(
         fontSize: AppDimens.fontMD,
         fontWeight: FontWeight.w600,
         color: color,
@@ -279,7 +279,7 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
-      fontFamily: GoogleFonts.dmSans().fontFamily,
+      fontFamily: GoogleFonts.plusJakartaSans().fontFamily,
       scaffoldBackgroundColor: AppColor.darkBg,
       primaryColor: AppColor.primary,
       colorScheme: ColorScheme.dark(
@@ -388,11 +388,11 @@ class AppTheme {
         unselectedItemColor: AppColor.textTertiary,
         elevation: 0,
         type: BottomNavigationBarType.fixed,
-        selectedLabelStyle: GoogleFonts.dmSans(
+        selectedLabelStyle: GoogleFonts.plusJakartaSans(
           fontSize: AppDimens.fontXS,
           fontWeight: FontWeight.w600,
         ),
-        unselectedLabelStyle: GoogleFonts.dmSans(
+        unselectedLabelStyle: GoogleFonts.plusJakartaSans(
           fontSize: AppDimens.fontXS,
           fontWeight: FontWeight.w400,
         ),
@@ -459,7 +459,7 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.light,
-      fontFamily: GoogleFonts.dmSans().fontFamily,
+      fontFamily: GoogleFonts.plusJakartaSans().fontFamily,
       scaffoldBackgroundColor: AppColor.lightBg,
       primaryColor: AppColor.primary,
       colorScheme: ColorScheme.light(
@@ -567,11 +567,11 @@ class AppTheme {
         unselectedItemColor: AppColor.lightTextTertiary,
         elevation: 0,
         type: BottomNavigationBarType.fixed,
-        selectedLabelStyle: GoogleFonts.dmSans(
+        selectedLabelStyle: GoogleFonts.plusJakartaSans(
           fontSize: AppDimens.fontXS,
           fontWeight: FontWeight.w600,
         ),
-        unselectedLabelStyle: GoogleFonts.dmSans(
+        unselectedLabelStyle: GoogleFonts.plusJakartaSans(
           fontSize: AppDimens.fontXS,
           fontWeight: FontWeight.w400,
         ),

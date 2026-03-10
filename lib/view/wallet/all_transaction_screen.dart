@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:get/get.dart';
-import 'package:iconsax/iconsax.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:spendify/config/app_color.dart';
 import 'package:spendify/config/app_theme.dart';
@@ -89,7 +89,7 @@ class _AllTransactionsScreenState extends State<AllTransactionsScreen> {
       elevation: 0,
       scrolledUnderElevation: 0,
       leading: IconButton(
-        icon: Icon(Iconsax.arrow_left,
+        icon: PhosphorIcon(PhosphorIconsLight.arrowLeft,
             color: textPrimary, size: AppDimens.iconLG),
         onPressed: Get.back,
       ),
@@ -153,18 +153,19 @@ class _AllTransactionsScreenState extends State<AllTransactionsScreen> {
     final border = isDark ? AppColor.darkBorder : AppColor.lightBorder;
     return Obx(() {
       final selectedChip = controller.selectedChip.value;
+      final cats = controller.uniqueCategories;
       return SizedBox(
         height: 44,
         child: ListView.separated(
           scrollDirection: Axis.horizontal,
           padding: const EdgeInsets.symmetric(horizontal: AppDimens.spaceLG),
-          itemCount: categoryList.length,
+          itemCount: cats.length,
           separatorBuilder: (_, __) =>
               const SizedBox(width: AppDimens.spaceXS),
           itemBuilder: (_, i) {
-            final cat = categoryList[i];
-            final catColor = AppColor.categoryColor(cat.name);
-            final isSelected = selectedChip == cat.name;
+            final cat = cats[i];
+            final catColor = AppColor.categoryColor(cat);
+            final isSelected = selectedChip == cat;
             return GestureDetector(
               onTap: () {
                 if (isSelected) {
@@ -173,7 +174,7 @@ class _AllTransactionsScreenState extends State<AllTransactionsScreen> {
                   controller.filterTransactions(
                       controller.selectedFilter.value);
                 } else {
-                  controller.filterTransactionsByCategory(cat.name);
+                  controller.filterTransactionsByCategory(cat);
                 }
               },
               child: AnimatedContainer(
@@ -202,7 +203,7 @@ class _AllTransactionsScreenState extends State<AllTransactionsScreen> {
                       const SizedBox(width: AppDimens.spaceXXS + 1),
                     ],
                     Text(
-                      cat.name,
+                      cat,
                       style: AppTypography.captionSemiBold(
                           isSelected ? catColor : (isDark
                               ? AppColor.textSecondary
@@ -246,7 +247,7 @@ class _AllTransactionsScreenState extends State<AllTransactionsScreen> {
             AppDimens.spaceLG, AppDimens.spaceSM),
         child: Row(
           children: [
-            Icon(Iconsax.calendar_1,
+            PhosphorIcon(PhosphorIconsLight.calendar,
                 color: textSecondary, size: AppDimens.iconXS),
             const SizedBox(width: AppDimens.spaceXXS + 2),
             Text(label, style: AppTypography.caption(textSecondary)),
@@ -280,7 +281,7 @@ class _AllTransactionsScreenState extends State<AllTransactionsScreen> {
                   color: AppColor.primary.withOpacity(0.08),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Iconsax.receipt_item,
+                child: const PhosphorIcon(PhosphorIconsLight.receipt,
                     color: AppColor.primary, size: AppDimens.iconXXL),
               ),
               const SizedBox(height: AppDimens.spaceMD),

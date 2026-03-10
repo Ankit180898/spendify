@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
-import 'package:iconsax/iconsax.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
+
 import 'package:intl/intl.dart';
 import 'package:spendify/config/app_color.dart';
 import 'package:spendify/config/app_theme.dart';
 import 'package:spendify/controller/goals_controller/goals_controller.dart';
+import 'package:spendify/controller/home_controller/home_controller.dart';
 import 'package:spendify/controller/savings_controller/savings_controller.dart';
 import 'package:spendify/model/savings_goal_model.dart';
 import 'package:spendify/model/spending_goal_model.dart';
@@ -75,7 +77,7 @@ class _GoalsScreenState extends State<GoalsScreen>
                 _showAddSavingsSheet(context, savingsC);
               }
             },
-            icon: const Icon(Iconsax.add_circle),
+            icon: const PhosphorIcon(PhosphorIconsLight.plusCircle),
           ),
         ],
         bottom: TabBar(
@@ -148,7 +150,7 @@ class _BudgetTab extends StatelessWidget {
 
       if (controller.goals.isEmpty) {
         return _EmptyView(
-          icon: Iconsax.wallet_check,
+          icon: PhosphorIconsLight.wallet,
           title: 'No budget limits yet',
           subtitle:
               'Set monthly or weekly spending limits per category and get\nalerted when you go over.',
@@ -269,7 +271,7 @@ class _BudgetSummaryCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Iconsax.calendar, color: Colors.white70,
+              const PhosphorIcon(PhosphorIconsLight.calendar, color: Colors.white70,
                   size: AppDimens.iconSM),
               const SizedBox(width: AppDimens.spaceXS),
               Text(monthName, style: AppTypography.caption(Colors.white70)),
@@ -387,7 +389,7 @@ class _BudgetRow extends StatelessWidget {
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: AppDimens.spaceXXL),
         color: AppColor.expense.withOpacity(0.15),
-        child: const Icon(Iconsax.trash, color: AppColor.expense),
+        child: const PhosphorIcon(PhosphorIconsLight.trash, color: AppColor.expense),
       ),
       onDismissed: (_) => controller.deleteGoal(goal.id),
       child: Padding(
@@ -402,7 +404,7 @@ class _BudgetRow extends StatelessWidget {
                 color: categoryColor.withOpacity(0.12),
                 borderRadius: BorderRadius.circular(AppDimens.radiusSM),
               ),
-              child: Icon(
+              child: PhosphorIcon(
                 _categoryIcon(goal.category),
                 color: categoryColor,
                 size: AppDimens.iconMD,
@@ -479,18 +481,18 @@ class _BudgetRow extends StatelessWidget {
     );
   }
 
-  IconData _categoryIcon(String category) {
-    if (category == 'All') return Iconsax.wallet;
+  PhosphorIconData _categoryIcon(String category) {
+    if (category == 'All') return PhosphorIconsLight.wallet;
     final k = category.toLowerCase();
-    if (k.contains('invest')) return Iconsax.chart;
-    if (k.contains('health') || k.contains('medical')) return Iconsax.health;
-    if (k.contains('bill') || k.contains('fee')) return Iconsax.receipt;
-    if (k.contains('food') || k.contains('drink')) return Iconsax.cup;
-    if (k.contains('car') || k.contains('vehicle')) return Iconsax.car;
-    if (k.contains('grocer')) return Iconsax.shopping_cart;
-    if (k.contains('gift')) return Iconsax.gift;
-    if (k.contains('transport')) return Iconsax.bus;
-    return Iconsax.category;
+    if (k.contains('invest')) return PhosphorIconsLight.chartBar;
+    if (k.contains('health') || k.contains('medical')) return PhosphorIconsLight.heart;
+    if (k.contains('bill') || k.contains('fee')) return PhosphorIconsLight.receipt;
+    if (k.contains('food') || k.contains('drink')) return PhosphorIconsLight.coffee;
+    if (k.contains('car') || k.contains('vehicle')) return PhosphorIconsLight.car;
+    if (k.contains('grocer')) return PhosphorIconsLight.shoppingCart;
+    if (k.contains('gift')) return PhosphorIconsLight.gift;
+    if (k.contains('transport')) return PhosphorIconsLight.bus;
+    return PhosphorIconsLight.squaresFour;
   }
 }
 
@@ -516,7 +518,7 @@ class _SavingsTab extends StatelessWidget {
 
       if (controller.goals.isEmpty) {
         return _EmptyView(
-          icon: Iconsax.money_recive,
+          icon: PhosphorIconsLight.currencyCircleDollar,
           title: 'No savings goals yet',
           subtitle:
               'Create a goal, set a target amount, and track your\nprogress as you save.',
@@ -612,7 +614,7 @@ class _SavingsGoalCard extends StatelessWidget {
           color: AppColor.expense.withOpacity(0.15),
           borderRadius: BorderRadius.circular(AppDimens.radiusXL),
         ),
-        child: const Icon(Iconsax.trash, color: AppColor.expense),
+        child: const PhosphorIcon(PhosphorIconsLight.trash, color: AppColor.expense),
       ),
       onDismissed: (_) => controller.deleteGoal(goal.id),
       child: Container(
@@ -730,7 +732,7 @@ class _SavingsGoalCard extends StatelessWidget {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(Iconsax.add,
+                          const PhosphorIcon(PhosphorIconsLight.plus,
                               size: 14, color: AppColor.primary),
                           const SizedBox(width: 4),
                           Text('Add money',
@@ -752,7 +754,7 @@ class _SavingsGoalCard extends StatelessWidget {
 // ── Shared empty state ────────────────────────────────────────────────────────
 
 class _EmptyView extends StatelessWidget {
-  final IconData icon;
+  final PhosphorIconData icon;
   final String title;
   final String subtitle;
   final Color textPrimary;
@@ -781,7 +783,7 @@ class _EmptyView extends StatelessWidget {
                 color: AppColor.primaryGlow,
                 borderRadius: BorderRadius.circular(AppDimens.radiusXXL),
               ),
-              child: Icon(icon,
+              child: PhosphorIcon(icon,
                   color: AppColor.primary, size: AppDimens.iconHero),
             ),
             const SizedBox(height: AppDimens.spaceXXL),
@@ -817,7 +819,16 @@ class _AddBudgetSheetState extends State<_AddBudgetSheet> {
   String _selectedPeriod = 'monthly';
   bool _isSaving = false;
 
-  final List<String> _categories = ['All', ...categoryList.map((c) => c.name)];
+  List<String> get _categories {
+    final homeC = Get.find<HomeController>();
+    final fromTx = homeC.transactions
+        .map((t) => t['category'] as String? ?? '')
+        .where((c) => c.isNotEmpty)
+        .toSet();
+    final predefined = categoryList.map((c) => c.name).toSet();
+    final all = {...predefined, ...fromTx}.toList()..sort();
+    return ['All', ...all];
+  }
 
   @override
   void dispose() {
@@ -852,16 +863,24 @@ class _AddBudgetSheetState extends State<_AddBudgetSheet> {
         isDark ? AppColor.textSecondary : AppColor.lightTextSecondary;
     final chipBg = isDark ? AppColor.darkCard : AppColor.lightBg;
 
-    return Padding(
-      padding:
-          EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-      child: Container(
-        decoration: BoxDecoration(
-          color: sheetBg,
-          borderRadius: const BorderRadius.vertical(
-              top: Radius.circular(AppDimens.radiusXXXL)),
+    final keyboardH = MediaQuery.of(context).viewInsets.bottom;
+
+    return Container(
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.88,
+      ),
+      decoration: BoxDecoration(
+        color: sheetBg,
+        borderRadius: const BorderRadius.vertical(
+            top: Radius.circular(AppDimens.radiusXXXL)),
+      ),
+      child: SingleChildScrollView(
+        padding: EdgeInsets.fromLTRB(
+          AppDimens.spaceXXL,
+          AppDimens.spaceXXL,
+          AppDimens.spaceXXL,
+          AppDimens.spaceXXL + keyboardH,
         ),
-        padding: const EdgeInsets.all(AppDimens.spaceXXL),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -889,7 +908,7 @@ class _AddBudgetSheetState extends State<_AddBudgetSheet> {
               autofocus: true,
               decoration: const InputDecoration(
                 labelText: 'Limit amount (₹)',
-                prefixIcon: Icon(Iconsax.dollar_circle),
+                prefixIcon: PhosphorIcon(PhosphorIconsLight.currencyDollar),
                 hintText: 'e.g. 5000',
               ),
             ),
@@ -1070,36 +1089,43 @@ class _AddSavingsSheetState extends State<_AddSavingsSheet> {
     final textSecondary =
         isDark ? AppColor.textSecondary : AppColor.lightTextSecondary;
 
-    return Padding(
-      padding:
-          EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-      child: Container(
-        decoration: BoxDecoration(
-          color: sheetBg,
-          borderRadius: const BorderRadius.vertical(
-              top: Radius.circular(AppDimens.radiusXXXL)),
+    final keyboardH = MediaQuery.of(context).viewInsets.bottom;
+
+    return Container(
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.88,
+      ),
+      decoration: BoxDecoration(
+        color: sheetBg,
+        borderRadius: const BorderRadius.vertical(
+            top: Radius.circular(AppDimens.radiusXXXL)),
+      ),
+      child: SingleChildScrollView(
+        padding: EdgeInsets.fromLTRB(
+          AppDimens.spaceXXL,
+          AppDimens.spaceXXL,
+          AppDimens.spaceXXL,
+          AppDimens.spaceXXL + keyboardH,
         ),
-        padding: const EdgeInsets.all(AppDimens.spaceXXL),
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color:
-                        isDark ? AppColor.darkBorder : AppColor.lightBorder,
-                    borderRadius:
-                        BorderRadius.circular(AppDimens.radiusCircle),
-                  ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color:
+                      isDark ? AppColor.darkBorder : AppColor.lightBorder,
+                  borderRadius:
+                      BorderRadius.circular(AppDimens.radiusCircle),
                 ),
               ),
-              const SizedBox(height: AppDimens.spaceXXL),
-              Text('New savings goal',
-                  style: AppTypography.heading2(textPrimary)),
+            ),
+            const SizedBox(height: AppDimens.spaceXXL),
+            Text('New savings goal',
+                style: AppTypography.heading2(textPrimary)),
               const SizedBox(height: AppDimens.spaceXXL),
 
               // Emoji picker
@@ -1148,7 +1174,7 @@ class _AddSavingsSheetState extends State<_AddSavingsSheet> {
                 decoration: const InputDecoration(
                   labelText: 'Goal name',
                   hintText: 'e.g. Vacation to Bali',
-                  prefixIcon: Icon(Iconsax.edit),
+                  prefixIcon: PhosphorIcon(PhosphorIconsLight.pencilSimple),
                 ),
               ),
               const SizedBox(height: AppDimens.spaceMD),
@@ -1161,7 +1187,7 @@ class _AddSavingsSheetState extends State<_AddSavingsSheet> {
                 decoration: const InputDecoration(
                   labelText: 'Target amount (₹)',
                   hintText: 'e.g. 50000',
-                  prefixIcon: Icon(Iconsax.dollar_circle),
+                  prefixIcon: PhosphorIcon(PhosphorIconsLight.currencyDollar),
                 ),
               ),
               const SizedBox(height: AppDimens.spaceMD),
@@ -1187,7 +1213,7 @@ class _AddSavingsSheetState extends State<_AddSavingsSheet> {
                   ),
                   child: Row(
                     children: [
-                      Icon(Iconsax.calendar,
+                      PhosphorIcon(PhosphorIconsLight.calendar,
                           color: textSecondary,
                           size: AppDimens.iconMD),
                       const SizedBox(width: AppDimens.spaceMD),
@@ -1237,7 +1263,6 @@ class _AddSavingsSheetState extends State<_AddSavingsSheet> {
             ],
           ),
         ),
-      ),
     );
   }
 }
@@ -1288,16 +1313,21 @@ class _AddMoneySheetState extends State<_AddMoneySheet> {
     final fmt = NumberFormat('#,##0', 'en_IN');
     final remaining = widget.goal.targetAmount - widget.goal.savedAmount;
 
-    return Padding(
-      padding:
-          EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-      child: Container(
-        decoration: BoxDecoration(
-          color: sheetBg,
-          borderRadius: const BorderRadius.vertical(
-              top: Radius.circular(AppDimens.radiusXXXL)),
+    final keyboardH = MediaQuery.of(context).viewInsets.bottom;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: sheetBg,
+        borderRadius: const BorderRadius.vertical(
+            top: Radius.circular(AppDimens.radiusXXXL)),
+      ),
+      child: SingleChildScrollView(
+        padding: EdgeInsets.fromLTRB(
+          AppDimens.spaceXXL,
+          AppDimens.spaceXXL,
+          AppDimens.spaceXXL,
+          AppDimens.spaceXXL + keyboardH,
         ),
-        padding: const EdgeInsets.all(AppDimens.spaceXXL),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1345,7 +1375,7 @@ class _AddMoneySheetState extends State<_AddMoneySheet> {
               autofocus: true,
               decoration: const InputDecoration(
                 labelText: 'Amount to add (₹)',
-                prefixIcon: Icon(Iconsax.dollar_circle),
+                prefixIcon: PhosphorIcon(PhosphorIconsLight.currencyDollar),
                 hintText: 'e.g. 1000',
               ),
             ),

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
-import 'package:iconsax/iconsax.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:spendify/config/app_color.dart';
 import 'package:spendify/config/app_theme.dart';
@@ -42,15 +42,15 @@ class _CommonBottomSheetState extends State<CommonBottomSheet> {
   }
 
   final List<_CategoryItem> _categories = const [
-    _CategoryItem('Investments', Iconsax.chart_2),
-    _CategoryItem('Health', Iconsax.heart),
-    _CategoryItem('Bills & Fees', Iconsax.receipt_2),
-    _CategoryItem('Food & Drinks', Iconsax.coffee),
-    _CategoryItem('Car', Iconsax.car),
-    _CategoryItem('Groceries', Iconsax.shop),
-    _CategoryItem('Gifts', Iconsax.gift),
-    _CategoryItem('Transport', Iconsax.bus),
-    _CategoryItem('Others', Iconsax.category_2),
+    _CategoryItem('Investments', PhosphorIconsLight.chartBar),
+    _CategoryItem('Health', PhosphorIconsLight.heart),
+    _CategoryItem('Bills & Fees', PhosphorIconsLight.receipt),
+    _CategoryItem('Food & Drinks', PhosphorIconsLight.coffee),
+    _CategoryItem('Car', PhosphorIconsLight.car),
+    _CategoryItem('Groceries', PhosphorIconsLight.shoppingCart),
+    _CategoryItem('Gifts', PhosphorIconsLight.gift),
+    _CategoryItem('Transport', PhosphorIconsLight.bus),
+    _CategoryItem('Others', PhosphorIconsLight.squaresFour),
   ];
 
   @override
@@ -61,10 +61,8 @@ class _CommonBottomSheetState extends State<CommonBottomSheet> {
 
     final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
     final screenHeight = MediaQuery.of(context).size.height;
-    final bottomPadding = MediaQuery.of(context).padding.bottom;
     // Leave at least 20% of screen as tappable barrier above the sheet
-    final maxContentHeight =
-        screenHeight * 0.78 - keyboardHeight - bottomPadding;
+    final maxContentHeight = screenHeight * 0.78;
 
     return Container(
       decoration: BoxDecoration(
@@ -108,7 +106,7 @@ class _CommonBottomSheetState extends State<CommonBottomSheet> {
                   AppDimens.spaceLG,
                   AppDimens.spaceSM,
                   AppDimens.spaceLG,
-                  AppDimens.spaceXXL,
+                  AppDimens.spaceXXL + keyboardHeight,
                 ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -162,7 +160,7 @@ class _CommonBottomSheetState extends State<CommonBottomSheet> {
             Expanded(
               child: _TypePill(
                 label: 'Income',
-                icon: Iconsax.arrow_up_1,
+                icon: PhosphorIconsLight.arrowUp,
                 isSelected: isIncome,
                 selectedColor: AppColor.income,
                 isDark: isDark,
@@ -176,7 +174,7 @@ class _CommonBottomSheetState extends State<CommonBottomSheet> {
             Expanded(
               child: _TypePill(
                 label: 'Expense',
-                icon: Iconsax.arrow_down_1,
+                icon: PhosphorIconsLight.arrowDown,
                 isSelected: !isIncome,
                 selectedColor: AppColor.expense,
                 isDark: isDark,
@@ -315,7 +313,7 @@ class _CommonBottomSheetState extends State<CommonBottomSheet> {
               color: AppColor.primary.withOpacity(0.10),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Iconsax.edit_2,
+            child: const PhosphorIcon(PhosphorIconsLight.pencilSimple,
                 color: AppColor.primary, size: AppDimens.iconMD),
           ),
           const SizedBox(width: AppDimens.spaceMD),
@@ -392,7 +390,7 @@ class _CommonBottomSheetState extends State<CommonBottomSheet> {
                       : catColor.withOpacity(0.10),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(
+                child: PhosphorIcon(
                   cat.icon,
                   color: catColor,
                   size: AppDimens.iconMD,
@@ -446,8 +444,8 @@ class _CommonBottomSheetState extends State<CommonBottomSheet> {
                 color: AppColor.primary.withOpacity(0.10),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(
-                Iconsax.calendar_1,
+              child: const PhosphorIcon(
+                PhosphorIconsLight.calendar,
                 color: AppColor.primary,
                 size: AppDimens.iconMD,
               ),
@@ -468,7 +466,7 @@ class _CommonBottomSheetState extends State<CommonBottomSheet> {
                 ],
               ),
             ),
-            Icon(Iconsax.arrow_right_3,
+            PhosphorIcon(PhosphorIconsLight.caretRight,
                 color: textSecondary, size: AppDimens.iconSM),
           ],
         ),
@@ -511,8 +509,8 @@ class _CommonBottomSheetState extends State<CommonBottomSheet> {
                     color: AppColor.primary.withOpacity(0.10),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(
-                    Iconsax.edit_2,
+                  child: const PhosphorIcon(
+                    PhosphorIconsLight.pencilSimple,
                     color: AppColor.primary,
                     size: AppDimens.iconMD,
                   ),
@@ -552,8 +550,7 @@ class _CommonBottomSheetState extends State<CommonBottomSheet> {
       final isLoading = controller.isLoading.isTrue;
       final isExpense =
           _transactionType.value == Transactions.expense;
-      final gradient =
-          isExpense ? AppColor.expenseGradient : AppColor.incomeGradient;
+      final btnColor = isExpense ? AppColor.expense : AppColor.income;
 
       return GestureDetector(
         onTap: isLoading
@@ -569,16 +566,8 @@ class _CommonBottomSheetState extends State<CommonBottomSheet> {
             width: double.infinity,
             height: AppDimens.buttonHeight,
             decoration: BoxDecoration(
-              gradient: gradient,
+              color: btnColor,
               borderRadius: BorderRadius.circular(AppDimens.radiusMD),
-              boxShadow: [
-                BoxShadow(
-                  color: (isExpense ? AppColor.expense : AppColor.income)
-                      .withOpacity(0.35),
-                  blurRadius: 20,
-                  offset: const Offset(0, 6),
-                ),
-              ],
             ),
             child: Center(
               child: isLoading
@@ -643,13 +632,13 @@ class _CommonBottomSheetState extends State<CommonBottomSheet> {
 
 class _CategoryItem {
   final String name;
-  final IconData icon;
+  final PhosphorIconData icon;
   const _CategoryItem(this.name, this.icon);
 }
 
 class _TypePill extends StatelessWidget {
   final String label;
-  final IconData icon;
+  final PhosphorIconData icon;
   final bool isSelected;
   final Color selectedColor;
   final bool isDark;
@@ -688,7 +677,7 @@ class _TypePill extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
+            PhosphorIcon(
               icon,
               color: isSelected ? selectedColor : textSecondary,
               size: AppDimens.iconMD,

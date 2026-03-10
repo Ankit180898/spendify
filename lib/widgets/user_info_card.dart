@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:iconsax/iconsax.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:spendify/config/app_color.dart';
 import 'package:spendify/config/app_theme.dart';
@@ -73,7 +73,7 @@ class UserInfoCard extends StatelessWidget {
                       value: controller.isAmountVisible.value
                           ? '₹${fmt.format(controller.totalIncome.value)}'
                           : '₹ •••••',
-                      icon: Iconsax.arrow_up_3,
+                      icon: PhosphorIconsLight.arrowUp,
                       iconColor: AppColor.income,
                     ),
                   ),
@@ -91,7 +91,7 @@ class UserInfoCard extends StatelessWidget {
                       value: controller.isAmountVisible.value
                           ? '₹${fmt.format(controller.totalExpense.value)}'
                           : '₹ •••••',
-                      icon: Iconsax.arrow_down,
+                      icon: PhosphorIconsLight.arrowDown,
                       iconColor: AppColor.expense,
                     ),
                   ),
@@ -126,8 +126,8 @@ class _VisibilityChip extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              isVisible ? Iconsax.eye : Iconsax.eye_slash,
+            PhosphorIcon(
+              isVisible ? PhosphorIconsLight.eye : PhosphorIconsLight.eyeSlash,
               color: Colors.white,
               size: AppDimens.iconSM,
             ),
@@ -146,7 +146,7 @@ class _VisibilityChip extends StatelessWidget {
 class _StatTile extends StatelessWidget {
   final String label;
   final String value;
-  final IconData icon;
+  final PhosphorIconData icon;
   final Color iconColor;
   const _StatTile(
       {required this.label,
@@ -165,7 +165,7 @@ class _StatTile extends StatelessWidget {
             color: iconColor.withOpacity(0.2),
             borderRadius: BorderRadius.circular(AppDimens.radiusSM),
           ),
-          child: Icon(icon, color: iconColor, size: AppDimens.iconSM),
+          child: PhosphorIcon(icon, color: iconColor, size: AppDimens.iconSM),
         ),
         const SizedBox(width: AppDimens.spaceSM),
         Column(

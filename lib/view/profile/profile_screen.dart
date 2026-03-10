@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:iconsax/iconsax.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:spendify/config/app_color.dart';
 import 'package:spendify/config/app_theme.dart';
@@ -44,9 +44,9 @@ class ProfileScreen extends StatelessWidget {
 
             const SizedBox(height: AppDimens.spaceLG),
 
-            // ── Balance summary ─────────────────────
-            _buildBalanceSection(
-                controller, cardBg, textPrimary, textSecondary, borderColor),
+            // ── Quick stats ─────────────────────────
+            _buildQuickStats(controller, cardBg, textPrimary, textSecondary,
+                borderColor),
 
             const SizedBox(height: AppDimens.spaceLG),
 
@@ -71,7 +71,7 @@ class ProfileScreen extends StatelessWidget {
                   await controller.signOut();
                   CustomToast.successToast('Success', 'Logged out successfully');
                 },
-                icon: const Icon(Iconsax.logout,
+                icon: const PhosphorIcon(PhosphorIconsLight.signOut,
                     color: AppColor.expense, size: AppDimens.iconMD),
                 label: Text(
                   'Logout',
@@ -146,58 +146,68 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildBalanceSection(
+  Widget _buildQuickStats(
     HomeController controller,
     Color cardBg,
     Color textPrimary,
     Color textSecondary,
     Color borderColor,
   ) {
-    final fmt = NumberFormat('#,##0.00', 'en_IN');
-
-    return Container(
-      padding: const EdgeInsets.all(AppDimens.spaceXXL),
-      decoration: BoxDecoration(
-        gradient: AppColor.balanceCardGradient,
-        borderRadius: BorderRadius.circular(AppDimens.radiusXXL),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+    final fmt = NumberFormat('#,##0', 'en_IN');
+    return Obx(() {
+      final net = controller.totalIncome.value - controller.totalExpense.value;
+      final isPositive = net >= 0;
+      final netColor = isPositive ? AppColor.income : AppColor.expense;
+      return Row(
         children: [
-          Text(
-            'Total Balance',
-            style: AppTypography.caption(Colors.white.withOpacity(0.75)),
+          Expanded(
+            child: Container(
+              padding: const EdgeInsets.all(AppDimens.spaceLG),
+              decoration: BoxDecoration(
+                color: cardBg,
+                borderRadius: BorderRadius.circular(AppDimens.radiusXL),
+                border: Border.all(color: borderColor),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Transactions',
+                      style: AppTypography.caption(textSecondary)),
+                  const SizedBox(height: AppDimens.spaceXXS),
+                  Text('${controller.transactions.length}',
+                      style: AppTypography.heading2(textPrimary)),
+                ],
+              ),
+            ),
           ),
-          const SizedBox(height: AppDimens.spaceSM),
-          Obx(() => Text(
-                '₹${fmt.format(controller.totalBalance.value)}',
-                style: AppTypography.amountDisplay(Colors.white),
-              )),
-          const SizedBox(height: AppDimens.spaceXXL),
-          Row(
-            children: [
-              Expanded(
-                child: _BalanceChip(
-                  label: 'Income',
-                  value: Obx(() =>
-                      Text('₹${fmt.format(controller.totalIncome.value)}')),
-                  color: AppColor.income,
-                ),
+          const SizedBox(width: AppDimens.spaceMD),
+          Expanded(
+            child: Container(
+              padding: const EdgeInsets.all(AppDimens.spaceLG),
+              decoration: BoxDecoration(
+                color: isPositive
+                    ? AppColor.income.withOpacity(0.08)
+                    : AppColor.expense.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(AppDimens.radiusXL),
+                border: Border.all(color: netColor.withOpacity(0.25)),
               ),
-              const SizedBox(width: AppDimens.spaceLG),
-              Expanded(
-                child: _BalanceChip(
-                  label: 'Expenses',
-                  value: Obx(() =>
-                      Text('₹${fmt.format(controller.totalExpense.value)}')),
-                  color: AppColor.expense,
-                ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Net Balance',
+                      style: AppTypography.caption(textSecondary)),
+                  const SizedBox(height: AppDimens.spaceXXS),
+                  Text(
+                    '${isPositive ? '+' : '-'}₹${fmt.format(net.abs())}',
+                    style: AppTypography.heading2(netColor),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ],
-      ),
-    );
+      );
+    });
   }
 
   Widget _buildRecentTransactions(
@@ -323,8 +333,8 @@ class ProfileScreen extends StatelessWidget {
                     color: AppColor.primary.withOpacity(0.12),
                     borderRadius: BorderRadius.circular(AppDimens.radiusSM),
                   ),
-                  child: Icon(
-                    themeCtrl.isDarkMode ? Iconsax.moon : Iconsax.sun_1,
+                  child: PhosphorIcon(
+                    themeCtrl.isDarkMode ? PhosphorIconsLight.moon : PhosphorIconsLight.sun,
                     color: AppColor.primary,
                     size: AppDimens.iconMD,
                   ),
