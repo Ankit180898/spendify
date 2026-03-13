@@ -10,14 +10,14 @@ class ImageConstants {
   // Define static icons and set their color based on the 'colors' property
   PhosphorIcon get success => PhosphorIcon(PhosphorIconsFill.checkCircle, color: colors);
   PhosphorIcon get failure => PhosphorIcon(PhosphorIconsFill.info, color: colors);
-  Icon get settings => Icon(Icons.settings, color: colors);
+  PhosphorIcon get settings => PhosphorIcon(PhosphorIconsLight.gear, color: colors);
   PhosphorIcon get home => PhosphorIcon(PhosphorIconsLight.house, color: colors);
   PhosphorIcon get profile => PhosphorIcon(PhosphorIconsLight.user, color: colors);
   PhosphorIcon get search => PhosphorIcon(PhosphorIconsLight.magnifyingGlass, color: colors);
   PhosphorIcon get trash => PhosphorIcon(PhosphorIconsLight.trash, color: colors);
-  Icon get income => Icon(Icons.arrow_upward_rounded, color: colors);
-  Icon get expense => Icon(Icons.arrow_downward_rounded, color: colors);
-  Icon get avatar => Icon(Icons.camera, color: colors);
+  PhosphorIcon get income => PhosphorIcon(PhosphorIconsLight.arrowUp, color: colors);
+  PhosphorIcon get expense => PhosphorIcon(PhosphorIconsLight.arrowDown, color: colors);
+  PhosphorIcon get avatar => PhosphorIcon(PhosphorIconsLight.camera, color: colors);
   PhosphorIcon get leftArrow => PhosphorIcon(PhosphorIconsLight.arrowLeft, color: colors);
   PhosphorIcon get rightArrow => PhosphorIcon(PhosphorIconsLight.arrowRight, color: colors);
   PhosphorIcon get plus => PhosphorIcon(PhosphorIconsRegular.plus, color: colors);

@@ -56,8 +56,8 @@ class UserInfoCard extends StatelessWidget {
                 child: Text(
                   key: ValueKey(controller.isAmountVisible.value),
                   controller.isAmountVisible.value
-                      ? '₹${fmt.format(controller.totalBalance.value)}'
-                      : '₹ ••••••',
+                      ? '${controller.currencySymbol.value}${fmt.format(controller.totalBalance.value)}'
+                      : '${controller.currencySymbol.value} ••••••',
                   style: AppTypography.amountDisplay(Colors.white),
                 ),
               )),
@@ -71,8 +71,8 @@ class UserInfoCard extends StatelessWidget {
                     child: _StatTile(
                       label: 'Income',
                       value: controller.isAmountVisible.value
-                          ? '₹${fmt.format(controller.totalIncome.value)}'
-                          : '₹ •••••',
+                          ? '${controller.currencySymbol.value}${fmt.format(controller.totalIncome.value)}'
+                          : '${controller.currencySymbol.value} •••••',
                       icon: PhosphorIconsLight.arrowUp,
                       iconColor: AppColor.income,
                     ),
@@ -89,8 +89,8 @@ class UserInfoCard extends StatelessWidget {
                     child: _StatTile(
                       label: 'Expenses',
                       value: controller.isAmountVisible.value
-                          ? '₹${fmt.format(controller.totalExpense.value)}'
-                          : '₹ •••••',
+                          ? '${controller.currencySymbol.value}${fmt.format(controller.totalExpense.value)}'
+                          : '${controller.currencySymbol.value} •••••',
                       icon: PhosphorIconsLight.arrowDown,
                       iconColor: AppColor.expense,
                     ),

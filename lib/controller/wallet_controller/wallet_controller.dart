@@ -130,6 +130,7 @@ class TransactionController extends GetxController {
 
   Future<void> deleteTransaction(String transactionId) async {
     try {
+      isLoading.value = true;
       // Fetch the transaction to get its amount and type
       final response = await supabaseC.from('transactions').select().eq('id', transactionId).single();
 
@@ -154,11 +155,14 @@ class TransactionController extends GetxController {
       CustomToast.successToast("Success", "Transaction deleted successfully");
     } catch (e) {
       CustomToast.errorToast("Error", "Failed to delete transaction");
+    } finally {
+      isLoading.value = false;
     }
   }
 
   Future<void> updateTransaction(String transactionId) async {
     try {
+      isLoading.value = true;
       // Fetch the old transaction to get its amount and type
       final oldTransaction = await supabaseC.from('transactions').select().eq('id', transactionId).single();
 
@@ -203,6 +207,8 @@ class TransactionController extends GetxController {
       Get.back(result: true);
     } catch (e) {
       CustomToast.errorToast("Error", "Failed to update transaction");
+    } finally {
+      isLoading.value = false;
     }
   }
 }

@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:spendify/config/app_color.dart';
 import 'package:spendify/config/app_theme.dart';
 import 'package:spendify/controller/home_controller/home_controller.dart';
 import 'package:spendify/utils/utils.dart';
 import 'package:spendify/view/wallet/transaction_details_screen.dart';
-import 'package:syncfusion_flutter_charts/charts.dart';
 
 class StatisticsScreen extends StatefulWidget {
   const StatisticsScreen({super.key});
@@ -19,33 +19,25 @@ class StatisticsScreen extends StatefulWidget {
 class _StatisticsScreenState extends State<StatisticsScreen>
     with SingleTickerProviderStateMixin {
   late DateTime _month;
-  bool _showBar = false;
-  String _viewType = 'expense';
-  late AnimationController _fadeCtrl;
-  late Animation<double> _fadeAnim;
+  late TabController _tab;
 
   @override
   void initState() {
     super.initState();
     _month = DateTime(DateTime.now().year, DateTime.now().month);
-    _fadeCtrl = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 320));
-    _fadeAnim = CurvedAnimation(parent: _fadeCtrl, curve: Curves.easeOut);
-    _fadeCtrl.forward();
+    _tab = TabController(length: 2, vsync: this);
+    _tab.addListener(() => setState(() {}));
   }
 
   @override
   void dispose() {
-    _fadeCtrl.dispose();
+    _tab.dispose();
     super.dispose();
   }
 
   void _prevMonth() {
     HapticFeedback.lightImpact();
     setState(() => _month = DateTime(_month.year, _month.month - 1));
-    _fadeCtrl
-      ..reset()
-      ..forward();
   }
 
   void _nextMonth() {
@@ -53,9 +45,6 @@ class _StatisticsScreenState extends State<StatisticsScreen>
     if (_month.year == now.year && _month.month == now.month) return;
     HapticFeedback.lightImpact();
     setState(() => _month = DateTime(_month.year, _month.month + 1));
-    _fadeCtrl
-      ..reset()
-      ..forward();
   }
 
   List<Map<String, dynamic>> _txForMonth(
@@ -87,7 +76,6 @@ class _StatisticsScreenState extends State<StatisticsScreen>
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bg = isDark ? AppColor.darkBg : AppColor.lightBg;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle(
@@ -95,94 +83,95 @@ class _StatisticsScreenState extends State<StatisticsScreen>
         statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
       ),
       child: Scaffold(
-        backgroundColor: bg,
+        backgroundColor: isDark ? AppColor.darkBg : Colors.white,
         body: SafeArea(
           bottom: false,
           child: Obx(() {
             final controller = Get.find<HomeController>();
             final all = controller.allTransactions;
             final monthTx = _txForMonth(all, _month);
+
             final income = _sum(monthTx, 'income');
             final spent = _sum(monthTx, 'expense');
             final net = income - spent;
-            final cats = _categoryTotals(monthTx, _viewType);
-            final total = _viewType == 'expense' ? spent : income;
+
+            final viewType = _tab.index == 0 ? 'expense' : 'income';
+            final activeTotal = viewType == 'expense' ? spent : income;
+            final activeColor =
+                viewType == 'expense' ? AppColor.expense : AppColor.income;
+
+            final cats = _categoryTotals(monthTx, viewType);
             final sorted = cats.entries.toList()
               ..sort((a, b) => b.value.compareTo(a.value));
 
-            return RefreshIndicator(
-              color: AppColor.primary,
-              backgroundColor:
-                  isDark ? AppColor.darkCard : AppColor.lightSurface,
-              onRefresh: () async =>
-                  await Future.delayed(const Duration(milliseconds: 600)),
-              child: FadeTransition(
-                opacity: _fadeAnim,
-                child: CustomScrollView(
-                  physics: const BouncingScrollPhysics(
-                      parent: AlwaysScrollableScrollPhysics()),
-                  slivers: [
-                    SliverToBoxAdapter(
-                      child: _TopBar(
-                        month: _month,
-                        isDark: isDark,
-                        onPrev: _prevMonth,
-                        onNext: _nextMonth,
-                        canGoNext: !(_month.year == DateTime.now().year &&
-                            _month.month == DateTime.now().month),
-                      ),
-                    ),
-                    SliverToBoxAdapter(
-                      child: _HeroCard(
-                        spent: spent,
-                        income: income,
-                        net: net,
-                        isDark: isDark,
-                        month: _month,
-                      ),
-                    ),
-                    SliverToBoxAdapter(
-                      child: _SectionLabel(label: 'Breakdown', isDark: isDark),
-                    ),
-                    SliverToBoxAdapter(
-                      child: _BreakdownCard(
-                        sorted: sorted,
-                        total: total,
-                        viewType: _viewType,
-                        showBar: _showBar,
-                        isDark: isDark,
-                        onViewTypeChanged: (v) {
-                          HapticFeedback.selectionClick();
-                          setState(() => _viewType = v);
-                        },
-                        onChartTypeChanged: (b) {
-                          HapticFeedback.selectionClick();
-                          setState(() => _showBar = b);
-                        },
-                      ),
-                    ),
-                    SliverToBoxAdapter(
-                      child: _SectionLabel(
-                        label: 'Transactions',
-                        isDark: isDark,
-                        trailing:
-                            monthTx.isNotEmpty ? '${monthTx.length}' : null,
-                      ),
-                    ),
-                    SliverToBoxAdapter(
-                      child: _TransactionsList(
-                          monthTx: monthTx, isDark: isDark),
-                    ),
-                    SliverToBoxAdapter(
-                      child: SizedBox(
-                        height: MediaQuery.of(context).padding.bottom +
-                            AppDimens.navBarHeight +
-                            AppDimens.spaceLG,
-                      ),
-                    ),
-                  ],
+            final filteredTx = monthTx
+                .where((t) => t['type'] == viewType)
+                .toList()
+              ..sort((a, b) => DateTime.parse(b['date'])
+                  .compareTo(DateTime.parse(a['date'])));
+
+            final daysInMonth =
+                DateTime(_month.year, _month.month + 1, 0).day;
+            final dayMap = <int, double>{};
+            for (final tx in monthTx) {
+              if (tx['type'] != viewType) continue;
+              final d = DateTime.parse(tx['date']).day;
+              dayMap[d] =
+                  (dayMap[d] ?? 0) + (tx['amount'] as num).toDouble();
+            }
+            final hasData = dayMap.isNotEmpty;
+            final maxVal = hasData
+                ? dayMap.values.reduce((a, b) => a > b ? a : b)
+                : 1.0;
+
+            return CustomScrollView(
+              physics: const BouncingScrollPhysics(
+                  parent: AlwaysScrollableScrollPhysics()),
+              slivers: [
+                SliverToBoxAdapter(
+                  child: _TopSection(
+                    month: _month,
+                    isDark: isDark,
+                    tab: _tab,
+                    onPrev: _prevMonth,
+                    onNext: _nextMonth,
+                    canGoNext: !(_month.year == DateTime.now().year &&
+                        _month.month == DateTime.now().month),
+                    spent: spent,
+                    income: income,
+                    net: net,
+                    activeTotal: activeTotal,
+                    activeColor: activeColor,
+                    viewType: viewType,
+                    daysInMonth: daysInMonth,
+                    dayMap: dayMap,
+                    hasData: hasData,
+                    maxVal: maxVal,
+                  ),
                 ),
-              ),
+                SliverToBoxAdapter(
+                  child: _CategoryBreakdown(
+                    sorted: sorted,
+                    total: activeTotal,
+                    viewType: viewType,
+                    isDark: isDark,
+                  ),
+                ),
+                SliverToBoxAdapter(
+                  child: _TransactionsSection(
+                    filteredTx: filteredTx,
+                    viewType: viewType,
+                    isDark: isDark,
+                  ),
+                ),
+                SliverToBoxAdapter(
+                  child: SizedBox(
+                    height: MediaQuery.of(context).padding.bottom +
+                        AppDimens.navBarHeight +
+                        AppDimens.spaceLG,
+                  ),
+                ),
+              ],
             );
           }),
         ),
@@ -192,923 +181,800 @@ class _StatisticsScreenState extends State<StatisticsScreen>
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Top bar
+// Shared icon helper — used by both categories and transactions
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _TopBar extends StatelessWidget {
+PhosphorIconData _categoryIcon(String category, bool isIncome) {
+  if (isIncome) return PhosphorIconsLight.wallet;
+  final k = category.toLowerCase().trim();
+  if (k.contains('food') || k.contains('restaurant') || k.contains('drink')) {
+    return PhosphorIconsLight.forkKnife;
+  }
+  if (k.contains('grocer') || k.contains('super') || k.contains('market')) {
+    return PhosphorIconsLight.shoppingCart;
+  }
+  if (k.contains('transport') || k.contains('uber') || k.contains('cab') ||
+      k.contains('train') || k.contains('bus')) {
+    return PhosphorIconsLight.bus;
+  }
+  if (k.contains('car') || k.contains('fuel') || k.contains('vehicle')) {
+    return PhosphorIconsLight.car;
+  }
+  if (k.contains('health') || k.contains('medical') || k.contains('pharma')) {
+    return PhosphorIconsLight.pill;
+  }
+  if (k.contains('invest')) return PhosphorIconsLight.trendUp;
+  if (k.contains('bill') || k.contains('util') || k.contains('electric')) {
+    return PhosphorIconsLight.lightning;
+  }
+  if (k.contains('gift') || k.contains('present')) {
+    return PhosphorIconsLight.gift;
+  }
+  if (k.contains('entertain') || k.contains('movie') || k.contains('ott')) {
+    return PhosphorIconsLight.filmSlate;
+  }
+  if (k.contains('shop') || k.contains('cloth')) {
+    return PhosphorIconsLight.bag;
+  }
+  if (k.contains('rent') || k.contains('home') || k.contains('house')) {
+    return PhosphorIconsLight.house;
+  }
+  if (k.contains('salary') || k.contains('income')) {
+    return PhosphorIconsLight.wallet;
+  }
+  return PhosphorIconsLight.tag;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Top section — stateful so sparkline can hold tap selection
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _TopSection extends StatefulWidget {
   final DateTime month;
   final bool isDark;
+  final TabController tab;
   final VoidCallback onPrev;
   final VoidCallback onNext;
   final bool canGoNext;
-
-  const _TopBar({
-    required this.month,
-    required this.isDark,
-    required this.onPrev,
-    required this.onNext,
-    required this.canGoNext,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final textPrimary =
-        isDark ? AppColor.textPrimary : AppColor.lightTextPrimary;
-    final textSecondary =
-        isDark ? AppColor.textSecondary : AppColor.lightTextSecondary;
-    final btnBg = isDark ? AppColor.darkCard : AppColor.lightSurface;
-    final border = isDark ? AppColor.darkBorder : AppColor.lightBorder;
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Analytics', style: AppTypography.heading2(textPrimary)),
-              const SizedBox(height: 2),
-              Text(
-                DateFormat('MMMM yyyy').format(month),
-                style: AppTypography.caption(textSecondary),
-              ),
-            ],
-          ),
-          Container(
-            decoration: BoxDecoration(
-              color: btnBg,
-              borderRadius: BorderRadius.circular(100),
-              border: Border.all(color: border),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _NavBtn(icon: Icons.chevron_left_rounded, onTap: onPrev),
-                _NavBtn(
-                  icon: Icons.chevron_right_rounded,
-                  onTap: canGoNext ? onNext : null,
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _NavBtn extends StatelessWidget {
-  final IconData icon;
-  final VoidCallback? onTap;
-  const _NavBtn({required this.icon, this.onTap});
-
-  @override
-  Widget build(BuildContext context) => GestureDetector(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
-          child: Icon(icon,
-              size: 17,
-              color:
-                  onTap != null ? AppColor.primary : AppColor.textTertiary),
-        ),
-      );
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Section label
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _SectionLabel extends StatelessWidget {
-  final String label;
-  final bool isDark;
-  final String? trailing;
-
-  const _SectionLabel(
-      {required this.label, required this.isDark, this.trailing});
-
-  @override
-  Widget build(BuildContext context) {
-    final textSecondary =
-        isDark ? AppColor.textSecondary : AppColor.lightTextSecondary;
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 28, 24, 10),
-      child: Row(
-        children: [
-          Text(
-            label.toUpperCase(),
-            style: AppTypography.captionSemiBold(textSecondary).copyWith(
-              fontSize: 11,
-              letterSpacing: 1.4,
-            ),
-          ),
-          if (trailing != null) ...[
-            const SizedBox(width: 8),
-            Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-              decoration: BoxDecoration(
-                color: AppColor.primary.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(100),
-              ),
-              child: Text(
-                trailing!,
-                style: AppTypography.caption(AppColor.primary)
-                    .copyWith(fontSize: 11, fontWeight: FontWeight.w700),
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Hero card — large spend + spend ratio ring + income/saved chips
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _HeroCard extends StatelessWidget {
   final double spent;
   final double income;
   final double net;
-  final bool isDark;
-  final DateTime month;
+  final double activeTotal;
+  final Color activeColor;
+  final String viewType;
+  final int daysInMonth;
+  final Map<int, double> dayMap;
+  final bool hasData;
+  final double maxVal;
 
-  const _HeroCard({
+  const _TopSection({
+    required this.month,
+    required this.isDark,
+    required this.tab,
+    required this.onPrev,
+    required this.onNext,
+    required this.canGoNext,
     required this.spent,
     required this.income,
     required this.net,
-    required this.isDark,
-    required this.month,
+    required this.activeTotal,
+    required this.activeColor,
+    required this.viewType,
+    required this.daysInMonth,
+    required this.dayMap,
+    required this.hasData,
+    required this.maxVal,
   });
 
   @override
+  State<_TopSection> createState() => _TopSectionState();
+}
+
+class _TopSectionState extends State<_TopSection> {
+  int? _selectedDay; // null = nothing selected
+
+  @override
+  void didUpdateWidget(_TopSection old) {
+    super.didUpdateWidget(old);
+    // Clear selection when tab or month changes
+    if (old.viewType != widget.viewType || old.month != widget.month) {
+      _selectedDay = null;
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final fmt = NumberFormat('#,##0', 'en_IN');
-    final fmtCompact = NumberFormat.compactCurrency(
-        symbol: '₹', decimalDigits: 1, locale: 'en_IN');
+    final isDark = widget.isDark;
     final textPrimary =
         isDark ? AppColor.textPrimary : AppColor.lightTextPrimary;
-    final textSecondary =
+    final textMuted =
         isDark ? AppColor.textSecondary : AppColor.lightTextSecondary;
-    final cardBg = isDark ? AppColor.darkCard : AppColor.lightSurface;
-    final border = isDark ? AppColor.darkBorder : AppColor.lightBorder;
-    final isPositive = net >= 0;
-    final netColor = isPositive ? AppColor.income : AppColor.expense;
-    final ratio = income > 0 ? (spent / income).clamp(0.0, 1.0) : 0.0;
+    final textDim =
+        isDark ? AppColor.textTertiary : AppColor.lightTextTertiary;
+    final divider = isDark ? AppColor.darkBorder : AppColor.lightBorder;
+    final segBg = isDark ? AppColor.darkCard : const Color(0xFFEEECE8);
+    final tooltipBg = isDark ? AppColor.darkElevated : Colors.white;
+    final fmt = NumberFormat('#,##0', 'en_IN');
+    final sym = Get.find<HomeController>().currencySymbol.value;
+    final isExpense = widget.viewType == 'expense';
+    final isPositive = widget.net >= 0;
+    final activeColor = widget.activeColor;
+    final now = DateTime.now();
 
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
-      child: Container(
-        padding: const EdgeInsets.all(22),
-        decoration: BoxDecoration(
-          color: cardBg,
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: border),
-          boxShadow: isDark
-              ? null
-              : [
-                  BoxShadow(
-                    color: AppColor.expense.withValues(alpha: 0.07),
-                    blurRadius: 32,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
-        ),
+    // Tooltip text for selected day
+    final selVal = _selectedDay != null ? (widget.dayMap[_selectedDay!] ?? 0) : 0.0;
+    final selDate = _selectedDay != null
+        ? DateTime(widget.month.year, widget.month.month, _selectedDay!)
+        : null;
+    final selLabel = selDate != null
+        ? '${DateFormat('d MMM').format(selDate)}  ·  $sym${fmt.format(selVal)}'
+        : null;
+
+    return GestureDetector(
+      // Tap anywhere outside bars clears selection
+      onTap: () => setState(() => _selectedDay = null),
+      behavior: HitTestBehavior.translucent,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ── Top row: big number + ring ─────────────
+            // ── Month nav ──────────────────────────────────────
             Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Total Spent',
-                          style: AppTypography.caption(textSecondary)),
-                      const SizedBox(height: 6),
-                      Text(
-                        '₹${fmt.format(spent)}',
-                        style:
-                            AppTypography.heading2(textPrimary).copyWith(
-                          fontSize: 36,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: -1.0,
-                          height: 1.0,
-                        ),
-                      ),
-                    ],
+                GestureDetector(
+                  onTap: widget.onPrev,
+                  behavior: HitTestBehavior.opaque,
+                  child: Padding(
+                    padding: const EdgeInsets.only(right: 12, top: 4, bottom: 4),
+                    child: PhosphorIcon(PhosphorIconsLight.caretLeft,
+                        size: 15, color: AppColor.primary),
                   ),
                 ),
-                _SpendRing(ratio: ratio, isDark: isDark),
+                Text(
+                  DateFormat('MMMM yyyy').format(widget.month),
+                  style: TextStyle(
+                      color: textMuted,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500),
+                ),
+                GestureDetector(
+                  onTap: widget.canGoNext ? widget.onNext : null,
+                  behavior: HitTestBehavior.opaque,
+                  child: Padding(
+                    padding: const EdgeInsets.only(left: 12, top: 4, bottom: 4),
+                    child: PhosphorIcon(PhosphorIconsLight.caretRight,
+                        size: 15,
+                        color: widget.canGoNext ? AppColor.primary : textDim),
+                  ),
+                ),
               ],
             ),
-
-            const SizedBox(height: 20),
-            Divider(height: 1, thickness: 1, color: border),
             const SizedBox(height: 18),
 
-            // ── Income + Net chips ─────────────────────
-            Row(
-              children: [
-                Expanded(
-                  child: _StatChip(
-                    icon: Icons.arrow_downward_rounded,
-                    label: 'Income',
-                    value: fmtCompact.format(income),
-                    color: AppColor.income,
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: _StatChip(
-                    icon: isPositive
-                        ? Icons.savings_outlined
-                        : Icons.warning_amber_rounded,
-                    label: isPositive ? 'Saved' : 'Over budget',
-                    value:
-                        '${isPositive ? '+' : '-'}${fmtCompact.format(net.abs())}',
-                    color: netColor,
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _SpendRing extends StatelessWidget {
-  final double ratio;
-  final bool isDark;
-
-  const _SpendRing({required this.ratio, required this.isDark});
-
-  @override
-  Widget build(BuildContext context) {
-    final trackColor = isDark
-        ? Colors.white.withValues(alpha: 0.07)
-        : Colors.black.withValues(alpha: 0.06);
-    final ringColor =
-        ratio > 0.85 ? AppColor.expense : AppColor.primary;
-
-    return SizedBox(
-      width: 68,
-      height: 68,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          SizedBox(
-            width: 68,
-            height: 68,
-            child: CircularProgressIndicator(
-              value: ratio,
-              strokeWidth: 5.5,
-              backgroundColor: trackColor,
-              valueColor: AlwaysStoppedAnimation<Color>(ringColor),
-              strokeCap: StrokeCap.round,
-            ),
-          ),
-          Text(
-            '${(ratio * 100).toStringAsFixed(0)}%',
-            style: TextStyle(
-              color: ringColor,
-              fontSize: 13,
-              fontWeight: FontWeight.w800,
-              letterSpacing: -0.4,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _StatChip extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String value;
-  final Color color;
-
-  const _StatChip({
-    required this.icon,
-    required this.label,
-    required this.value,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.08),
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Row(
-          children: [
+            // ── Segmented control ──────────────────────────────
             Container(
-              width: 30,
-              height: 30,
+              height: 40,
+              padding: const EdgeInsets.all(3),
               decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.15),
-                shape: BoxShape.circle,
+                color: segBg,
+                borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(icon, color: color, size: 15),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    label,
-                    style: TextStyle(
-                      color: color.withValues(alpha: 0.7),
-                      fontSize: 10,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  Text(
-                    value,
-                    style: TextStyle(
-                      color: color,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: -0.3,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      );
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Breakdown card
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _BreakdownCard extends StatelessWidget {
-  final List<MapEntry<String, double>> sorted;
-  final double total;
-  final String viewType;
-  final bool showBar;
-  final bool isDark;
-  final ValueChanged<String> onViewTypeChanged;
-  final ValueChanged<bool> onChartTypeChanged;
-
-  const _BreakdownCard({
-    required this.sorted,
-    required this.total,
-    required this.viewType,
-    required this.showBar,
-    required this.isDark,
-    required this.onViewTypeChanged,
-    required this.onChartTypeChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final cardBg = isDark ? AppColor.darkCard : AppColor.lightSurface;
-    final border = isDark ? AppColor.darkBorder : AppColor.lightBorder;
-    final textPrimary =
-        isDark ? AppColor.textPrimary : AppColor.lightTextPrimary;
-    final btnBg = isDark ? AppColor.darkElevated : AppColor.lightBg;
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: Container(
-        decoration: BoxDecoration(
-          color: cardBg,
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: border),
-          boxShadow: isDark
-              ? null
-              : [
-                  BoxShadow(
-                    color: AppColor.primary.withValues(alpha: 0.04),
-                    blurRadius: 24,
-                    offset: const Offset(0, 6),
-                  ),
-                ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 14, 0),
-              child: Row(
-                children: [
-                  Container(
-                    height: 34,
-                    decoration: BoxDecoration(
-                      color: btnBg,
-                      borderRadius: BorderRadius.circular(100),
-                      border: Border.all(color: border),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        _SegPill(
-                          label: 'Expenses',
-                          selected: viewType == 'expense',
-                          color: AppColor.expense,
-                          isDark: isDark,
-                          onTap: () => onViewTypeChanged('expense'),
-                        ),
-                        _SegPill(
-                          label: 'Income',
-                          selected: viewType == 'income',
-                          color: AppColor.income,
-                          isDark: isDark,
-                          onTap: () => onViewTypeChanged('income'),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const Spacer(),
-                  Container(
-                    height: 34,
-                    decoration: BoxDecoration(
-                      color: btnBg,
-                      borderRadius: BorderRadius.circular(100),
-                      border: Border.all(color: border),
-                    ),
-                    child: Row(
-                      children: [
-                        _IconToggle(
-                          icon: Icons.donut_large_rounded,
-                          selected: !showBar,
-                          onTap: () => onChartTypeChanged(false),
-                        ),
-                        _IconToggle(
-                          icon: Icons.bar_chart_rounded,
-                          selected: showBar,
-                          onTap: () => onChartTypeChanged(true),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            if (sorted.isEmpty)
-              _EmptyChart(isDark: isDark)
-            else ...[
-              showBar
-                  ? _BarChart(
-                      sorted: sorted,
-                      isDark: isDark,
-                      textPrimary: textPrimary)
-                  : _DonutChart(
-                      total: total,
-                      sorted: sorted,
-                      viewType: viewType,
-                      isDark: isDark),
-              Divider(
-                  height: 1,
-                  thickness: 1,
-                  color: border,
-                  indent: 16,
-                  endIndent: 16),
-              _CategoryRows(sorted: sorted, total: total, isDark: isDark),
-            ],
-            const SizedBox(height: 16),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _SegPill extends StatelessWidget {
-  final String label;
-  final bool selected;
-  final Color color;
-  final bool isDark;
-  final VoidCallback onTap;
-
-  const _SegPill({
-    required this.label,
-    required this.selected,
-    required this.color,
-    required this.isDark,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final textSecondary =
-        isDark ? AppColor.textSecondary : AppColor.lightTextSecondary;
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        margin: const EdgeInsets.all(3),
-        padding: const EdgeInsets.symmetric(horizontal: 13),
-        decoration: BoxDecoration(
-          color:
-              selected ? color.withValues(alpha: 0.15) : Colors.transparent,
-          borderRadius: BorderRadius.circular(100),
-        ),
-        alignment: Alignment.center,
-        child: Text(
-          label,
-          style: selected
-              ? AppTypography.captionSemiBold(color).copyWith(fontSize: 11)
-              : AppTypography.label(textSecondary).copyWith(fontSize: 11),
-        ),
-      ),
-    );
-  }
-}
-
-class _IconToggle extends StatelessWidget {
-  final IconData icon;
-  final bool selected;
-  final VoidCallback onTap;
-  const _IconToggle(
-      {required this.icon, required this.selected, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) => GestureDetector(
-        onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          margin: const EdgeInsets.all(3),
-          padding: const EdgeInsets.symmetric(horizontal: 10),
-          decoration: BoxDecoration(
-            color: selected
-                ? AppColor.primary.withValues(alpha: 0.15)
-                : Colors.transparent,
-            borderRadius: BorderRadius.circular(100),
-          ),
-          alignment: Alignment.center,
-          child: Icon(icon,
-              size: 16,
-              color: selected ? AppColor.primary : AppColor.textTertiary),
-        ),
-      );
-}
-
-class _EmptyChart extends StatelessWidget {
-  final bool isDark;
-  const _EmptyChart({required this.isDark});
-
-  @override
-  Widget build(BuildContext context) {
-    final textSecondary =
-        isDark ? AppColor.textSecondary : AppColor.lightTextSecondary;
-    return SizedBox(
-      width: double.infinity,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 48),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Icon(Icons.bar_chart_rounded,
-                size: 40,
-                color: AppColor.textTertiary.withValues(alpha: 0.25)),
-            const SizedBox(height: 12),
-            Text('No data for this period',
-                style: AppTypography.body(textSecondary)),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Donut — top category % in center with subtle glow
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _DonutChart extends StatelessWidget {
-  final double total;
-  final List<MapEntry<String, double>> sorted;
-  final String viewType;
-  final bool isDark;
-
-  const _DonutChart({
-    required this.total,
-    required this.sorted,
-    required this.viewType,
-    required this.isDark,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final textSecondary =
-        isDark ? AppColor.textSecondary : AppColor.lightTextSecondary;
-    final fmt = NumberFormat('#,##0', 'en_IN');
-    final topCat = sorted.isNotEmpty ? sorted.first : null;
-    final topPct =
-        topCat != null && total > 0 ? topCat.value / total * 100 : 0.0;
-    final topColor =
-        topCat != null ? AppColor.categoryColor(topCat.key) : AppColor.primary;
-
-    final pieData = sorted
-        .map((e) => _PieData(e.key, e.value, AppColor.categoryColor(e.key)))
-        .toList();
-
-    return SizedBox(
-      height: 200,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          if (topCat != null)
-            Container(
-              width: 90,
-              height: 90,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: topColor.withValues(alpha: isDark ? 0.18 : 0.10),
-                    blurRadius: 40,
-                    spreadRadius: 8,
-                  ),
-                ],
-              ),
-            ),
-          SfCircularChart(
-            margin: EdgeInsets.zero,
-            series: <CircularSeries>[
-              DoughnutSeries<_PieData, String>(
-                dataSource: pieData,
-                xValueMapper: (d, _) => d.category,
-                yValueMapper: (d, _) => d.amount,
-                pointColorMapper: (d, _) => d.color,
-                innerRadius: '72%',
-                radius: '86%',
-                animationDuration: 450,
-                enableTooltip: false,
-              ),
-            ],
-          ),
-          if (topCat != null)
-            Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  topCat.key,
-                  style: TextStyle(
-                    color: textSecondary,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w500,
-                    letterSpacing: 0.2,
-                  ),
+              child: TabBar(
+                controller: widget.tab,
+                indicator: BoxDecoration(
+                  color: isDark ? AppColor.darkElevated : Colors.white,
+                  borderRadius: BorderRadius.circular(9),
+                  boxShadow: isDark
+                      ? null
+                      : [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.06),
+                            blurRadius: 4,
+                            offset: const Offset(0, 1),
+                          ),
+                        ],
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  '${topPct.toStringAsFixed(0)}%',
-                  style: TextStyle(
-                    color: topColor,
-                    fontSize: 22,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: -0.8,
-                    height: 1.0,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  '₹${fmt.format(total)}',
-                  style: TextStyle(
-                    color: textSecondary,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Bar chart
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _BarChart extends StatelessWidget {
-  final List<MapEntry<String, double>> sorted;
-  final bool isDark;
-  final Color textPrimary;
-
-  const _BarChart({
-    required this.sorted,
-    required this.isDark,
-    required this.textPrimary,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final axisColor =
-        isDark ? AppColor.textTertiary : AppColor.lightTextTertiary;
-    final gridColor = isDark
-        ? Colors.white.withValues(alpha: 0.04)
-        : const Color(0xFFF3F2FA);
-    final border = isDark ? AppColor.darkBorder : AppColor.lightBorder;
-
-    final data = sorted
-        .map((e) => _BarCatData(
-              label:
-                  e.key.length > 11 ? '${e.key.substring(0, 10)}…' : e.key,
-              amount: e.value,
-              color: AppColor.categoryColor(e.key),
-            ))
-        .toList();
-
-    return SizedBox(
-      height: 210,
-      child: Padding(
-        padding: const EdgeInsets.only(top: 16),
-        child: SfCartesianChart(
-          margin: const EdgeInsets.symmetric(horizontal: 8),
-          plotAreaBorderWidth: 0,
-          primaryXAxis: CategoryAxis(
-            labelStyle: TextStyle(
-                color: axisColor,
-                fontSize: 10,
-                fontWeight: FontWeight.w500),
-            majorGridLines: const MajorGridLines(width: 0),
-            majorTickLines: const MajorTickLines(size: 0),
-            axisLine: const AxisLine(width: 0),
-            labelIntersectAction: AxisLabelIntersectAction.rotate45,
-          ),
-          primaryYAxis: NumericAxis(
-            isVisible: false,
-            majorGridLines: MajorGridLines(
-                width: 1,
-                color: gridColor,
-                dashArray: const [3, 3]),
-          ),
-          tooltipBehavior: TooltipBehavior(
-            enable: true,
-            color: isDark ? AppColor.darkElevated : Colors.white,
-            borderColor: border,
-            borderWidth: 1,
-            textStyle: TextStyle(
-                color: textPrimary,
-                fontSize: 12,
-                fontWeight: FontWeight.w700),
-            header: '',
-          ),
-          series: <CartesianSeries>[
-            ColumnSeries<_BarCatData, String>(
-              dataSource: data,
-              xValueMapper: (d, _) => d.label,
-              yValueMapper: (d, _) => d.amount,
-              pointColorMapper: (d, _) => d.color,
-              borderRadius:
-                  const BorderRadius.vertical(top: Radius.circular(10)),
-              animationDuration: 450,
-              width: 0.5,
-              enableTooltip: true,
-              dataLabelSettings: DataLabelSettings(
-                isVisible: true,
-                labelAlignment: ChartDataLabelAlignment.top,
-                builder: (data, point, series, pointIndex, seriesIndex) {
-                  final val = (data as _BarCatData).amount;
-                  final fmt = NumberFormat.compactCurrency(
-                      symbol: '₹', decimalDigits: 0);
-                  return Text(fmt.format(val),
+                indicatorSize: TabBarIndicatorSize.tab,
+                dividerColor: Colors.transparent,
+                labelPadding: EdgeInsets.zero,
+                tabs: [
+                  Tab(
+                    child: Text(
+                      'Expenses',
                       style: TextStyle(
-                          color: axisColor,
-                          fontSize: 9,
-                          fontWeight: FontWeight.w700));
-                },
+                        color: widget.tab.index == 0
+                            ? AppColor.expense
+                            : textMuted,
+                        fontSize: 13,
+                        fontWeight: widget.tab.index == 0
+                            ? FontWeight.w600
+                            : FontWeight.w400,
+                      ),
+                    ),
+                  ),
+                  Tab(
+                    child: Text(
+                      'Income',
+                      style: TextStyle(
+                        color: widget.tab.index == 1
+                            ? AppColor.income
+                            : textMuted,
+                        fontSize: 13,
+                        fontWeight: widget.tab.index == 1
+                            ? FontWeight.w600
+                            : FontWeight.w400,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
-          ],
-          onTooltipRender: (TooltipArgs args) {
-            final idx = args.pointIndex?.toInt() ?? 0;
-            if (args.dataPoints != null && args.dataPoints!.length > idx) {
-              final val = args.dataPoints![idx].y as num;
-              args.text = '₹${NumberFormat('#,##0').format(val)}';
-            }
-          },
-        ),
-      ),
-    );
-  }
-}
+            const SizedBox(height: 22),
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Category rows — full-width bars below each row
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _CategoryRows extends StatelessWidget {
-  final List<MapEntry<String, double>> sorted;
-  final double total;
-  final bool isDark;
-
-  const _CategoryRows({
-    required this.sorted,
-    required this.total,
-    required this.isDark,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final textPrimary =
-        isDark ? AppColor.textPrimary : AppColor.lightTextPrimary;
-    final textSecondary =
-        isDark ? AppColor.textSecondary : AppColor.lightTextSecondary;
-    final divider = isDark ? AppColor.darkBorder : AppColor.lightBorder;
-    final fmt = NumberFormat('#,##0', 'en_IN');
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-      child: Column(
-        children: sorted.asMap().entries.map((entry) {
-          final i = entry.key;
-          final cat = entry.value;
-          final pct = total > 0 ? cat.value / total : 0.0;
-          final color = AppColor.categoryColor(cat.key);
-
-          return Column(
-            children: [
-              if (i > 0) Divider(height: 1, thickness: 1, color: divider),
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 13),
+            // ── Hero number ────────────────────────────────────
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 200),
+              child: SizedBox(
+                width: double.infinity,
+                key: ValueKey(widget.viewType),
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        Container(
-                          width: 8,
-                          height: 8,
-                          decoration: BoxDecoration(
-                              color: color, shape: BoxShape.circle),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            cat.key,
-                            style: AppTypography.body(textPrimary),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        Text(
-                          '${(pct * 100).toStringAsFixed(0)}%',
-                          style: TextStyle(
-                            color: color.withValues(alpha: 0.8),
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Text(
-                          '₹${fmt.format(cat.value)}',
-                          style: AppTypography.captionSemiBold(textPrimary),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    // Full-width bar below the row
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(6),
-                      child: LinearProgressIndicator(
-                        value: pct,
-                        minHeight: 5,
-                        backgroundColor: color.withValues(alpha: 0.10),
-                        valueColor: AlwaysStoppedAnimation<Color>(color),
+                    Text(
+                      '$sym${fmt.format(widget.activeTotal)}',
+                      style: TextStyle(
+                        color: textPrimary,
+                        fontSize: 42,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -2,
+                        height: 1.0,
                       ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${isExpense ? 'spent' : 'earned'} in ${DateFormat('MMMM').format(widget.month)}',
+                      style: TextStyle(color: textDim, fontSize: 13),
                     ),
                   ],
                 ),
               ),
-            ],
-          );
-        }).toList(),
+            ),
+            const SizedBox(height: 16),
+
+            // ── Secondary stats ────────────────────────────────
+            Row(
+              children: [
+                _InlineStat(
+                  label: isExpense ? 'Income' : 'Expenses',
+                  value: '$sym${fmt.format(isExpense ? widget.income : widget.spent)}',
+                  color: isExpense ? AppColor.income : AppColor.expense,
+                  textMuted: textMuted,
+                ),
+                Container(
+                  width: 1,
+                  height: 28,
+                  color: divider,
+                  margin: const EdgeInsets.symmetric(horizontal: 16),
+                ),
+                _InlineStat(
+                  label: isPositive ? 'Saved' : 'Over',
+                  value: '$sym${fmt.format(widget.net.abs())}',
+                  color: isPositive ? AppColor.income : AppColor.expense,
+                  textMuted: textMuted,
+                ),
+                if (widget.income > 0 && widget.spent > 0) ...[
+                  Container(
+                    width: 1,
+                    height: 28,
+                    color: divider,
+                    margin: const EdgeInsets.symmetric(horizontal: 16),
+                  ),
+                  _InlineStat(
+                    label: 'Spend rate',
+                    value:
+                        '${(widget.spent / widget.income * 100).toStringAsFixed(0)}%',
+                    color: textPrimary,
+                    textMuted: textMuted,
+                  ),
+                ],
+              ],
+            ),
+            const SizedBox(height: 24),
+
+            // ── Sparkline header row: label + tooltip pill ─────
+            Row(
+              children: [
+                Text(
+                  'Daily ${isExpense ? 'spend' : 'income'}',
+                  style: TextStyle(
+                    color: textDim,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                    letterSpacing: 0.3,
+                  ),
+                ),
+                if (selLabel != null) ...[
+                  const SizedBox(width: 8),
+                  AnimatedOpacity(
+                    opacity: 1.0,
+                    duration: const Duration(milliseconds: 150),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: tooltipBg,
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(
+                          color: activeColor.withValues(alpha: 0.3),
+                          width: 0.5,
+                        ),
+                        boxShadow: isDark
+                            ? null
+                            : [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.06),
+                                  blurRadius: 6,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                      ),
+                      child: Text(
+                        selLabel,
+                        style: TextStyle(
+                          color: activeColor,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: -0.2,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+            const SizedBox(height: 8),
+
+            // ── Sparkline bars ─────────────────────────────────
+            // Extra 10px top padding so the "today" dot has room above the bar
+            SizedBox(
+              height: 66, // 46 bar + 10 dot zone + 10 top buffer
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: List.generate(widget.daysInMonth, (i) {
+                  final day = i + 1;
+                  final val = widget.dayMap[day] ?? 0;
+                  final frac = val > 0 ? val / widget.maxVal : 0.0;
+                  final isToday = day == now.day &&
+                      widget.month.month == now.month &&
+                      widget.month.year == now.year;
+                  final isSelected = _selectedDay == day;
+                  final hasValue = val > 0;
+
+                  // Bar opacity: selected = full, rest dim slightly; today always full
+                  final barAlpha = _selectedDay == null
+                      ? (isToday ? 1.0 : 0.55)
+                      : (isSelected ? 1.0 : 0.25);
+
+                  return Expanded(
+                    child: GestureDetector(
+                      onTap: () {
+                        if (!hasValue) return; // can't select empty bars
+                        HapticFeedback.selectionClick();
+                        setState(() {
+                          _selectedDay = isSelected ? null : day;
+                        });
+                      },
+                      behavior: HitTestBehavior.opaque,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 0.8),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            // Today dot — 4px circle above bar, only for current month
+                            SizedBox(
+                              height: 10,
+                              child: Center(
+                                child: isToday
+                                    ? Container(
+                                        width: 4,
+                                        height: 4,
+                                        decoration: BoxDecoration(
+                                          color: activeColor,
+                                          shape: BoxShape.circle,
+                                        ),
+                                      )
+                                    : const SizedBox.shrink(),
+                              ),
+                            ),
+                            // The bar itself
+                            AnimatedContainer(
+                              duration: const Duration(milliseconds: 200),
+                              height: hasValue
+                                  ? (frac * 46).clamp(3.0, 46.0)
+                                  : 3,
+                              decoration: BoxDecoration(
+                                color: hasValue
+                                    ? activeColor.withValues(alpha: barAlpha)
+                                    : (isDark
+                                        ? Colors.white.withValues(alpha: 0.05)
+                                        : Colors.black.withValues(alpha: 0.04)),
+                                borderRadius: BorderRadius.circular(2),
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                }),
+              ),
+            ),
+
+            // ── Axis labels ────────────────────────────────────
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: ['1', '7', '14', '21', '${widget.daysInMonth}']
+                  .map((l) =>
+                      Text(l, style: TextStyle(color: textDim, fontSize: 10)))
+                  .toList(),
+            ),
+            const SizedBox(height: 24),
+            Divider(height: 1, thickness: 0.5, color: divider),
+          ],
+        ),
       ),
     );
   }
 }
 
+class _InlineStat extends StatelessWidget {
+  final String label;
+  final String value;
+  final Color color;
+  final Color textMuted;
+
+  const _InlineStat({
+    required this.label,
+    required this.value,
+    required this.color,
+    required this.textMuted,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label,
+            style: TextStyle(
+                color: textMuted, fontSize: 11, fontWeight: FontWeight.w400)),
+        const SizedBox(height: 2),
+        Text(value,
+            style: TextStyle(
+              color: color,
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+              letterSpacing: -0.5,
+            )),
+      ],
+    );
+  }
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
-// Transactions list — grouped by date with day total, category pill
+// Category breakdown
+// Each category gets a shade of the tab's accent color (expense = coral family,
+// income = mint family) so the stacked bar and row bars always feel cohesive.
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _TransactionsList extends StatelessWidget {
-  final List<Map<String, dynamic>> monthTx;
+// Returns an ordered list of colors for N categories, all within the tab hue.
+List<Color> _tabPalette(String viewType, int count) {
+  // Expense: coral-red family.  Income: mint-green family.
+  final isExpense = viewType == 'expense';
+
+  // Define 6 stops per family — enough for top-5 + tail
+  final List<Color> palette = isExpense
+      ? const [
+          Color(0xFFFF5370), // coral (AppColor.expense)
+          Color(0xFFFF7A5C),
+          Color(0xFFFF9A6C),
+          Color(0xFFFFB88A),
+          Color(0xFFFFD0A8),
+          Color(0xFFFFE8CC),
+        ]
+      : const [
+          Color(0xFF00C896), // mint (AppColor.income)
+          Color(0xFF26D4A4),
+          Color(0xFF4DDEB4),
+          Color(0xFF80E8C8),
+          Color(0xFFAAF0DA),
+          Color(0xFFCCF7EC),
+        ];
+
+  return List.generate(count, (i) => palette[i.clamp(0, palette.length - 1)]);
+}
+
+class _CategoryBreakdown extends StatelessWidget {
+  final List<MapEntry<String, double>> sorted;
+  final double total;
+  final String viewType;
   final bool isDark;
 
-  const _TransactionsList({required this.monthTx, required this.isDark});
+  const _CategoryBreakdown({
+    required this.sorted,
+    required this.total,
+    required this.viewType,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final textMuted =
+        isDark ? AppColor.textSecondary : AppColor.lightTextSecondary;
+    final textPrimary =
+        isDark ? AppColor.textPrimary : AppColor.lightTextPrimary;
+    final divider = isDark ? AppColor.darkBorder : AppColor.lightBorder;
+    final sym = Get.find<HomeController>().currencySymbol.value;
+    final fmt = NumberFormat('#,##0', 'en_IN');
+    final isExpense = viewType == 'expense';
+    final top5 = sorted.take(5).toList();
+
+    // One palette call — same colors used in bar AND rows
+    final colors = _tabPalette(viewType, top5.length);
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Categories',
+            style: TextStyle(
+              color: textMuted,
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
+              letterSpacing: 0.3,
+            ),
+          ),
+          const SizedBox(height: 14),
+
+          if (sorted.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 24),
+              child: Text(
+                'No ${isExpense ? 'expense' : 'income'} categories this month',
+                style: TextStyle(color: textMuted, fontSize: 13),
+              ),
+            )
+          else ...[
+            // ── Stacked proportion bar ────────────────────────
+            // Uses tab-palette colors so bar segments visually match the rows
+            ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: SizedBox(
+                height: 6,
+                child: Row(
+                  children: [
+                    ...top5.asMap().entries.map((e) {
+                      final flex = total > 0
+                          ? (e.value.value / total * 1000).round()
+                          : 0;
+                      return Flexible(
+                        flex: flex < 1 ? 1 : flex,
+                        child: Container(color: colors[e.key]),
+                      );
+                    }),
+                    if (sorted.length > 5)
+                      Flexible(
+                        flex: sorted.skip(5).fold<int>(
+                              0,
+                              (s, e) => s +
+                                  (total > 0
+                                      ? (e.value / total * 1000).round()
+                                      : 0),
+                            ),
+                        child: Container(
+                          color: isDark
+                              ? Colors.white.withValues(alpha: 0.10)
+                              : Colors.black.withValues(alpha: 0.06),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 6),
+
+            // ── Category rows ─────────────────────────────────
+            ...top5.asMap().entries.map((entry) {
+              final i = entry.key;
+              final cat = entry.value;
+              final pct = total > 0 ? cat.value / total : 0.0;
+              final color = colors[i];
+
+              return _CategoryRow(
+                name: cat.key,
+                amount: '$sym${fmt.format(cat.value)}',
+                pct: pct,
+                color: color,
+                isDark: isDark,
+                textPrimary: textPrimary,
+                textMuted: textMuted,
+                isExpense: isExpense,
+                dividerColor: divider,
+                showDivider: i < top5.length - 1 || sorted.length > 5,
+              );
+            }),
+
+            if (sorted.length > 5)
+              Padding(
+                padding: const EdgeInsets.only(top: 8, bottom: 4),
+                child: Text(
+                  '+ ${sorted.length - 5} more categories',
+                  style: const TextStyle(
+                    color: AppColor.primary,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+          ],
+          const SizedBox(height: 24),
+          Divider(height: 1, thickness: 0.5, color: divider),
+        ],
+      ),
+    );
+  }
+}
+
+class _CategoryRow extends StatelessWidget {
+  final String name;
+  final String amount;
+  final double pct;
+  final Color color;
+  final bool isDark;
+  final Color textPrimary;
+  final Color textMuted;
+  final bool isExpense;
+  final Color dividerColor;
+  final bool showDivider;
+
+  const _CategoryRow({
+    required this.name,
+    required this.amount,
+    required this.pct,
+    required this.color,
+    required this.isDark,
+    required this.textPrimary,
+    required this.textMuted,
+    required this.isExpense,
+    required this.dividerColor,
+    required this.showDivider,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final track = isDark
+        ? Colors.white.withValues(alpha: 0.07)
+        : Colors.black.withValues(alpha: 0.05);
+
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 13),
+          child: Row(
+            children: [
+              // Icon circle — tinted with row color
+              Container(
+                width: 34,
+                height: 34,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: isDark ? 0.16 : 0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: Center(
+                  child: PhosphorIcon(
+                    _categoryIcon(name, !isExpense),
+                    size: 15,
+                    color: color,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+
+              // Name + progress bar
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      name,
+                      style: TextStyle(
+                        color: textPrimary,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 5),
+                    Stack(
+                      children: [
+                        Container(
+                          height: 3,
+                          decoration: BoxDecoration(
+                            color: track,
+                            borderRadius: BorderRadius.circular(3),
+                          ),
+                        ),
+                        FractionallySizedBox(
+                          widthFactor: pct.clamp(0.0, 1.0),
+                          child: Container(
+                            height: 3,
+                            decoration: BoxDecoration(
+                              color: color,
+                              borderRadius: BorderRadius.circular(3),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 16),
+
+              // Amount + percentage stacked right-aligned
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    amount,
+                    style: TextStyle(
+                      color: textPrimary,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: -0.3,
+                    ),
+                  ),
+                  const SizedBox(height: 1),
+                  Text(
+                    '${(pct * 100).toStringAsFixed(0)}%',
+                    style: TextStyle(color: textMuted, fontSize: 11),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        if (showDivider)
+          Divider(
+            height: 1,
+            thickness: 0.5,
+            color: dividerColor,
+            indent: 46,
+          ),
+      ],
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Transactions — Phosphor icons, filtered by tab
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _TransactionsSection extends StatelessWidget {
+  final List<Map<String, dynamic>> filteredTx;
+  final String viewType;
+  final bool isDark;
+
+  const _TransactionsSection({
+    required this.filteredTx,
+    required this.viewType,
+    required this.isDark,
+  });
 
   Map<String, List<Map<String, dynamic>>> _groupByDate(
       List<Map<String, dynamic>> txs) {
@@ -1122,214 +988,154 @@ class _TransactionsList extends StatelessWidget {
       String label;
       if (day == today) {
         label = 'Today';
-      } else if (day == yesterday) {
-        label = 'Yesterday';
-      } else {
-        label = DateFormat('EEEE, d MMM').format(d);
-      }
+      } else if (day == yesterday) label = 'Yesterday';
+      else label = DateFormat('EEE, d MMM').format(d);
       groups.putIfAbsent(label, () => []).add(tx);
     }
     return groups;
   }
 
+  String _title(Map<String, dynamic> tx) {
+    final t = tx['title'];
+    if (t != null && (t as String).isNotEmpty) return t;
+    final cat = (tx['category'] as String?) ?? '';
+    if (cat.isNotEmpty) return cat;
+    return tx['type'] == 'income' ? 'Income' : 'Expense';
+  }
+
   @override
   Widget build(BuildContext context) {
-    final controller = Get.find<HomeController>();
     final textPrimary =
         isDark ? AppColor.textPrimary : AppColor.lightTextPrimary;
-    final textSecondary =
+    final textMuted =
         isDark ? AppColor.textSecondary : AppColor.lightTextSecondary;
-    final cardBg = isDark ? AppColor.darkCard : AppColor.lightSurface;
-    final border = isDark ? AppColor.darkBorder : AppColor.lightBorder;
-    final divider = isDark ? AppColor.darkBorder : AppColor.lightBorder;
-    final groupLabelColor =
+    final textDim =
         isDark ? AppColor.textTertiary : AppColor.lightTextTertiary;
-
-    final sorted = [...monthTx]..sort((a, b) =>
-        DateTime.parse(b['date']).compareTo(DateTime.parse(a['date'])));
-
-    if (sorted.isEmpty) {
-      return Padding(
-        padding: const EdgeInsets.fromLTRB(24, 0, 24, 0),
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 40),
-            child: Column(
-              children: [
-                Icon(Icons.receipt_long_outlined,
-                    size: 44,
-                    color: AppColor.textTertiary.withValues(alpha: 0.25)),
-                const SizedBox(height: 14),
-                Text('No transactions this month',
-                    style: AppTypography.body(textSecondary)),
-                const SizedBox(height: 4),
-                Text('🎉 Great savings!',
-                    style: AppTypography.caption(textSecondary)),
-              ],
-            ),
-          ),
-        ),
-      );
-    }
-
-    final grouped = _groupByDate(sorted);
+    final divColor = isDark ? AppColor.darkBorder : AppColor.lightBorder;
+    final sym = Get.find<HomeController>().currencySymbol.value;
+    final isExpense = viewType == 'expense';
+    final amountColor = isExpense ? AppColor.expense : AppColor.income;
     final fmt = NumberFormat('#,##0', 'en_IN');
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
+      padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: grouped.entries.map((group) {
-          final dateLabel = group.key;
-          final txsInGroup = group.value;
-          final dayTotal = txsInGroup
-              .where((t) => t['type'] == 'expense')
-              .fold(0.0, (s, t) => s + (t['amount'] as num).toDouble());
+        children: [
+          Text(
+            isExpense ? 'Expenses' : 'Income',
+            style: TextStyle(
+              color: textMuted,
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
+              letterSpacing: 0.3,
+            ),
+          ),
+          const SizedBox(height: 16),
 
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Date header with day spend total
-              Padding(
-                padding: const EdgeInsets.only(bottom: 8, top: 4),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      dateLabel,
-                      style: TextStyle(
-                        color: groupLabelColor,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 0.3,
-                      ),
-                    ),
-                    if (dayTotal > 0)
-                      Text(
-                        '-₹${fmt.format(dayTotal)}',
-                        style: TextStyle(
-                          color: AppColor.expense.withValues(alpha: 0.65),
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                  ],
-                ),
+          if (filteredTx.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 32),
+              child: Text(
+                'No ${isExpense ? 'expenses' : 'income'} this month',
+                style: TextStyle(color: textMuted, fontSize: 13),
               ),
-
-              Container(
-                decoration: BoxDecoration(
-                  color: cardBg,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: border),
-                  boxShadow: isDark
-                      ? null
-                      : [
-                          BoxShadow(
-                            color:
-                                AppColor.primary.withValues(alpha: 0.04),
-                            blurRadius: 16,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                ),
-                child: Column(
-                  children: txsInGroup.asMap().entries.map((entry) {
-                    final i = entry.key;
-                    final tx = entry.value;
-                    final isExpense = tx['type'] == 'expense';
-                    final category = tx['category'] as String? ?? '';
-                    final catColor = AppColor.categoryColor(category);
-                    final amountColor =
-                        isExpense ? AppColor.expense : AppColor.income;
-                    final prefix = isExpense ? '-' : '+';
-                    final amount = (tx['amount'] as num).toDouble();
+            )
+          else
+            ..._groupByDate(filteredTx).entries.map((group) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Text(group.key,
+                        style: TextStyle(
+                          color: textDim,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
+                          letterSpacing: 0.2,
+                        )),
+                  ),
+                  ...group.value.asMap().entries.map((e) {
+                    final idx = e.key;
+                    final tx = e.value;
+                    final cat = (tx['category'] as String?) ?? '';
+                    final catColor = cat.isNotEmpty
+                        ? AppColor.categoryColor(cat)
+                        : AppColor.primary;
+                    final displayTitle = _title(tx);
 
                     return Column(
                       children: [
-                        if (i > 0)
-                          Divider(height: 1, thickness: 1, color: divider),
-                        InkWell(
-                          borderRadius: i == 0
-                              ? const BorderRadius.vertical(
-                                  top: Radius.circular(20))
-                              : i == txsInGroup.length - 1
-                                  ? const BorderRadius.vertical(
-                                      bottom: Radius.circular(20))
-                                  : BorderRadius.zero,
-                          splashColor:
-                              AppColor.primary.withValues(alpha: 0.05),
-                          onTap: () => Get.to(
-                            () => TransactionDetailsScreen(
-                              transaction: tx,
-                              categoryList: categoryList,
-                            ),
+                        if (idx > 0)
+                          Divider(
+                            height: 1,
+                            thickness: 0.5,
+                            color: divColor,
+                            indent: 46,
                           ),
+                        InkWell(
+                          onTap: () {
+                            HapticFeedback.lightImpact();
+                            Get.to(
+                              () => TransactionDetailsScreen(
+                                  transaction: tx,
+                                  categoryList: categoryList),
+                              transition: Transition.cupertino,
+                            );
+                          },
                           child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 14),
+                            padding: const EdgeInsets.symmetric(vertical: 11),
                             child: Row(
                               children: [
+                                // Phosphor icon circle
                                 Container(
-                                  width: 42,
-                                  height: 42,
+                                  width: 34,
+                                  height: 34,
                                   decoration: BoxDecoration(
-                                    color:
-                                        catColor.withValues(alpha: 0.12),
+                                    color: catColor.withValues(alpha: 0.12),
                                     shape: BoxShape.circle,
                                   ),
-                                  child: Icon(
-                                    controller.getCategoryIcon(
-                                        category, categoryList),
-                                    color: catColor,
-                                    size: AppDimens.iconSM,
+                                  child: Center(
+                                    child: PhosphorIcon(
+                                      _categoryIcon(cat, !isExpense),
+                                      size: 15,
+                                      color: catColor,
+                                    ),
                                   ),
                                 ),
-                                const SizedBox(width: 13),
+                                const SizedBox(width: 12),
                                 Expanded(
                                   child: Column(
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
                                     children: [
                                       Text(
-                                        tx['description']?.toString() ??
-                                            '',
-                                        style: AppTypography.body(
-                                            textPrimary),
+                                        displayTitle,
+                                        style: TextStyle(
+                                          color: textPrimary,
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w500,
+                                        ),
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
                                       ),
-                                      const SizedBox(height: 4),
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                            horizontal: 8, vertical: 2),
-                                        decoration: BoxDecoration(
-                                          color: catColor
-                                              .withValues(alpha: 0.10),
-                                          borderRadius:
-                                              BorderRadius.circular(100),
-                                        ),
-                                        child: Text(
-                                          category,
-                                          style: TextStyle(
-                                              color: catColor,
-                                              fontSize: 10,
-                                              fontWeight: FontWeight.w600),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ),
+                                      if (cat.isNotEmpty &&
+                                          cat != displayTitle)
+                                        Text(cat,
+                                            style: TextStyle(
+                                              color: textDim,
+                                              fontSize: 11,
+                                            )),
                                     ],
                                   ),
                                 ),
-                                const SizedBox(width: 8),
                                 Text(
-                                  '$prefix₹${fmt.format(amount)}',
+                                  '${isExpense ? '−' : '+'}$sym${fmt.format((tx['amount'] as num).toDouble())}',
                                   style: TextStyle(
                                     color: amountColor,
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w700,
-                                    letterSpacing: -0.3,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
                                   ),
                                 ),
                               ],
@@ -1338,48 +1144,13 @@ class _TransactionsList extends StatelessWidget {
                         ),
                       ],
                     );
-                  }).toList(),
-                ),
-              ),
-              const SizedBox(height: 10),
-            ],
-          );
-        }).toList(),
+                  }),
+                  const SizedBox(height: 16),
+                ],
+              );
+            }),
+        ],
       ),
     );
   }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Data models
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _PieData {
-  final String category;
-  final double amount;
-  final Color color;
-  _PieData(this.category, this.amount, this.color);
-}
-
-class _BarCatData {
-  final String label;
-  final double amount;
-  final Color color;
-  _BarCatData(
-      {required this.label, required this.amount, required this.color});
-}
-
-class _MonthPoint {
-  final String label;
-  final double income;
-  final double expense;
-  _MonthPoint(
-      {required this.label, required this.income, required this.expense});
-}
-
-// Keep for any external references
-class PieData {
-  final String category;
-  final double amount;
-  PieData(this.category, this.amount);
 }

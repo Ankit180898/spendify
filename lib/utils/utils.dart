@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:spendify/model/categories_model.dart';
 
 enum RotationDirection { clockwise, counterclockwise }
@@ -48,12 +49,12 @@ TextStyle normalText(double size, Color color) => GoogleFonts.dmSans(
     );
 
    List<CategoriesModel> categoryList = [
-    CategoriesModel(name: 'Investments', icon: Icons.trending_up),
-    CategoriesModel(name: 'Health', icon: Icons.medical_services_outlined),
-    CategoriesModel(name: 'Bills & Fees', icon: Icons.receipt_long),
-    CategoriesModel(name: 'Food & Drinks', icon: Icons.restaurant),
-    CategoriesModel(name: 'Car', icon: Icons.directions_car),
-    CategoriesModel(name: 'Groceries', icon: Icons.shopping_cart),
-    CategoriesModel(name: 'Gifts', icon: Icons.card_giftcard),
-    CategoriesModel(name: 'Transport', icon: Icons.transit_enterexit),
+    CategoriesModel(name: 'Investments', icon: PhosphorIconsLight.chartBar),
+    CategoriesModel(name: 'Health', icon: PhosphorIconsLight.heart),
+    CategoriesModel(name: 'Bills & Fees', icon: PhosphorIconsLight.receipt),
+    CategoriesModel(name: 'Food & Drinks', icon: PhosphorIconsLight.coffee),
+    CategoriesModel(name: 'Car', icon: PhosphorIconsLight.car),
+    CategoriesModel(name: 'Groceries', icon: PhosphorIconsLight.shoppingCart),
+    CategoriesModel(name: 'Gifts', icon: PhosphorIconsLight.gift),
+    CategoriesModel(name: 'Transport', icon: PhosphorIconsLight.bus),
   ];

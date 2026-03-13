@@ -5,7 +5,10 @@ import 'package:spendify/view/auth/register_screen.dart';
 import 'package:spendify/view/home/home_screen.dart';
 import 'package:spendify/view/landing/get_started_screen.dart';
 import 'package:spendify/view/landing/splash_screen.dart';
+import 'package:spendify/view/onboarding/onboarding_screen.dart';
 import 'package:spendify/view/profile/profile_screen.dart';
+import 'package:spendify/view/auth/forgot_password_screen.dart';
+import 'package:spendify/view/profile/support_screen.dart';
 part 'app_routes.dart';
 
 class AppPages {
@@ -41,6 +44,21 @@ class AppPages {
     GetPage(
       name: _Paths.PROFILE,
       page: () => const ProfileScreen(),
+      transition: Transition.fadeIn,
+    ),
+    GetPage(
+      name: _Paths.ONBOARDING,
+      page: () => const OnboardingScreen(),
+      transition: Transition.fadeIn,
+    ),
+    GetPage(
+      name: _Paths.SUPPORT,
+      page: () => const SupportScreen(),
+      transition: Transition.fadeIn,
+    ),
+    GetPage(
+      name: _Paths.FORGOT_PASSWORD,
+      page: () => const ForgotPasswordScreen(),
       transition: Transition.fadeIn,
     ),
   ];

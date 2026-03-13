@@ -1,7 +1,15 @@
 {
   "permissions": {
     "allow": [
-      "WebSearch"
+      "WebSearch",
+      "Bash(flutter analyze:*)",
+      "Read(//Users/ankitkumar/Developer/Flutter projects/expense tracker/spendify/**)",
+      "Read(//Users/ankitkumar/.pub-cache/hosted/pub.dev/**)",
+      "Read(//Users/ankitkumar/Developer/Flutter projects/expense tracker/spendify/$HOME/.pub-cache/hosted/**)",
+      "Read(//Users/ankitkumar/Developer/Flutter projects/expense tracker/spendify/$HOME/**)",
+      "Bash(find '/Users/ankitkumar/Developer/Flutter projects/expense tracker/spendify' -name *.dart -path *phosphor*)",
+      "Read(//phosphor_flutter/,/**)",
+      "Read(//Users/ankitkumar/**)"
     ]
   }
 }

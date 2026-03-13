@@ -3,9 +3,10 @@ import 'package:get/get.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:spendify/config/app_color.dart';
-import 'package:spendify/config/app_theme.dart';
 import 'package:spendify/controller/home_controller/home_controller.dart';
 import 'package:spendify/controller/theme_controller.dart';
+import 'package:spendify/routes/app_pages.dart';
+import 'package:spendify/view/profile/edit_profile_screen.dart';
 import 'package:spendify/widgets/toast/custom_toast.dart';
 
 class ProfileScreen extends StatelessWidget {
@@ -13,397 +14,232 @@ class ProfileScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final controller = Get.find<HomeController>();
+    final ctrl = Get.find<HomeController>();
     final themeCtrl = ThemeController.to;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    final bg = isDark ? AppColor.darkBg : AppColor.lightBg;
-    final cardBg = isDark ? AppColor.darkCard : AppColor.lightSurface;
-    final textPrimary =
-        isDark ? AppColor.textPrimary : AppColor.lightTextPrimary;
-    final textSecondary =
-        isDark ? AppColor.textSecondary : AppColor.lightTextSecondary;
-    final borderColor = isDark ? AppColor.darkBorder : AppColor.lightBorder;
+    final bg = isDark ? AppColor.darkBg : Colors.white;
+    final textPrimary = isDark ? AppColor.textPrimary : const Color(0xFF09090B);
+    final textMuted = isDark ? AppColor.textSecondary : const Color(0xFF71717A);
+    final divColor = isDark ? AppColor.darkBorder : const Color(0xFFF4F4F5);
 
     return Scaffold(
       backgroundColor: bg,
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
+        backgroundColor: bg,
         elevation: 0,
+        scrolledUnderElevation: 0,
         automaticallyImplyLeading: false,
-        title: Text('Profile', style: AppTypography.heading2(textPrimary)),
+        title: Text('Profile', style: TextStyle(color: textPrimary, fontSize: 17, fontWeight: FontWeight.w600)),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppDimens.spaceLG),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ── Avatar + name ───────────────────────
-            _buildAvatarSection(controller, cardBg, textPrimary,
-                textSecondary, borderColor),
 
-            const SizedBox(height: AppDimens.spaceLG),
-
-            // ── Quick stats ─────────────────────────
-            _buildQuickStats(controller, cardBg, textPrimary, textSecondary,
-                borderColor),
-
-            const SizedBox(height: AppDimens.spaceLG),
-
-            // ── Recent transactions ─────────────────
-            _buildRecentTransactions(controller, cardBg, textPrimary,
-                textSecondary, borderColor, isDark),
-
-            const SizedBox(height: AppDimens.spaceLG),
-
-            // ── Preferences ────────────────────────
-            _buildPreferences(themeCtrl, isDark, cardBg, textPrimary,
-                textSecondary, borderColor),
-
-            const SizedBox(height: AppDimens.spaceLG),
-
-            // ── Logout ──────────────────────────────
-            SizedBox(
-              width: double.infinity,
-              height: AppDimens.buttonHeight,
-              child: OutlinedButton.icon(
-                onPressed: () async {
-                  await controller.signOut();
-                  CustomToast.successToast('Success', 'Logged out successfully');
-                },
-                icon: const PhosphorIcon(PhosphorIconsLight.signOut,
-                    color: AppColor.expense, size: AppDimens.iconMD),
-                label: Text(
-                  'Logout',
-                  style: AppTypography.button(AppColor.expense),
+            // ── Avatar + name ─────────────────────────────
+            Obx(() {
+              final name = ctrl.userName.value;
+              final email = ctrl.userEmail.value;
+              final initials = _initials(name);
+              return Padding(
+                padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 52, height: 52,
+                      decoration: BoxDecoration(color: AppColor.primary.withValues(alpha: 0.12), shape: BoxShape.circle),
+                      child: Center(child: Text(initials, style: const TextStyle(color: AppColor.primary, fontSize: 18, fontWeight: FontWeight.w700))),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(name, style: TextStyle(color: textPrimary, fontSize: 16, fontWeight: FontWeight.w600)),
+                          const SizedBox(height: 2),
+                          Text(email, style: TextStyle(color: textMuted, fontSize: 13), maxLines: 1, overflow: TextOverflow.ellipsis),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-                style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: AppColor.expense, width: 1.5),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppDimens.radiusMD),
-                  ),
+              );
+            }),
+
+            Divider(height: 1, color: divColor),
+
+            // ── Stats row ─────────────────────────────────
+            Obx(() {
+              final fmt = NumberFormat('#,##0', 'en_IN');
+              final net = ctrl.totalIncome.value - ctrl.totalExpense.value;
+              final isPos = net >= 0;
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+                child: Row(
+                  children: [
+                    _StatBox(label: 'Transactions', value: '${ctrl.transactions.length}', color: AppColor.primary, isDark: isDark),
+                    const SizedBox(width: 10),
+                    _StatBox(
+                      label: 'Net balance',
+                      value: '${isPos ? '+' : '-'}${ctrl.currencySymbol.value}${fmt.format(net.abs())}',
+                      color: isPos ? AppColor.income : AppColor.expense,
+                      isDark: isDark,
+                    ),
+                  ],
                 ),
+              );
+            }),
+
+            Divider(height: 1, color: divColor),
+
+            // ── Settings list ─────────────────────────────
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+              child: Text('Settings', style: TextStyle(color: textMuted, fontSize: 12, fontWeight: FontWeight.w500)),
+            ),
+
+            _SettingRow(
+              icon: PhosphorIconsLight.sliders,
+              label: 'Edit Preferences',
+              subtitle: 'Currency, occupation, budget & categories',
+              trailing: PhosphorIcon(PhosphorIconsLight.caretRight, size: 18, color: textMuted),
+              textPrimary: textPrimary,
+              textMuted: textMuted,
+              divColor: divColor,
+              onTap: () => Get.to(() => const EditProfileScreen()),
+            ),
+
+            Obx(() => _SettingRow(
+              icon: themeCtrl.isDarkMode ? PhosphorIconsLight.moon : PhosphorIconsLight.sun,
+              label: 'Appearance',
+              subtitle: themeCtrl.isDarkMode ? 'Dark mode' : 'Light mode',
+              trailing: Switch.adaptive(
+                value: themeCtrl.isDarkMode,
+                onChanged: (_) => themeCtrl.toggleTheme(),
               ),
+              textPrimary: textPrimary,
+              textMuted: textMuted,
+              divColor: divColor,
+            )),
+
+            _SettingRow(
+              icon: PhosphorIconsLight.headset,
+              label: 'Help & Support',
+              subtitle: 'Report a bug or ask for help',
+              trailing: PhosphorIcon(PhosphorIconsLight.caretRight, size: 18, color: textMuted),
+              textPrimary: textPrimary,
+              textMuted: textMuted,
+              divColor: divColor,
+              onTap: () => Get.toNamed(Routes.SUPPORT),
             ),
 
-            SizedBox(
-              height: MediaQuery.of(context).padding.bottom +
-                  AppDimens.navBarHeight +
-                  AppDimens.spaceLG,
+            const SizedBox(height: 8),
+            Divider(height: 1, color: divColor),
+
+            // ── Logout ────────────────────────────────────
+            _SettingRow(
+              icon: PhosphorIconsLight.signOut,
+              label: 'Sign out',
+              subtitle: 'Log out of your account',
+              iconColor: AppColor.expense,
+              labelColor: AppColor.expense,
+              trailing: const PhosphorIcon(PhosphorIconsLight.caretRight, size: 18, color: AppColor.expense),
+              textPrimary: textPrimary,
+              textMuted: textMuted,
+              divColor: divColor,
+              onTap: () async {
+                await ctrl.signOut();
+                CustomToast.successToast('Success', 'Logged out');
+              },
             ),
+
+            SizedBox(height: MediaQuery.of(context).padding.bottom + 100),
           ],
         ),
       ),
     );
   }
 
-  // ── Section builders ────────────────────────────────────────────────────────
-
-  Widget _buildAvatarSection(
-    HomeController controller,
-    Color cardBg,
-    Color textPrimary,
-    Color textSecondary,
-    Color borderColor,
-  ) {
-    return Container(
-      padding: const EdgeInsets.all(AppDimens.spaceXXL),
-      decoration: BoxDecoration(
-        color: cardBg,
-        borderRadius: BorderRadius.circular(AppDimens.radiusXXL),
-        border: Border.all(color: borderColor),
-      ),
-      child: Obx(() {
-        final name = controller.userName.value;
-        final initials = _initials(name);
-        return Row(
-          children: [
-            CircleAvatar(
-              radius: 32,
-              backgroundColor: AppColor.primary,
-              child: Text(
-                initials,
-                style: AppTypography.heading2(Colors.white),
-              ),
-            ),
-            const SizedBox(width: AppDimens.spaceLG),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(name, style: AppTypography.heading3(textPrimary)),
-                  const SizedBox(height: AppDimens.spaceXXS),
-                  Text(controller.userEmail.value,
-                      style: AppTypography.body(textSecondary),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis),
-                ],
-              ),
-            ),
-          ],
-        );
-      }),
-    );
-  }
-
-  Widget _buildQuickStats(
-    HomeController controller,
-    Color cardBg,
-    Color textPrimary,
-    Color textSecondary,
-    Color borderColor,
-  ) {
-    final fmt = NumberFormat('#,##0', 'en_IN');
-    return Obx(() {
-      final net = controller.totalIncome.value - controller.totalExpense.value;
-      final isPositive = net >= 0;
-      final netColor = isPositive ? AppColor.income : AppColor.expense;
-      return Row(
-        children: [
-          Expanded(
-            child: Container(
-              padding: const EdgeInsets.all(AppDimens.spaceLG),
-              decoration: BoxDecoration(
-                color: cardBg,
-                borderRadius: BorderRadius.circular(AppDimens.radiusXL),
-                border: Border.all(color: borderColor),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Transactions',
-                      style: AppTypography.caption(textSecondary)),
-                  const SizedBox(height: AppDimens.spaceXXS),
-                  Text('${controller.transactions.length}',
-                      style: AppTypography.heading2(textPrimary)),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(width: AppDimens.spaceMD),
-          Expanded(
-            child: Container(
-              padding: const EdgeInsets.all(AppDimens.spaceLG),
-              decoration: BoxDecoration(
-                color: isPositive
-                    ? AppColor.income.withOpacity(0.08)
-                    : AppColor.expense.withOpacity(0.08),
-                borderRadius: BorderRadius.circular(AppDimens.radiusXL),
-                border: Border.all(color: netColor.withOpacity(0.25)),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Net Balance',
-                      style: AppTypography.caption(textSecondary)),
-                  const SizedBox(height: AppDimens.spaceXXS),
-                  Text(
-                    '${isPositive ? '+' : '-'}₹${fmt.format(net.abs())}',
-                    style: AppTypography.heading2(netColor),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      );
-    });
-  }
-
-  Widget _buildRecentTransactions(
-    HomeController controller,
-    Color cardBg,
-    Color textPrimary,
-    Color textSecondary,
-    Color borderColor,
-    bool isDark,
-  ) {
-    return Container(
-      decoration: BoxDecoration(
-        color: cardBg,
-        borderRadius: BorderRadius.circular(AppDimens.radiusXXL),
-        border: Border.all(color: borderColor),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(AppDimens.spaceXXL,
-                AppDimens.spaceXXL, AppDimens.spaceXXL, AppDimens.spaceLG),
-            child:
-                Text('Recent Transactions', style: AppTypography.heading3(textPrimary)),
-          ),
-          Obx(() {
-            if (controller.transactions.isEmpty) {
-              return Padding(
-                padding: const EdgeInsets.all(AppDimens.spaceXXL),
-                child: Center(
-                  child: Text('No transactions yet',
-                      style: AppTypography.body(textSecondary)),
-                ),
-              );
-            }
-            final recent = controller.transactions.take(5).toList();
-            return ListView.separated(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: recent.length,
-              separatorBuilder: (_, __) =>
-                  Divider(color: borderColor, height: 1),
-              itemBuilder: (context, i) {
-                final t = recent[i];
-                final isExpense = t['type'] == 'expense';
-                final amtColor =
-                    isExpense ? AppColor.expense : AppColor.income;
-                return ListTile(
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: AppDimens.spaceXXL,
-                    vertical: AppDimens.spaceXS,
-                  ),
-                  leading: Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: amtColor.withOpacity(0.12),
-                      borderRadius:
-                          BorderRadius.circular(AppDimens.radiusSM),
-                    ),
-                    child: Icon(
-                      isExpense
-                          ? Icons.arrow_downward_rounded
-                          : Icons.arrow_upward_rounded,
-                      color: amtColor,
-                      size: AppDimens.iconMD,
-                    ),
-                  ),
-                  title: Text(t['description']?.toString() ?? '',
-                      style: AppTypography.bodyLarge(textPrimary),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis),
-                  subtitle: Text(
-                    DateFormat('MMM d, y')
-                        .format(DateTime.parse(t['date'])),
-                    style: AppTypography.caption(textSecondary),
-                  ),
-                  trailing: Text(
-                    '${isExpense ? '-' : '+'}₹${t['amount']}',
-                    style: AppTypography.bodySemiBold(amtColor),
-                  ),
-                );
-              },
-            );
-          }),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPreferences(
-    ThemeController themeCtrl,
-    bool isDark,
-    Color cardBg,
-    Color textPrimary,
-    Color textSecondary,
-    Color borderColor,
-  ) {
-    return Container(
-      decoration: BoxDecoration(
-        color: cardBg,
-        borderRadius: BorderRadius.circular(AppDimens.radiusXXL),
-        border: Border.all(color: borderColor),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(AppDimens.spaceXXL,
-                AppDimens.spaceXXL, AppDimens.spaceXXL, AppDimens.spaceLG),
-            child: Text('Preferences', style: AppTypography.heading3(textPrimary)),
-          ),
-          Divider(color: borderColor, height: 1),
-          Obx(() => ListTile(
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: AppDimens.spaceXXL,
-                  vertical: AppDimens.spaceXS,
-                ),
-                leading: Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: AppColor.primary.withOpacity(0.12),
-                    borderRadius: BorderRadius.circular(AppDimens.radiusSM),
-                  ),
-                  child: PhosphorIcon(
-                    themeCtrl.isDarkMode ? PhosphorIconsLight.moon : PhosphorIconsLight.sun,
-                    color: AppColor.primary,
-                    size: AppDimens.iconMD,
-                  ),
-                ),
-                title: Text(
-                  themeCtrl.isDarkMode ? 'Dark Mode' : 'Light Mode',
-                  style: AppTypography.bodyLarge(textPrimary),
-                ),
-                subtitle: Text(
-                  'Switch app appearance',
-                  style: AppTypography.caption(textSecondary),
-                ),
-                trailing: Switch.adaptive(
-                  value: themeCtrl.isDarkMode,
-                  onChanged: (_) => themeCtrl.toggleTheme(),
-                  activeColor: AppColor.primary,
-                ),
-              )),
-        ],
-      ),
-    );
-  }
-
   String _initials(String name) {
     if (name.isEmpty) return '?';
-    final parts = name.trim().split(' ');
-    final first = parts.first.isNotEmpty ? parts.first[0] : '';
-    final last =
-        parts.length > 1 && parts.last.isNotEmpty ? parts.last[0] : '';
-    return '$first$last'.toUpperCase();
+    final p = name.trim().split(' ');
+    return '${p.first.isNotEmpty ? p.first[0] : ''}${p.length > 1 && p.last.isNotEmpty ? p.last[0] : ''}'.toUpperCase();
   }
 }
 
-// ── Helper widgets ──────────────────────────────────────────────────────────
-
-class _BalanceChip extends StatelessWidget {
+class _StatBox extends StatelessWidget {
   final String label;
-  final Widget value;
+  final String value;
   final Color color;
-
-  const _BalanceChip({
-    required this.label,
-    required this.value,
-    required this.color,
-  });
+  final bool isDark;
+  const _StatBox({required this.label, required this.value, required this.color, required this.isDark});
 
   @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppDimens.spaceMD,
-        vertical: AppDimens.spaceSM,
-      ),
+  Widget build(BuildContext context) => Expanded(
+    child: Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.12),
-        borderRadius: BorderRadius.circular(AppDimens.radiusMD),
+        color: color.withValues(alpha: 0.07),
+        borderRadius: BorderRadius.circular(14),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label,
-              style: AppTypography.caption(Colors.white.withOpacity(0.7))),
-          const SizedBox(height: AppDimens.spaceXXS),
-          DefaultTextStyle(
-            style: AppTypography.amountSmall(Colors.white),
-            child: value,
-          ),
+          Text(label, style: TextStyle(color: color.withValues(alpha: 0.7), fontSize: 11)),
+          const SizedBox(height: 4),
+          Text(value, style: TextStyle(color: color, fontSize: 18, fontWeight: FontWeight.w700, letterSpacing: -0.5)),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
+
+class _SettingRow extends StatelessWidget {
+  final PhosphorIconData icon;
+  final String label;
+  final String subtitle;
+  final Widget trailing;
+  final Color textPrimary;
+  final Color textMuted;
+  final Color divColor;
+  final Color? iconColor;
+  final Color? labelColor;
+  final VoidCallback? onTap;
+
+  const _SettingRow({
+    required this.icon,
+    required this.label,
+    required this.subtitle,
+    required this.trailing,
+    required this.textPrimary,
+    required this.textMuted,
+    required this.divColor,
+    this.iconColor,
+    this.labelColor,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) => InkWell(
+    onTap: onTap,
+    child: Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+      child: Row(
+        children: [
+          PhosphorIcon(icon, color: iconColor ?? textMuted, size: 20),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label, style: TextStyle(color: labelColor ?? textPrimary, fontSize: 14, fontWeight: FontWeight.w500)),
+                Text(subtitle, style: TextStyle(color: textMuted, fontSize: 12)),
+              ],
+            ),
+          ),
+          trailing,
+        ],
+      ),
+    ),
+  );
 }

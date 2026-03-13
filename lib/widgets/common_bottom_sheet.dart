@@ -4,17 +4,9 @@ import 'package:get/get.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:spendify/config/app_color.dart';
-import 'package:spendify/config/app_theme.dart';
+import 'package:spendify/controller/home_controller/home_controller.dart';
 import 'package:spendify/controller/wallet_controller/wallet_controller.dart';
 
-// ─────────────────────────────────────────────────────────────────────────────
-// ADD TRANSACTION BOTTOM SHEET
-// Inspired by Copilot Money & Wallet by BudgetBakers:
-//  • Hero amount input centred at the top
-//  • Income / Expense pill selector with semantic colors
-//  • Circular category icons with per-category accent colors
-//  • Theme-aware (dark navy / crisp white)
-// ─────────────────────────────────────────────────────────────────────────────
 class CommonBottomSheet extends StatefulWidget {
   const CommonBottomSheet({super.key});
 
@@ -56,20 +48,18 @@ class _CommonBottomSheetState extends State<CommonBottomSheet> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bg = isDark ? AppColor.darkSurface : AppColor.lightSurface;
-    final handleColor = isDark ? AppColor.darkBorder : AppColor.lightBorder;
+    final bg = isDark ? AppColor.darkSurface : Colors.white;
+    final handleColor = isDark ? AppColor.darkBorder : const Color(0xFFE4E4E7);
 
     final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
     final screenHeight = MediaQuery.of(context).size.height;
-    // Leave at least 20% of screen as tappable barrier above the sheet
-    final maxContentHeight = screenHeight * 0.78;
 
     return Container(
       decoration: BoxDecoration(
         color: bg,
         borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(AppDimens.radiusXXXL),
-          topRight: Radius.circular(AppDimens.radiusXXXL),
+          topLeft: Radius.circular(24),
+          topRight: Radius.circular(24),
         ),
       ),
       child: SafeArea(
@@ -77,59 +67,63 @@ class _CommonBottomSheetState extends State<CommonBottomSheet> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Drag handle — always visible, never scrolls away
-            GestureDetector(
-              onVerticalDragUpdate: (d) {
-                if (d.primaryDelta != null && d.primaryDelta! > 8) {
-                  Navigator.of(context).pop();
-                }
-              },
-              child: Container(
-                width: 40,
-                height: 4,
-                margin:
-                    const EdgeInsets.symmetric(vertical: AppDimens.spaceLG),
-                decoration: BoxDecoration(
-                  color: handleColor,
-                  borderRadius: BorderRadius.circular(AppDimens.radiusCircle),
-                ),
+            // Drag handle
+            Container(
+              width: 36,
+              height: 4,
+              margin: const EdgeInsets.symmetric(vertical: 16),
+              decoration: BoxDecoration(
+                color: handleColor,
+                borderRadius: BorderRadius.circular(100),
               ),
             ),
 
-            // Scrollable content — capped so sheet never fills full screen
             ConstrainedBox(
               constraints: BoxConstraints(
-                maxHeight: maxContentHeight.clamp(200.0, screenHeight * 0.78),
+                maxHeight: (screenHeight * 0.78).clamp(200.0, screenHeight * 0.78),
               ),
               child: SingleChildScrollView(
-                padding: EdgeInsets.fromLTRB(
-                  AppDimens.spaceLG,
-                  AppDimens.spaceSM,
-                  AppDimens.spaceLG,
-                  AppDimens.spaceXXL + keyboardHeight,
-                ),
+                padding: EdgeInsets.fromLTRB(20, 4, 20, 24 + keyboardHeight),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _SectionLabel('Add Transaction', isDark),
-                    const SizedBox(height: AppDimens.spaceXXL),
+                    // Title
+                    Center(
+                      child: Text('Add Transaction',
+                          style: TextStyle(
+                            color: isDark ? AppColor.textPrimary : const Color(0xFF09090B),
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          )),
+                    ),
+                    const SizedBox(height: 20),
 
                     _buildTypeSelector(isDark),
-                    const SizedBox(height: AppDimens.spaceXXL),
+                    const SizedBox(height: 24),
 
                     _buildAmountInput(isDark),
-                    const SizedBox(height: AppDimens.spaceXXL),
+                    const SizedBox(height: 20),
+
+                    // Category label
+                    Text('Category',
+                        style: TextStyle(
+                          color: isDark ? AppColor.textSecondary : const Color(0xFF71717A),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        )),
+                    const SizedBox(height: 10),
 
                     _buildCategoryGrid(isDark),
-                    const SizedBox(height: AppDimens.spaceXL),
+                    const SizedBox(height: 16),
 
                     _buildDateRow(isDark),
-                    const SizedBox(height: AppDimens.spaceMD),
+                    const SizedBox(height: 10),
 
                     _buildDescriptionInput(isDark),
-                    const SizedBox(height: AppDimens.spaceXXL),
+                    const SizedBox(height: 24),
 
-                    _buildSubmitButton(),
+                    _buildSubmitButton(isDark),
                   ],
                 ),
               ),
@@ -140,65 +134,56 @@ class _CommonBottomSheetState extends State<CommonBottomSheet> {
     );
   }
 
-  // ── Type selector ───────────────────────────────────────────────────────────
+  // ── Type selector ────────────────────────────────────────────────────────────
 
   Widget _buildTypeSelector(bool isDark) {
-    final bg = isDark ? AppColor.darkCard : AppColor.lightBg;
-    final border = isDark ? AppColor.darkBorder : AppColor.lightBorder;
+    final segBg = isDark ? AppColor.darkCard : const Color(0xFFF4F4F5);
 
     return Obx(() {
       final isIncome = _transactionType.value == Transactions.income;
       return Container(
-        padding: const EdgeInsets.all(AppDimens.spaceXXS + 2),
+        height: 40,
+        padding: const EdgeInsets.all(3),
         decoration: BoxDecoration(
-          color: bg,
-          borderRadius: BorderRadius.circular(AppDimens.radiusLG),
-          border: Border.all(color: border),
+          color: segBg,
+          borderRadius: BorderRadius.circular(10),
         ),
         child: Row(
           children: [
-            Expanded(
-              child: _TypePill(
-                label: 'Income',
-                icon: PhosphorIconsLight.arrowUp,
-                isSelected: isIncome,
-                selectedColor: AppColor.income,
-                isDark: isDark,
-                onTap: () {
-                  HapticFeedback.selectionClick();
-                  _transactionType.value = Transactions.income;
-                  controller.selectedType.value = 'income';
-                },
-              ),
-            ),
-            Expanded(
-              child: _TypePill(
-                label: 'Expense',
-                icon: PhosphorIconsLight.arrowDown,
-                isSelected: !isIncome,
-                selectedColor: AppColor.expense,
-                isDark: isDark,
-                onTap: () {
-                  HapticFeedback.selectionClick();
-                  _transactionType.value = Transactions.expense;
-                  controller.selectedType.value = 'expense';
-                },
-              ),
-            ),
+            Expanded(child: _TypePill(
+              label: 'Income',
+              isSelected: isIncome,
+              selectedColor: AppColor.income,
+              isDark: isDark,
+              onTap: () {
+                HapticFeedback.selectionClick();
+                _transactionType.value = Transactions.income;
+                controller.selectedType.value = 'income';
+              },
+            )),
+            Expanded(child: _TypePill(
+              label: 'Expense',
+              isSelected: !isIncome,
+              selectedColor: AppColor.expense,
+              isDark: isDark,
+              onTap: () {
+                HapticFeedback.selectionClick();
+                _transactionType.value = Transactions.expense;
+                controller.selectedType.value = 'expense';
+              },
+            )),
           ],
         ),
       );
     });
   }
 
-  // ── Amount input ────────────────────────────────────────────────────────────
+  // ── Amount input ─────────────────────────────────────────────────────────────
 
   Widget _buildAmountInput(bool isDark) {
-    final textPrimary =
-        isDark ? AppColor.textPrimary : AppColor.lightTextPrimary;
-    final textSecondary =
-        isDark ? AppColor.textSecondary : AppColor.lightTextSecondary;
-    final dividerColor = isDark ? AppColor.darkBorder : AppColor.lightBorder;
+    final textPrimary = isDark ? AppColor.textPrimary : const Color(0xFF09090B);
+    final textMuted = isDark ? AppColor.textSecondary : const Color(0xFF71717A);
+    final divColor = isDark ? AppColor.darkBorder : const Color(0xFFF4F4F5);
 
     return Obx(() {
       final isExpense = _transactionType.value == Transactions.expense;
@@ -206,34 +191,44 @@ class _CommonBottomSheetState extends State<CommonBottomSheet> {
       return Column(
         children: [
           Text(
-            isExpense ? 'EXPENSE AMOUNT' : 'INCOME AMOUNT',
-            style: AppTypography.label(textSecondary),
+            isExpense ? 'Expense amount' : 'Income amount',
+            style: TextStyle(color: textMuted, fontSize: 12, fontWeight: FontWeight.w400),
           ),
-          const SizedBox(height: AppDimens.spaceLG),
+          const SizedBox(height: 12),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Text(
-                '₹',
-                style: AppTypography.amountDisplay(
-                    amountColor.withOpacity(0.6)),
-              ),
-              const SizedBox(width: AppDimens.spaceXS),
+              Text(Get.find<HomeController>().currencySymbol.value,
+                  style: TextStyle(
+                    color: amountColor.withValues(alpha: 0.5),
+                    fontSize: 32,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -1,
+                  )),
+              const SizedBox(width: 4),
               Flexible(
                 child: IntrinsicWidth(
                   child: TextField(
                     controller: controller.amountController,
-                    style: AppTypography.amountDisplay(textPrimary),
+                    style: TextStyle(
+                      color: textPrimary,
+                      fontSize: 32,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: -1,
+                    ),
                     textAlign: TextAlign.center,
-                    keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true),
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
                     cursorColor: AppColor.primary,
                     cursorWidth: 2.0,
                     decoration: InputDecoration(
-                      hintText: '0.00',
-                      hintStyle: AppTypography.amountDisplay(
-                          textPrimary.withOpacity(0.18)),
+                      hintText: '0',
+                      hintStyle: TextStyle(
+                        color: textPrimary.withValues(alpha: 0.15),
+                        fontSize: 32,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: -1,
+                      ),
                       border: InputBorder.none,
                       enabledBorder: InputBorder.none,
                       focusedBorder: InputBorder.none,
@@ -246,43 +241,45 @@ class _CommonBottomSheetState extends State<CommonBottomSheet> {
               ),
             ],
           ),
-          const SizedBox(height: AppDimens.spaceMD),
-          Container(
-            height: 1,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  dividerColor.withOpacity(0),
-                  dividerColor,
-                  dividerColor.withOpacity(0),
-                ],
-              ),
-            ),
-          ),
+          const SizedBox(height: 12),
+          Divider(height: 1, color: divColor),
         ],
       );
     });
   }
 
-  // ── Category grid ───────────────────────────────────────────────────────────
+  // ── Category grid ─────────────────────────────────────────────────────────────
 
   Widget _buildCategoryGrid(bool isDark) {
+    final preferred = Get.find<HomeController>().selectedCategories;
+    final sorted = [
+      ..._categories.where((c) => preferred.contains(c.name)),
+      ..._categories.where((c) => !preferred.contains(c.name)),
+    ];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _SectionLabel('Category', isDark),
-        const SizedBox(height: AppDimens.spaceMD),
+        if (preferred.isNotEmpty) ...[
+          Text('Your categories',
+              style: TextStyle(
+                color: isDark ? AppColor.textTertiary : const Color(0xFF9CA3AF),
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
+              )),
+          const SizedBox(height: 8),
+        ],
         GridView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 4,
-            crossAxisSpacing: AppDimens.spaceMD,
-            mainAxisSpacing: AppDimens.spaceMD,
-            childAspectRatio: 0.78,
+            crossAxisSpacing: 8,
+            mainAxisSpacing: 8,
+            childAspectRatio: 0.82,
           ),
-          itemCount: _categories.length,
-          itemBuilder: (_, i) => _buildCategoryCell(_categories[i], isDark),
+          itemCount: sorted.length,
+          itemBuilder: (_, i) => _buildCategoryCell(sorted[i], isDark,
+              isPreferred: preferred.contains(sorted[i].name)),
         ),
         Obx(() => _isOthers.value
             ? _buildCustomCategoryInput(isDark)
@@ -292,115 +289,93 @@ class _CommonBottomSheetState extends State<CommonBottomSheet> {
   }
 
   Widget _buildCustomCategoryInput(bool isDark) {
-    final bg = isDark ? AppColor.darkCard : AppColor.lightBg;
-    final textPrimary = isDark ? AppColor.textPrimary : AppColor.lightTextPrimary;
-    final textSecondary = isDark ? AppColor.textSecondary : AppColor.lightTextSecondary;
+    final bg = isDark ? AppColor.darkCard : const Color(0xFFF4F4F5);
+    final textPrimary = isDark ? AppColor.textPrimary : const Color(0xFF09090B);
+    final textMuted = isDark ? AppColor.textSecondary : const Color(0xFF71717A);
 
     return Container(
-      margin: const EdgeInsets.only(top: AppDimens.spaceMD),
+      margin: const EdgeInsets.only(top: 10),
       decoration: BoxDecoration(
         color: bg,
-        borderRadius: BorderRadius.circular(AppDimens.radiusLG),
+        borderRadius: BorderRadius.circular(10),
         border: Border.all(color: AppColor.primary, width: 1.5),
       ),
       child: Row(
         children: [
-          const SizedBox(width: AppDimens.spaceLG),
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: AppColor.primary.withOpacity(0.10),
-              shape: BoxShape.circle,
-            ),
-            child: const PhosphorIcon(PhosphorIconsLight.pencilSimple,
-                color: AppColor.primary, size: AppDimens.iconMD),
-          ),
-          const SizedBox(width: AppDimens.spaceMD),
+          const SizedBox(width: 14),
+          const PhosphorIcon(PhosphorIconsLight.pencilSimple, color: AppColor.primary, size: 16),
+          const SizedBox(width: 10),
           Expanded(
             child: TextField(
               controller: _customCategoryController,
               autofocus: true,
-              style: AppTypography.bodyLarge(textPrimary),
+              style: TextStyle(color: textPrimary, fontSize: 14),
               cursorColor: AppColor.primary,
               onChanged: (val) => controller.selectedCategory.value = val,
               decoration: InputDecoration(
-                hintText: 'Enter custom category…',
-                hintStyle:
-                    AppTypography.bodyLarge(textSecondary.withOpacity(0.6)),
+                hintText: 'Custom category name…',
+                hintStyle: TextStyle(color: textMuted, fontSize: 14),
                 border: InputBorder.none,
                 enabledBorder: InputBorder.none,
                 focusedBorder: InputBorder.none,
-                contentPadding: const EdgeInsets.symmetric(
-                    vertical: AppDimens.spaceMD),
+                contentPadding: const EdgeInsets.symmetric(vertical: 12),
                 filled: false,
               ),
             ),
           ),
-          const SizedBox(width: AppDimens.spaceLG),
+          const SizedBox(width: 14),
         ],
       ),
     );
   }
 
-  Widget _buildCategoryCell(_CategoryItem cat, bool isDark) {
-    final catColor = AppColor.categoryColor(cat.name);
-    final textSecondary =
-        isDark ? AppColor.textSecondary : AppColor.lightTextSecondary;
-    final bg = isDark ? AppColor.darkCard : AppColor.lightBg;
-    final border = isDark ? AppColor.darkBorder : AppColor.lightBorder;
+  Widget _buildCategoryCell(_CategoryItem cat, bool isDark, {bool isPreferred = false}) {
+    final iconBg = isDark ? AppColor.darkCard : const Color(0xFFF4F4F5);
+    final iconFg = isDark ? AppColor.textSecondary : const Color(0xFF71717A);
+    final textMuted = isDark ? AppColor.textSecondary : const Color(0xFF71717A);
+    final border = isDark ? AppColor.darkBorder : const Color(0xFFE4E4E7);
 
     return Obx(() {
       final isSelected = cat.name == 'Others'
           ? _isOthers.value
-          : (!_isOthers.value &&
-              controller.selectedCategory.value == cat.name);
+          : (!_isOthers.value && controller.selectedCategory.value == cat.name);
+
       return GestureDetector(
         onTap: () {
           HapticFeedback.selectionClick();
           if (cat.name == 'Others') {
             _isOthers.value = true;
-            controller.selectedCategory.value =
-                _customCategoryController.text;
+            controller.selectedCategory.value = _customCategoryController.text;
           } else {
             _isOthers.value = false;
             controller.selectedCategory.value = cat.name;
           }
         },
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
+          duration: const Duration(milliseconds: 180),
           decoration: BoxDecoration(
-            color: isSelected ? catColor.withOpacity(0.12) : bg,
-            borderRadius: BorderRadius.circular(AppDimens.radiusLG),
+            color: isSelected ? AppColor.primary.withValues(alpha: 0.08) : iconBg,
+            borderRadius: BorderRadius.circular(10),
             border: Border.all(
-              color: isSelected ? catColor : border,
-              width: isSelected ? 1.5 : 1.0,
+              color: isSelected ? AppColor.primary : (isPreferred ? AppColor.primary.withValues(alpha: 0.35) : border),
+              width: isSelected ? 1.5 : (isPreferred ? 1.0 : 1.0),
             ),
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                width: 42,
-                height: 42,
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? catColor.withOpacity(0.20)
-                      : catColor.withOpacity(0.10),
-                  shape: BoxShape.circle,
-                ),
-                child: PhosphorIcon(
-                  cat.icon,
-                  color: catColor,
-                  size: AppDimens.iconMD,
-                ),
+              PhosphorIcon(
+                cat.icon,
+                color: isSelected ? AppColor.primary : iconFg,
+                size: 20,
               ),
-              const SizedBox(height: AppDimens.spaceXS + 2),
+              const SizedBox(height: 6),
               Text(
-                cat.name.split(' ').first, // show first word only
-                style: AppTypography.label(
-                  isSelected ? catColor : textSecondary,
+                cat.name.split(' ').first,
+                style: TextStyle(
+                  color: isSelected ? AppColor.primary : textMuted,
+                  fontSize: 10,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
                 ),
                 textAlign: TextAlign.center,
                 maxLines: 1,
@@ -413,143 +388,80 @@ class _CommonBottomSheetState extends State<CommonBottomSheet> {
     });
   }
 
-  // ── Date row ────────────────────────────────────────────────────────────────
+  // ── Date row ──────────────────────────────────────────────────────────────────
 
   Widget _buildDateRow(bool isDark) {
-    final bg = isDark ? AppColor.darkCard : AppColor.lightBg;
-    final border = isDark ? AppColor.darkBorder : AppColor.lightBorder;
-    final textPrimary =
-        isDark ? AppColor.textPrimary : AppColor.lightTextPrimary;
-    final textSecondary =
-        isDark ? AppColor.textSecondary : AppColor.lightTextSecondary;
+    final bg = isDark ? AppColor.darkCard : const Color(0xFFF4F4F5);
+    final textPrimary = isDark ? AppColor.textPrimary : const Color(0xFF09090B);
+    final textMuted = isDark ? AppColor.textSecondary : const Color(0xFF71717A);
 
     return GestureDetector(
       onTap: () => _selectDate(context),
       child: Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppDimens.spaceLG,
-          vertical: AppDimens.spaceMD,
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
           color: bg,
-          borderRadius: BorderRadius.circular(AppDimens.radiusLG),
-          border: Border.all(color: border),
+          borderRadius: BorderRadius.circular(10),
         ),
         child: Row(
           children: [
-            Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: AppColor.primary.withOpacity(0.10),
-                shape: BoxShape.circle,
-              ),
-              child: const PhosphorIcon(
-                PhosphorIconsLight.calendar,
-                color: AppColor.primary,
-                size: AppDimens.iconMD,
-              ),
-            ),
-            const SizedBox(width: AppDimens.spaceMD),
+            PhosphorIcon(PhosphorIconsLight.calendar, color: textMuted, size: 16),
+            const SizedBox(width: 10),
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Transaction Date',
-                      style: AppTypography.caption(textSecondary)),
-                  const SizedBox(height: 2),
-                  Obx(() => Text(
-                        DateFormat('EEE, MMM d yyyy').format(
-                            DateTime.parse(controller.selectedDate.value)),
-                        style: AppTypography.bodySemiBold(textPrimary),
-                      )),
-                ],
-              ),
+              child: Obx(() => Text(
+                    DateFormat('EEE, MMM d yyyy')
+                        .format(DateTime.parse(controller.selectedDate.value)),
+                    style: TextStyle(color: textPrimary, fontSize: 14, fontWeight: FontWeight.w500),
+                  )),
             ),
-            PhosphorIcon(PhosphorIconsLight.caretRight,
-                color: textSecondary, size: AppDimens.iconSM),
+            PhosphorIcon(PhosphorIconsLight.caretRight, color: textMuted, size: 16),
           ],
         ),
       ),
     );
   }
 
-  // ── Description input ───────────────────────────────────────────────────────
+  // ── Description input ─────────────────────────────────────────────────────────
 
   Widget _buildDescriptionInput(bool isDark) {
-    final bg = isDark ? AppColor.darkCard : AppColor.lightBg;
-    final border = isDark ? AppColor.darkBorder : AppColor.lightBorder;
-    final focusBorder =
-        isDark ? AppColor.darkBorderFocus : AppColor.lightBorderFocus;
-    final textPrimary =
-        isDark ? AppColor.textPrimary : AppColor.lightTextPrimary;
-    final textSecondary =
-        isDark ? AppColor.textSecondary : AppColor.lightTextSecondary;
+    final bg = isDark ? AppColor.darkCard : const Color(0xFFF4F4F5);
+    final textPrimary = isDark ? AppColor.textPrimary : const Color(0xFF09090B);
+    final textMuted = isDark ? AppColor.textSecondary : const Color(0xFF71717A);
 
-    return Focus(
-      child: Builder(
-        builder: (ctx) {
-          final hasFocus = Focus.of(ctx).hasFocus;
-          return AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            decoration: BoxDecoration(
-              color: bg,
-              borderRadius: BorderRadius.circular(AppDimens.radiusLG),
-              border: Border.all(
-                  color: hasFocus ? AppColor.primary : border,
-                  width: hasFocus ? 1.5 : 1.0),
-            ),
-            child: Row(
-              children: [
-                const SizedBox(width: AppDimens.spaceLG),
-                Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: AppColor.primary.withOpacity(0.10),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const PhosphorIcon(
-                    PhosphorIconsLight.pencilSimple,
-                    color: AppColor.primary,
-                    size: AppDimens.iconMD,
-                  ),
-                ),
-                const SizedBox(width: AppDimens.spaceMD),
-                Expanded(
-                  child: TextField(
-                    controller: controller.titleController,
-                    style: AppTypography.bodyLarge(textPrimary),
-                    cursorColor: AppColor.primary,
-                    decoration: InputDecoration(
-                      hintText: 'Transaction name or note…',
-                      hintStyle: AppTypography.bodyLarge(
-                          textSecondary.withOpacity(0.6)),
-                      border: InputBorder.none,
-                      enabledBorder: InputBorder.none,
-                      focusedBorder: InputBorder.none,
-                      contentPadding: const EdgeInsets.symmetric(
-                          vertical: AppDimens.spaceMD),
-                      filled: false,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: AppDimens.spaceLG),
-              ],
-            ),
-          );
-        },
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: TextField(
+        controller: controller.titleController,
+        style: TextStyle(color: textPrimary, fontSize: 14),
+        cursorColor: AppColor.primary,
+        decoration: InputDecoration(
+          hintText: 'Note (optional)',
+          hintStyle: TextStyle(color: textMuted, fontSize: 14),
+          border: InputBorder.none,
+          enabledBorder: InputBorder.none,
+          focusedBorder: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(vertical: 13),
+          filled: false,
+          prefixIcon: Padding(
+            padding: const EdgeInsets.only(right: 10),
+            child: PhosphorIcon(PhosphorIconsLight.pencilSimple, color: textMuted, size: 16),
+          ),
+          prefixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
+        ),
       ),
     );
   }
 
-  // ── Submit button ───────────────────────────────────────────────────────────
+  // ── Submit button ─────────────────────────────────────────────────────────────
 
-  Widget _buildSubmitButton() {
+  Widget _buildSubmitButton(bool isDark) {
     return Obx(() {
       final isLoading = controller.isLoading.isTrue;
-      final isExpense =
-          _transactionType.value == Transactions.expense;
+      final isExpense = _transactionType.value == Transactions.expense;
       final btnColor = isExpense ? AppColor.expense : AppColor.income;
 
       return GestureDetector(
@@ -564,22 +476,25 @@ class _CommonBottomSheetState extends State<CommonBottomSheet> {
           opacity: isLoading ? 0.6 : 1.0,
           child: Container(
             width: double.infinity,
-            height: AppDimens.buttonHeight,
+            height: 50,
             decoration: BoxDecoration(
               color: btnColor,
-              borderRadius: BorderRadius.circular(AppDimens.radiusMD),
+              borderRadius: BorderRadius.circular(12),
             ),
             child: Center(
               child: isLoading
                   ? const SizedBox(
-                      width: 22,
-                      height: 22,
-                      child: CircularProgressIndicator(
-                          color: Colors.white, strokeWidth: 2),
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
                     )
                   : Text(
                       isExpense ? 'Add Expense' : 'Add Income',
-                      style: AppTypography.button(Colors.white),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
             ),
           ),
@@ -588,7 +503,7 @@ class _CommonBottomSheetState extends State<CommonBottomSheet> {
     });
   }
 
-  // ── Date picker ─────────────────────────────────────────────────────────────
+  // ── Date picker ───────────────────────────────────────────────────────────────
 
   Future<void> _selectDate(BuildContext context) async {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -597,28 +512,22 @@ class _CommonBottomSheetState extends State<CommonBottomSheet> {
       initialDate: DateTime.parse(controller.selectedDate.value),
       firstDate: DateTime(2000),
       lastDate: DateTime(2100),
-      builder: (ctx, child) {
-        return Theme(
-          data: isDark
-              ? ThemeData.dark().copyWith(
-                  colorScheme: const ColorScheme.dark(
-                    primary: AppColor.primary,
-                    surface: AppColor.darkElevated,
-                    onSurface: AppColor.textPrimary,
-                  ),
-                  dialogTheme: const DialogThemeData(
-                      backgroundColor: AppColor.darkSurface),
-                )
-              : ThemeData.light().copyWith(
-                  colorScheme: const ColorScheme.light(
-                    primary: AppColor.primary,
-                    surface: AppColor.lightSurface,
-                    onSurface: AppColor.lightTextPrimary,
-                  ),
+      builder: (ctx, child) => Theme(
+        data: isDark
+            ? ThemeData.dark().copyWith(
+                colorScheme: const ColorScheme.dark(
+                  primary: AppColor.primary,
+                  surface: AppColor.darkElevated,
+                  onSurface: AppColor.textPrimary,
                 ),
-          child: child!,
-        );
-      },
+              )
+            : ThemeData.light().copyWith(
+                colorScheme: const ColorScheme.light(
+                  primary: AppColor.primary,
+                ),
+              ),
+        child: child!,
+      ),
     );
     if (picked != null) {
       controller.selectedDate.value = picked.toIso8601String();
@@ -638,7 +547,6 @@ class _CategoryItem {
 
 class _TypePill extends StatelessWidget {
   final String label;
-  final PhosphorIconData icon;
   final bool isSelected;
   final Color selectedColor;
   final bool isDark;
@@ -646,7 +554,6 @@ class _TypePill extends StatelessWidget {
 
   const _TypePill({
     required this.label,
-    required this.icon,
     required this.isSelected,
     required this.selectedColor,
     required this.isDark,
@@ -655,58 +562,28 @@ class _TypePill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final textSecondary =
-        isDark ? AppColor.textSecondary : AppColor.lightTextSecondary;
-
+    final textMuted = isDark ? AppColor.textSecondary : const Color(0xFF71717A);
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(
-          vertical: AppDimens.spaceMD,
-          horizontal: AppDimens.spaceXS,
-        ),
+        duration: const Duration(milliseconds: 180),
         decoration: BoxDecoration(
-          color: isSelected ? selectedColor.withOpacity(0.12) : Colors.transparent,
-          borderRadius: BorderRadius.circular(AppDimens.radiusMD),
-          border: Border.all(
-            color: isSelected ? selectedColor : Colors.transparent,
-            width: 1.5,
+          color: isSelected
+              ? (isDark ? AppColor.darkElevated : Colors.white)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Center(
+          child: Text(
+            label,
+            style: TextStyle(
+              color: isSelected ? selectedColor : textMuted,
+              fontSize: 13,
+              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+            ),
           ),
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            PhosphorIcon(
-              icon,
-              color: isSelected ? selectedColor : textSecondary,
-              size: AppDimens.iconMD,
-            ),
-            const SizedBox(width: AppDimens.spaceXS),
-            Text(
-              label,
-              style: AppTypography.bodySemiBold(
-                  isSelected ? selectedColor : textSecondary),
-            ),
-          ],
-        ),
       ),
-    );
-  }
-}
-
-class _SectionLabel extends StatelessWidget {
-  final String text;
-  final bool isDark;
-  const _SectionLabel(this.text, this.isDark);
-
-  @override
-  Widget build(BuildContext context) {
-    final textPrimary =
-        isDark ? AppColor.textPrimary : AppColor.lightTextPrimary;
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: Text(text, style: AppTypography.heading3(textPrimary)),
     );
   }
 }

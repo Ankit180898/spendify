@@ -1,155 +1,119 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:spendify/config/app_color.dart';
-import 'package:spendify/config/app_theme.dart';
 import 'package:spendify/controller/home_controller/home_controller.dart';
 import 'package:spendify/utils/utils.dart';
+import 'package:spendify/view/wallet/add_transaction_screen.dart';
 import 'package:spendify/view/wallet/all_transaction_screen.dart';
 import 'package:spendify/view/wallet/transaction_list_item.dart';
-import 'package:spendify/widgets/common_bottom_sheet.dart';
 
 class TransactionsContent extends StatelessWidget {
   final int limit;
-
   const TransactionsContent(this.limit, {super.key});
 
   @override
   Widget build(BuildContext context) {
-    final controller = Get.find<HomeController>();
+    final ctrl = Get.find<HomeController>();
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textPrimary = isDark ? AppColor.textPrimary : AppColor.lightTextPrimary;
-    final textSecondary = isDark ? AppColor.textSecondary : AppColor.lightTextSecondary;
+    final textPrimary = isDark ? AppColor.textPrimary : const Color(0xFF09090B);
+    final textMuted = isDark ? AppColor.textSecondary : const Color(0xFF71717A);
+    final divColor = isDark ? AppColor.darkBorder : const Color(0xFFF4F4F5);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisAlignment: MainAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.only(left: 22.0, right: 22.0, top: 16.0),
+          padding: const EdgeInsets.fromLTRB(20, 8, 12, 4),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                'Recent Transactions',
-                style: AppTypography.heading3(textPrimary),
-              ),
-              TextButton.icon(
+              Text('Recent', style: TextStyle(color: textPrimary, fontSize: 15, fontWeight: FontWeight.w700)),
+              const Spacer(),
+              TextButton(
                 onPressed: () => Get.to(() => const AllTransactionsScreen()),
-                icon: Icon(Icons.arrow_forward, size: 16, color: AppColor.primary),
-                label: Text(
-                  'View All',
-                  style: normalText(14, AppColor.primary),
+                style: TextButton.styleFrom(
+                  foregroundColor: AppColor.primary,
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
+                child: const Text('See all', style: TextStyle(color: AppColor.primary, fontSize: 13)),
               ),
             ],
           ),
         ),
-        Obx(
-          () {
-            if (controller.isLoading.value) {
-              return const Center(
-                child: Padding(
-                  padding: EdgeInsets.all(40.0),
-                  child: CircularProgressIndicator(),
-                ),
-              );
-            }
 
-            if (controller.transactions.isEmpty) {
-              return Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(50.0),
-                  child: Column(
-                    children: [
-                      Icon(
-                        Icons.receipt_long,
-                        size: 64,
-                        color: textSecondary.withOpacity(0.4),
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        "No transactions yet",
-                        style: AppTypography.body(textSecondary),
-                      ),
-                      const SizedBox(height: 8),
-                      ElevatedButton(
-                        onPressed: () {
-                          showModalBottomSheet(
-                            context: context,
-                            isScrollControlled: true,
-                            backgroundColor: Colors.transparent,
-                            builder: (_) => const CommonBottomSheet(),
-                          );
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColor.primary,
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        child: const Text("Add your first transaction"),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            }
+        Obx(() {
+          if (ctrl.isLoading.value) {
+            return const Padding(
+              padding: EdgeInsets.all(40),
+              child: Center(child: CircularProgressIndicator(color: AppColor.primary, strokeWidth: 2)),
+            );
+          }
 
-            // Use the grouped transactions directly
-            final monthlyTransactions = controller.groupedTransactions;
-
-            return ListView.builder(
-              padding: const EdgeInsets.all(0),
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: monthlyTransactions.keys.length,
-              itemBuilder: (context, monthIndex) {
-                String month = monthlyTransactions.keys.elementAt(monthIndex);
-                List<Map<String, dynamic>> transactionsForMonth = monthlyTransactions[month] ?? [];
-
-                // Apply limit to transactions for each month
-                if (limit > 0 && transactionsForMonth.length > limit) {
-                  transactionsForMonth = transactionsForMonth.take(limit).toList();
-                }
-
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+          if (ctrl.transactions.isEmpty) {
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
+              child: Center(
+                child: Column(
                   children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 12.0),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: AppColor.primary.withOpacity(0.12),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          month,
-                          style: AppTypography.captionSemiBold(AppColor.primary),
-                        ),
+                    PhosphorIcon(PhosphorIconsLight.receipt, size: 40, color: textMuted.withValues(alpha: 0.3)),
+                    const SizedBox(height: 10),
+                    Text('No transactions yet', style: TextStyle(color: textMuted, fontSize: 14)),
+                    const SizedBox(height: 14),
+                    OutlinedButton(
+                      onPressed: () => Get.to(() => const AddTransactionScreen()),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColor.primary,
+                        side: const BorderSide(color: AppColor.primary),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                       ),
-                    ),
-                    ListView.builder(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: transactionsForMonth.length,
-                      itemBuilder: (context, transactionIndex) {
-                        return TransactionListItem(
-                          key: ValueKey(transactionsForMonth[transactionIndex]),
-                          transaction: transactionsForMonth,
-                          index: transactionIndex,
-                          categoryList: categoryList,
-                        );
-                      },
+                      child: const Text('Add first transaction'),
                     ),
                   ],
-                );
-              },
+                ),
+              ),
             );
-          },
-        ),
+          }
+
+          final groups = ctrl.groupedTransactions;
+
+          return ListView.builder(
+            padding: EdgeInsets.zero,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: groups.keys.length,
+            itemBuilder: (_, i) {
+              final month = groups.keys.elementAt(i);
+              var txs = groups[month] ?? [];
+              if (limit > 0 && txs.length > limit) txs = txs.take(limit).toList();
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 12, 20, 4),
+                    child: Text(month, style: TextStyle(color: textMuted, fontSize: 12, fontWeight: FontWeight.w500)),
+                  ),
+                  ListView.separated(
+                    padding: EdgeInsets.zero,
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: txs.length,
+                    separatorBuilder: (_, __) => Divider(height: 1, color: divColor, indent: 66, endIndent: 20),
+                    itemBuilder: (_, j) => TransactionListItem(
+                      key: ValueKey(txs[j]),
+                      transaction: txs,
+                      index: j,
+                      categoryList: categoryList,
+                    ),
+                  ),
+                ],
+              );
+            },
+          );
+        }),
       ],
     );
   }

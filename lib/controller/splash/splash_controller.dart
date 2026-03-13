@@ -20,19 +20,27 @@ class SplashController extends GetxController {
   }
 
   Future<void> _checkAuthentication() async {
-    // Initialize shared preferences
-
-    // Get current session
     final session = supabaseC.auth.currentSession;
 
     if (session != null) {
-      // User is authenticated 
-      // Navigate to the home screen
-      Get.offAll(const BottomNav());
-    } else {
-      // User is not authenticated
+      // Check if onboarding is complete
+      try {
+        final profile = await supabaseC
+            .from('user_profiles')
+            .select('onboarding_complete')
+            .eq('user_id', session.user.id)
+            .maybeSingle();
 
-      // Navigate to the get started screen
+        if (profile != null && profile['onboarding_complete'] == true) {
+          Get.offAll(const BottomNav());
+        } else {
+          Get.offAllNamed(Routes.ONBOARDING);
+        }
+      } catch (_) {
+        // If table doesn't exist yet, go to onboarding
+        Get.offAllNamed(Routes.ONBOARDING);
+      }
+    } else {
       Get.offAllNamed(Routes.GETSTARTED);
     }
   }

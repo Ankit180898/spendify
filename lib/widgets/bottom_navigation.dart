@@ -10,7 +10,7 @@ import 'package:spendify/view/goals/goals_screen.dart';
 import 'package:spendify/view/home/home_screen.dart';
 import 'package:spendify/view/profile/profile_screen.dart';
 import 'package:spendify/view/wallet/statistics_screen.dart';
-import 'package:spendify/widgets/common_bottom_sheet.dart';
+import 'package:spendify/view/wallet/add_transaction_screen.dart';
 
 class BottomNav extends StatefulWidget {
   const BottomNav({super.key});
@@ -38,12 +38,7 @@ class _BottomNavState extends State<BottomNav> {
 
   void _openAddSheet() {
     HapticFeedback.mediumImpact();
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => const CommonBottomSheet(),
-    );
+    Get.to(() => const AddTransactionScreen());
   }
 
   @override
@@ -119,17 +114,16 @@ class _NavBar extends StatelessWidget {
                 child: GestureDetector(
                   onTap: onAdd,
                   child: Container(
-                    width: 52,
-                    height: 52,
-                    decoration: BoxDecoration(
-                      gradient: AppColor.primaryGradient,
-                      borderRadius: BorderRadius.circular(AppDimens.radiusLG),
-                      boxShadow: AppShadows.primaryStrong,
+                    width: 48,
+                    height: 48,
+                    decoration: const BoxDecoration(
+                      color: AppColor.primary,
+                      shape: BoxShape.circle,
                     ),
                     child: const PhosphorIcon(
-                      PhosphorIconsRegular.plus,
+                      PhosphorIconsLight.plus,
                       color: Colors.white,
-                      size: AppDimens.iconXL,
+                      size: 22,
                     ),
                   ),
                 ),
@@ -188,18 +182,7 @@ class _NavItem extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            padding: const EdgeInsets.symmetric(
-                horizontal: AppDimens.spaceMD, vertical: AppDimens.spaceXS),
-            decoration: BoxDecoration(
-              color: isActive
-                  ? AppColor.primary.withOpacity(0.12)
-                  : Colors.transparent,
-              borderRadius: BorderRadius.circular(AppDimens.radiusCircle),
-            ),
-            child: PhosphorIcon(icon, color: color, size: AppDimens.iconLG),
-          ),
+          PhosphorIcon(icon, color: color, size: AppDimens.iconLG),
           const SizedBox(height: AppDimens.spaceXXS),
           Text(label, style: AppTypography.label(color)),
         ],

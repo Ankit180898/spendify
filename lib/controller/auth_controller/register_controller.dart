@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:spendify/main.dart';
-import 'package:spendify/widgets/bottom_navigation.dart';
+import 'package:spendify/routes/app_pages.dart';
 import 'package:spendify/widgets/toast/custom_toast.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -91,7 +91,7 @@ class RegisterController extends GetxController {
             "balance": 0.0,
             "url": ""
           });
-          Get.offAll(const BottomNav());
+          Get.offAllNamed(Routes.ONBOARDING);
         } else if (res.user != null) {
           // Email confirmation required — trigger will create the users row.
           // Update the name after confirmation via auth state listener.

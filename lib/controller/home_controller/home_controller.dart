@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:spendify/controller/wallet_controller/wallet_controller.dart';
@@ -23,6 +24,10 @@ class HomeController extends GetxController {
   var transactionsList = <TransactionModel>[].obs;
   var incomeTransactions = <Map<String, dynamic>>[];
   var expenseTransactions = <Map<String, dynamic>>[];
+
+  var currencySymbol = '₹'.obs;
+  var monthlyBudget = 0.0.obs;
+  var selectedCategories = <String>[].obs;
 
   var isLoading = false.obs;
   var totalExpense = 0.0.obs;
@@ -79,6 +84,24 @@ class HomeController extends GetxController {
       userName.value = userData['name'];
       totalBalance.value = (userData['balance'] ?? 0.0).toDouble();
       debugPrint(totalBalance.value.toString());
+
+      // Load preferences
+      try {
+        final profile = await supabaseC
+            .from('user_profiles')
+            .select('currency_symbol, monthly_budget, selected_categories')
+            .eq('user_id', user.id)
+            .maybeSingle();
+        if (profile != null) {
+          if (profile['currency_symbol'] != null) {
+            currencySymbol.value = profile['currency_symbol'];
+          }
+          monthlyBudget.value =
+              (profile['monthly_budget'] as num?)?.toDouble() ?? 0.0;
+          selectedCategories.value =
+              List<String>.from(profile['selected_categories'] ?? []);
+        }
+      } catch (_) {}
     } else {
       CustomToast.errorToast("Error", 'User not found');
     }
@@ -265,7 +288,7 @@ class HomeController extends GetxController {
   IconData getCategoryIcon(String category, List<CategoriesModel> categoryList) {
     var matchingCategory = categoryList.firstWhere(
       (element) => element.name == category,
-      orElse: () => CategoriesModel(name: category, icon: Icons.category),
+      orElse: () => CategoriesModel(name: category, icon: PhosphorIconsLight.tag),
     );
 
     return matchingCategory.icon;

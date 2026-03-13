@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:spendify/config/app_color.dart';
 import 'package:spendify/controller/home_controller/home_controller.dart';
 import 'package:spendify/utils/utils.dart';
@@ -25,8 +26,8 @@ class CategoriesGrid extends StatelessWidget {
           child: Center(
             child: Column(
               children: [
-                const Icon(
-                  Icons.hourglass_empty,
+                const PhosphorIcon(
+                  PhosphorIconsLight.hourglassSimple,
                   size: 48,
                   color: Colors.grey,
                 ),
@@ -106,7 +107,7 @@ class CategoriesGrid extends StatelessWidget {
                       style: titleText(16, Colors.white),
                     ),
                     Text(
-                      'Total: ${NumberFormat.currency(locale: 'en_US', symbol: '₹').format(totalAmount)}',
+                      'Total: ${NumberFormat.currency(locale: 'en_US', symbol: controller.currencySymbol.value).format(totalAmount)}',
                       style: titleText(16, Colors.white),
                     ),
                   ],
@@ -117,12 +118,12 @@ class CategoriesGrid extends StatelessWidget {
                   children: [
                     if (incomeAmount > 0)
                       Text(
-                        'Income: ${NumberFormat.currency(locale: 'en_US', symbol: '₹').format(incomeAmount)}',
+                        'Income: ${NumberFormat.currency(locale: 'en_US', symbol: controller.currencySymbol.value).format(incomeAmount)}',
                         style: normalText(14, Colors.green),
                       ),
                     if (expenseAmount > 0)
                       Text(
-                        'Expense: ${NumberFormat.currency(locale: 'en_US', symbol: '₹').format(expenseAmount)}',
+                        'Expense: ${NumberFormat.currency(locale: 'en_US', symbol: controller.currencySymbol.value).format(expenseAmount)}',
                         style: normalText(14, Colors.red),
                       ),
                   ],

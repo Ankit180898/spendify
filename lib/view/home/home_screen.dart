@@ -4,586 +4,528 @@ import 'package:get/get.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:spendify/config/app_color.dart';
-import 'package:spendify/config/app_theme.dart';
-import 'package:spendify/controller/goals_controller/goals_controller.dart';
 import 'package:spendify/controller/home_controller/home_controller.dart';
-import 'package:spendify/controller/savings_controller/savings_controller.dart';
 import 'package:spendify/controller/wallet_controller/wallet_controller.dart';
-import 'package:spendify/routes/app_pages.dart';
 import 'package:spendify/view/home/components/transaction_list.dart';
+import 'package:spendify/view/wallet/add_transaction_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final controller = Get.put(HomeController());
+    final ctrl = Get.put(HomeController());
     Get.put(TransactionController());
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
-      statusBarIconBrightness: Brightness.light,
+      statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
     ));
 
     return Scaffold(
-      backgroundColor: isDark ? AppColor.darkBg : AppColor.lightBg,
+      backgroundColor: isDark ? AppColor.darkBg : Colors.white,
       body: CustomScrollView(
         physics: const BouncingScrollPhysics(),
         slivers: [
-          // Unified hero section — greeting + balance + income/expense
-          SliverToBoxAdapter(
-            child: _HeroSection(isDark: isDark, controller: controller),
-          ),
-
-          // Alert strip
-          SliverToBoxAdapter(
-            child: _AlertStrip(isDark: isDark),
-          ),
-
-          // Budget health section
-          SliverToBoxAdapter(child: _BudgetHealthSection(isDark: isDark)),
-
-          // Transaction list
-          const SliverToBoxAdapter(child: TransactionsContent(5)),
-
-          // Load more
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: AppDimens.spaceLG, vertical: AppDimens.spaceXXL),
-              child: Obx(() =>
-                  controller.transactions.length >= controller.limit.value
-                      ? SizedBox(
-                          height: AppDimens.buttonHeight,
-                          child: OutlinedButton(
-                            onPressed: controller.loadMore,
-                            child: Text('Load More',
-                                style:
-                                    AppTypography.button(AppColor.primary)),
-                          ),
-                        )
-                      : const SizedBox()),
-            ),
-          ),
-
-          // Spacer for floating nav
-          const SliverToBoxAdapter(
-            child: SizedBox(height: AppDimens.spaceHuge + AppDimens.spaceLG),
-          ),
+          SliverToBoxAdapter(child: _Header(isDark: isDark, ctrl: ctrl)),
+          SliverToBoxAdapter(child: _MonthSummary(isDark: isDark, ctrl: ctrl)),
+          const SliverToBoxAdapter(child: TransactionsContent(0)),
+          const SliverToBoxAdapter(child: SizedBox(height: 120)),
         ],
       ),
     );
   }
 }
 
-// ── Unified hero section ───────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// Header — greeting, balance, visibility toggle
+// ─────────────────────────────────────────────────────────────────────────────
 
-class _HeroSection extends StatelessWidget {
+class _Header extends StatelessWidget {
   final bool isDark;
-  final HomeController controller;
-  const _HeroSection({required this.isDark, required this.controller});
+  final HomeController ctrl;
+  const _Header({required this.isDark, required this.ctrl});
 
   @override
   Widget build(BuildContext context) {
-    final heroBg =
-        isDark ? AppColor.darkCard : const Color(0xFF1E1B4B);
-    final fmt = NumberFormat('#,##0.00', 'en_IN');
+    final textPrimary = isDark ? AppColor.textPrimary : const Color(0xFF09090B);
+    final textMuted = isDark ? AppColor.textSecondary : const Color(0xFF71717A);
+    final divColor = isDark ? AppColor.darkBorder : const Color(0xFFF4F4F5);
+    final fmt = NumberFormat('#,##0.##', 'en_IN');
     final now = DateTime.now();
-    final monthYear = DateFormat('MMMM yyyy').format(now);
+    final greeting = now.hour < 12
+        ? 'Good morning'
+        : now.hour < 17
+            ? 'Good afternoon'
+            : 'Good evening';
 
-    return Container(
-      decoration: BoxDecoration(
-        color: heroBg,
-        borderRadius: const BorderRadius.only(
-          bottomLeft: Radius.circular(28),
-          bottomRight: Radius.circular(28),
-        ),
-      ),
-      child: SafeArea(
-        bottom: false,
-        child: Obx(() {
-          final name = controller.userName.value;
-          final firstName = name.split(' ').first;
-          final initials = _initials(name);
-          final isVisible = controller.isAmountVisible.value;
+    return SafeArea(
+      bottom: false,
+      child: Obx(() {
+        final name = ctrl.userName.value;
+        final first = name.split(' ').first;
+        final visible = ctrl.isAmountVisible.value;
 
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // ── Top row: month/greeting + avatar ──────────────────────
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            monthYear,
-                            style: AppTypography.caption(
-                                Colors.white.withOpacity(0.70)),
-                          ),
-                          const SizedBox(height: AppDimens.spaceXXS),
-                          Text(
-                            'Hello, ${firstName.isEmpty ? 'there' : firstName}',
-                            style: AppTypography.heading2(Colors.white),
-                          ),
-                        ],
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+              child: Row(
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        first.isEmpty ? greeting : '$greeting, $first',
+                        style: TextStyle(color: textMuted, fontSize: 13),
                       ),
-                    ),
-                    // Avatar circle
-                    Container(
-                      width: 44,
-                      height: 44,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: AppColor.primaryGradient,
-                        border: Border.all(
-                          color: Colors.white.withOpacity(0.25),
-                          width: 2,
+                      const SizedBox(height: 2),
+                      Text(
+                        'Your finances',
+                        style: TextStyle(
+                          color: textPrimary,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: -0.3,
                         ),
+                      ),
+                    ],
+                  ),
+                  const Spacer(),
+                  GestureDetector(
+                    onTap: ctrl.toggleVisibility,
+                    child: Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: isDark ? AppColor.darkCard : const Color(0xFFF4F4F5),
+                        shape: BoxShape.circle,
                       ),
                       child: Center(
-                        child: Text(
-                          initials,
-                          style: AppTypography.bodySemiBold(Colors.white),
+                        child: PhosphorIcon(
+                          visible ? PhosphorIconsLight.eye : PhosphorIconsLight.eyeSlash,
+                          color: textMuted,
+                          size: 16,
                         ),
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-
-              // ── Balance area ───────────────────────────────────────────
-              Padding(
-                padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Total Balance',
-                      style: AppTypography.caption(
-                          Colors.white.withOpacity(0.55)),
-                    ),
-                    const SizedBox(height: AppDimens.spaceXS),
-                    AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 300),
-                      child: Text(
-                        key: ValueKey(isVisible),
-                        isVisible
-                            ? '₹${fmt.format(controller.totalBalance.value)}'
-                            : '₹ ••••••',
-                        style: AppTypography.amountDisplay(Colors.white),
-                      ),
-                    ),
-                    const SizedBox(height: AppDimens.spaceSM),
-                    // Hide/show button row
-                    GestureDetector(
-                      onTap: controller.toggleVisibility,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: AppDimens.spaceMD,
-                            vertical: AppDimens.spaceXS + 2),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.12),
-                          borderRadius:
-                              BorderRadius.circular(AppDimens.radiusCircle),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            PhosphorIcon(
-                              isVisible
-                                  ? PhosphorIconsLight.eye
-                                  : PhosphorIconsLight.eyeSlash,
-                              color: Colors.white,
-                              size: AppDimens.iconSM,
-                            ),
-                            const SizedBox(width: AppDimens.spaceXS),
-                            Text(
-                              isVisible ? 'Hide' : 'Show',
-                              style: AppTypography.caption(Colors.white),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              // ── Income / Expense row ───────────────────────────────────
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                child: Row(
-                  children: [
-                    // Income tile
-                    Expanded(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: AppDimens.spaceMD,
-                            vertical: AppDimens.spaceMD),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.10),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 32,
-                              height: 32,
-                              decoration: BoxDecoration(
-                                color: AppColor.income.withOpacity(0.25),
-                                borderRadius: BorderRadius.circular(
-                                    AppDimens.radiusSM),
-                              ),
-                              child: const PhosphorIcon(
-                                PhosphorIconsLight.arrowUp,
-                                color: AppColor.income,
-                                size: AppDimens.iconSM,
-                              ),
-                            ),
-                            const SizedBox(width: AppDimens.spaceSM),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Income',
-                                    style: AppTypography.caption(
-                                        Colors.white.withOpacity(0.65)),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    isVisible
-                                        ? '₹${fmt.format(controller.totalIncome.value)}'
-                                        : '₹ •••••',
-                                    style: AppTypography.amountSmall(
-                                        Colors.white),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: AppDimens.spaceSM),
-                    // Expense tile
-                    Expanded(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: AppDimens.spaceMD,
-                            vertical: AppDimens.spaceMD),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.10),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 32,
-                              height: 32,
-                              decoration: BoxDecoration(
-                                color: AppColor.expense.withOpacity(0.25),
-                                borderRadius: BorderRadius.circular(
-                                    AppDimens.radiusSM),
-                              ),
-                              child: const PhosphorIcon(
-                                PhosphorIconsLight.arrowDown,
-                                color: AppColor.expense,
-                                size: AppDimens.iconSM,
-                              ),
-                            ),
-                            const SizedBox(width: AppDimens.spaceSM),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Expenses',
-                                    style: AppTypography.caption(
-                                        Colors.white.withOpacity(0.65)),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    isVisible
-                                        ? '₹${fmt.format(controller.totalExpense.value)}'
-                                        : '₹ •••••',
-                                    style: AppTypography.amountSmall(
-                                        Colors.white),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          );
-        }),
-      ),
-    );
-  }
-
-  String _initials(String name) {
-    if (name.isEmpty) return '?';
-    final parts = name.trim().split(' ');
-    final a = parts.first.isNotEmpty ? parts.first[0] : '';
-    final b = parts.length > 1 && parts.last.isNotEmpty ? parts.last[0] : '';
-    return '$a$b'.toUpperCase();
-  }
-}
-
-// ── Alert strip ───────────────────────────────────────────────────────────────
-
-class _AlertStrip extends StatelessWidget {
-  final bool isDark;
-  const _AlertStrip({required this.isDark});
-
-  @override
-  Widget build(BuildContext context) {
-    if (!Get.isRegistered<GoalsController>() ||
-        !Get.isRegistered<SavingsController>()) {
-      return const SizedBox.shrink();
-    }
-
-    final goalsC = Get.find<GoalsController>();
-    final savingsC = Get.find<SavingsController>();
-
-    return Obx(() {
-      final alerts = <_Alert>[];
-
-      // Budget alerts
-      for (final goal in goalsC.goals) {
-        final spent = goalsC.currentSpending(goal);
-        final pct = goal.limitAmount > 0 ? spent / goal.limitAmount : 0.0;
-        final label =
-            goal.category == 'All' ? 'Total spending' : goal.category;
-
-        if (pct >= 1.0) {
-          alerts.add(_Alert(
-            icon: PhosphorIconsLight.warning,
-            message: '$label limit exceeded',
-            color: AppColor.expense,
-          ));
-        } else if (pct >= 0.85) {
-          alerts.add(_Alert(
-            icon: PhosphorIconsFill.warning,
-            message: '$label at ${(pct * 100).toStringAsFixed(0)}%',
-            color: AppColor.warning,
-          ));
-        }
-      }
-
-      // Savings deadline alerts (due within 30 days, not yet complete)
-      final now = DateTime.now();
-      for (final goal in savingsC.goals) {
-        if (goal.targetDate == null) continue;
-        final days = goal.targetDate!.difference(now).inDays;
-        final progress = goal.targetAmount > 0
-            ? goal.savedAmount / goal.targetAmount
-            : 0.0;
-        if (days >= 0 && days <= 30 && progress < 1.0) {
-          alerts.add(_Alert(
-            icon: PhosphorIconsLight.clock,
-            message: '${goal.name}: $days day${days == 1 ? '' : 's'} left',
-            color: AppColor.primary,
-          ));
-        }
-      }
-
-      if (alerts.isEmpty) return const SizedBox.shrink();
-
-      return Padding(
-        padding: const EdgeInsets.fromLTRB(
-            AppDimens.spaceLG, 0, AppDimens.spaceLG, AppDimens.spaceMD),
-        child: SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            children: alerts
-                .map((a) => Padding(
-                      padding:
-                          const EdgeInsets.only(right: AppDimens.spaceSM),
-                      child: _AlertChip(alert: a),
-                    ))
-                .toList(),
-          ),
-        ),
-      );
-    });
-  }
-}
-
-class _Alert {
-  final PhosphorIconData icon;
-  final String message;
-  final Color color;
-  const _Alert(
-      {required this.icon, required this.message, required this.color});
-}
-
-class _AlertChip extends StatelessWidget {
-  final _Alert alert;
-  const _AlertChip({required this.alert});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-          horizontal: AppDimens.spaceMD, vertical: AppDimens.spaceXS),
-      decoration: BoxDecoration(
-        color: alert.color.withOpacity(0.10),
-        borderRadius: BorderRadius.circular(AppDimens.radiusCircle),
-        border: Border.all(color: alert.color.withOpacity(0.3)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          PhosphorIcon(alert.icon, size: 12, color: alert.color),
-          const SizedBox(width: AppDimens.spaceXS),
-          Text(alert.message, style: AppTypography.label(alert.color)),
-        ],
-      ),
-    );
-  }
-}
-
-// ── Budget health strip ───────────────────────────────────────────────────────
-
-class _BudgetHealthSection extends StatelessWidget {
-  final bool isDark;
-  const _BudgetHealthSection({required this.isDark});
-
-  @override
-  Widget build(BuildContext context) {
-    if (!Get.isRegistered<GoalsController>()) return const SizedBox.shrink();
-    final goalsC = Get.find<GoalsController>();
-
-    final cardBg = isDark ? AppColor.darkCard : AppColor.lightSurface;
-    final border = isDark ? AppColor.darkBorder : AppColor.lightBorder;
-    final textPrimary =
-        isDark ? AppColor.textPrimary : AppColor.lightTextPrimary;
-    final textSecondary =
-        isDark ? AppColor.textSecondary : AppColor.lightTextSecondary;
-    final fmt = NumberFormat('#,##0', 'en_IN');
-
-    return Obx(() {
-      if (goalsC.goals.isEmpty) return const SizedBox.shrink();
-
-      // Aggregate all goals
-      double totalBudget = 0;
-      double totalSpent = 0;
-      int overCount = 0;
-
-      for (final goal in goalsC.goals) {
-        totalBudget += goal.limitAmount;
-        final spent = goalsC.currentSpending(goal);
-        totalSpent += spent;
-        if (spent > goal.limitAmount) overCount++;
-      }
-
-      final progress =
-          totalBudget > 0 ? (totalSpent / totalBudget).clamp(0.0, 1.0) : 0.0;
-      final isOver = totalSpent > totalBudget;
-      final isNear = !isOver && progress >= 0.85;
-      final barColor = isOver
-          ? AppColor.expense
-          : isNear
-              ? AppColor.warning
-              : AppColor.primary;
-
-      return Padding(
-        padding: const EdgeInsets.fromLTRB(
-            AppDimens.spaceLG, AppDimens.spaceXXL, AppDimens.spaceLG, 0),
-        child: Container(
-          padding: const EdgeInsets.all(AppDimens.spaceLG),
-          decoration: BoxDecoration(
-            color: cardBg,
-            borderRadius: BorderRadius.circular(AppDimens.radiusXL),
-            border: Border.all(
-              color: isOver
-                  ? AppColor.expense.withOpacity(0.35)
-                  : isNear
-                      ? AppColor.warning.withOpacity(0.35)
-                      : border,
             ),
+
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 28, 20, 0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Total balance',
+                      style: TextStyle(color: textMuted, fontSize: 12)),
+                  const SizedBox(height: 6),
+                  AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 200),
+                    child: Text(
+                      key: ValueKey(visible),
+                      visible ? '${ctrl.currencySymbol.value}${fmt.format(ctrl.totalBalance.value)}' : '${ctrl.currencySymbol.value}  ••••••',
+                      style: TextStyle(
+                        color: textPrimary,
+                        fontSize: 42,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -2.0,
+                        height: 1.0,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+              child: Row(
+                children: [
+                  _StatPill(
+                    label: 'Income',
+                    value: visible ? '${ctrl.currencySymbol.value}${_compact(ctrl.totalIncome.value)}' : '•••',
+                    color: AppColor.income,
+                    isDark: isDark,
+                  ),
+                  const SizedBox(width: 10),
+                  _StatPill(
+                    label: 'Expenses',
+                    value: visible ? '${ctrl.currencySymbol.value}${_compact(ctrl.totalExpense.value)}' : '•••',
+                    color: AppColor.expense,
+                    isDark: isDark,
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 24),
+            Divider(height: 1, color: divColor),
+          ],
+        );
+      }),
+    );
+  }
+
+  String _compact(double v) {
+    if (v >= 100000) return '${(v / 100000).toStringAsFixed(1)}L';
+    if (v >= 1000) return '${(v / 1000).toStringAsFixed(1)}K';
+    return NumberFormat('#,##0', 'en_IN').format(v);
+  }
+}
+
+class _StatPill extends StatelessWidget {
+  final String label;
+  final String value;
+  final Color color;
+  final bool isDark;
+
+  const _StatPill({
+    required this.label,
+    required this.value,
+    required this.color,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) => Expanded(
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.06),
+            borderRadius: BorderRadius.circular(12),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [
-                      PhosphorIcon(
-                        PhosphorIconsLight.chartPie,
-                        size: AppDimens.iconSM,
-                        color: barColor,
-                      ),
-                      const SizedBox(width: AppDimens.spaceSM),
-                      Text(
-                        'Budget Health',
-                        style: AppTypography.bodySemiBold(textPrimary),
-                      ),
-                    ],
-                  ),
-                  if (overCount > 0)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: AppColor.expense.withOpacity(0.12),
-                        borderRadius:
-                            BorderRadius.circular(AppDimens.radiusCircle),
-                      ),
-                      child: Text(
-                        '$overCount over limit',
-                        style: AppTypography.label(AppColor.expense),
-                      ),
-                    ),
-                ],
-              ),
-              const SizedBox(height: AppDimens.spaceMD),
-              ClipRRect(
-                borderRadius:
-                    BorderRadius.circular(AppDimens.radiusCircle),
-                child: LinearProgressIndicator(
-                  value: progress,
-                  minHeight: 8,
-                  backgroundColor: barColor.withOpacity(0.12),
-                  valueColor: AlwaysStoppedAnimation<Color>(barColor),
-                ),
-              ),
-              const SizedBox(height: AppDimens.spaceSM),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    '₹${fmt.format(totalSpent)} spent',
-                    style: AppTypography.caption(textSecondary),
-                  ),
-                  Text(
-                    '₹${fmt.format(totalBudget)} budgeted',
-                    style: AppTypography.caption(textSecondary),
-                  ),
-                ],
-              ),
+              Text(label,
+                  style: TextStyle(
+                    color: color.withValues(alpha: 0.65),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                  )),
+              const SizedBox(height: 4),
+              Text(value,
+                  style: TextStyle(
+                    color: color,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.5,
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                  )),
             ],
           ),
         ),
       );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Month summary
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _MonthSummary extends StatelessWidget {
+  final bool isDark;
+  final HomeController ctrl;
+  const _MonthSummary({required this.isDark, required this.ctrl});
+
+  @override
+  Widget build(BuildContext context) {
+    final textPrimary = isDark ? AppColor.textPrimary : const Color(0xFF09090B);
+    final textMuted = isDark ? AppColor.textSecondary : const Color(0xFF71717A);
+    final divColor = isDark ? AppColor.darkBorder : const Color(0xFFF4F4F5);
+    final monthName = DateFormat('MMMM').format(DateTime.now());
+
+    return Obx(() {
+      final now = DateTime.now();
+      final monthStart = DateTime(now.year, now.month, 1);
+      final thisMonthTx = ctrl.allTransactions.where((t) {
+        try {
+          return !DateTime.parse(t['date']).isBefore(monthStart);
+        } catch (_) {
+          return false;
+        }
+      }).toList();
+
+      final monthSpent = thisMonthTx
+          .where((t) => t['type'] == 'expense')
+          .fold(0.0, (s, t) => s + (t['amount'] as num).toDouble());
+      final monthIncome = thisMonthTx
+          .where((t) => t['type'] == 'income')
+          .fold(0.0, (s, t) => s + (t['amount'] as num).toDouble());
+      final saved = monthIncome - monthSpent;
+      final fmt = NumberFormat('#,##0', 'en_IN');
+
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+            child: Row(
+              children: [
+                Text('$monthName overview',
+                    style: TextStyle(
+                        color: textPrimary,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600)),
+                const Spacer(),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: isDark ? AppColor.darkCard : const Color(0xFFF4F4F5),
+                    borderRadius: BorderRadius.circular(100),
+                  ),
+                  child: Text(
+                    '${thisMonthTx.length} txns',
+                    style: TextStyle(color: textMuted, fontSize: 11),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 14),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Row(
+              children: [
+                _MiniStat(
+                  icon: PhosphorIconsLight.arrowUp,
+                  label: 'Earned',
+                  value: '${ctrl.currencySymbol.value}${fmt.format(monthIncome)}',
+                  color: AppColor.income,
+                  isDark: isDark,
+                ),
+                _MiniStat(
+                  icon: PhosphorIconsLight.arrowDown,
+                  label: 'Spent',
+                  value: '${ctrl.currencySymbol.value}${fmt.format(monthSpent)}',
+                  color: AppColor.expense,
+                  isDark: isDark,
+                ),
+                _MiniStat(
+                  icon: PhosphorIconsLight.piggyBank,
+                  label: saved >= 0 ? 'Saved' : 'Over',
+                  value: '${ctrl.currencySymbol.value}${fmt.format(saved.abs())}',
+                  color: saved >= 0 ? AppColor.income : AppColor.expense,
+                  isDark: isDark,
+                ),
+              ],
+            ),
+          ),
+          // ── Monthly budget bar ──────────────────────────────
+          if (ctrl.monthlyBudget.value > 0) ...[
+            const SizedBox(height: 14),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: _BudgetBar(
+                spent: monthSpent,
+                budget: ctrl.monthlyBudget.value,
+                sym: ctrl.currencySymbol.value,
+                isDark: isDark,
+              ),
+            ),
+          ],
+          const SizedBox(height: 20),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Row(
+              children: [
+                Expanded(
+                  child: _QuickAction(
+                    label: 'Add expense',
+                    color: AppColor.expense,
+                    onTap: () => Get.to(() => const AddTransactionScreen(initialType: 'expense')),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _QuickAction(
+                    label: 'Add income',
+                    color: AppColor.income,
+                    onTap: () => Get.to(() => const AddTransactionScreen(initialType: 'income')),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+          Divider(height: 1, color: divColor),
+        ],
+      );
     });
   }
+
+}
+
+class _BudgetBar extends StatelessWidget {
+  final double spent;
+  final double budget;
+  final String sym;
+  final bool isDark;
+
+  const _BudgetBar({
+    required this.spent,
+    required this.budget,
+    required this.sym,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final pct = (spent / budget).clamp(0.0, 1.0);
+    final isOver = spent > budget;
+    final barColor = isOver
+        ? AppColor.expense
+        : pct >= 0.8
+            ? AppColor.warning
+            : AppColor.income;
+    final textPrimary = isDark ? AppColor.textPrimary : AppColor.lightTextPrimary;
+    final textMuted = isDark ? AppColor.textSecondary : AppColor.lightTextSecondary;
+    final trackColor = isDark ? AppColor.darkCard : const Color(0xFFF4F4F5);
+    final fmt = NumberFormat('#,##0', 'en_IN');
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: trackColor,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text('Monthly Budget',
+                  style: TextStyle(
+                      color: textMuted,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500)),
+              const Spacer(),
+              Text(
+                isOver
+                    ? '$sym${fmt.format(spent - budget)} over'
+                    : '$sym${fmt.format(budget - spent)} left',
+                style: TextStyle(
+                    color: barColor,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(100),
+            child: LinearProgressIndicator(
+              value: pct,
+              minHeight: 6,
+              backgroundColor: isDark
+                  ? AppColor.darkBorder
+                  : const Color(0xFFE4E4E7),
+              valueColor: AlwaysStoppedAnimation<Color>(barColor),
+            ),
+          ),
+          const SizedBox(height: 6),
+          Row(
+            children: [
+              Text('$sym${fmt.format(spent)} spent',
+                  style: TextStyle(color: textMuted, fontSize: 11)),
+              const Spacer(),
+              Text('of $sym${fmt.format(budget)}',
+                  style: TextStyle(
+                      color: textPrimary,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500)),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MiniStat extends StatelessWidget {
+  final PhosphorIconData icon;
+  final String label;
+  final String value;
+  final Color color;
+  final bool isDark;
+
+  const _MiniStat({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.color,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final textMuted = isDark ? AppColor.textSecondary : const Color(0xFF71717A);
+    final textPrimary = isDark ? AppColor.textPrimary : const Color(0xFF09090B);
+    return Expanded(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              PhosphorIcon(icon, size: 11, color: color),
+              const SizedBox(width: 4),
+              Text(label, style: TextStyle(color: textMuted, fontSize: 11)),
+            ],
+          ),
+          const SizedBox(height: 3),
+          Text(
+            value,
+            style: TextStyle(
+              color: textPrimary,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              letterSpacing: -0.3,
+              fontFeatures: const [FontFeature.tabularFigures()],
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _QuickAction extends StatelessWidget {
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _QuickAction({
+    required this.label,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) => GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 11),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.07),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: color.withValues(alpha: 0.15)),
+          ),
+          child: Center(
+            child: Text(
+              label,
+              style: TextStyle(
+                color: color,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ),
+      );
 }
