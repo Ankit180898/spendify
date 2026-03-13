@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:spendify/config/app_color.dart';
-import 'package:spendify/config/app_theme.dart';
 import 'package:spendify/controller/home_controller/home_controller.dart';
 import 'package:spendify/controller/wallet_controller/wallet_controller.dart';
 import 'package:spendify/model/categories_model.dart';
-import 'package:spendify/view/wallet/edit_transaction_screen.dart';
+import 'package:spendify/view/wallet/add_transaction_screen.dart';
 
 class TransactionDetailsScreen extends StatelessWidget {
   final Map<String, dynamic> transaction;
@@ -20,225 +20,140 @@ class TransactionDetailsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final controller = Get.find<HomeController>();
-    final transactionController = Get.find<TransactionController>();
+    final ctrl = Get.find<HomeController>();
+    final txCtrl = Get.find<TransactionController>();
     final isExpense = transaction['type'] == 'expense';
     final category = transaction['category'] as String? ?? '';
     final amount = transaction['amount'].toString();
     final date = DateTime.parse(transaction['date']);
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final description = transaction['description']?.toString() ?? '';
 
-    final bg = isDark ? AppColor.darkBg : AppColor.lightBg;
-    final cardBg = isDark ? AppColor.darkCard : AppColor.lightSurface;
-    final textPrimary =
-        isDark ? AppColor.textPrimary : AppColor.lightTextPrimary;
-    final textSecondary =
-        isDark ? AppColor.textSecondary : AppColor.lightTextSecondary;
-    final borderColor = isDark ? AppColor.darkBorder : AppColor.lightBorder;
-    final catColor = AppColor.categoryColor(category);
+    final bg = isDark ? AppColor.darkBg : Colors.white;
+    final textPrimary = isDark ? AppColor.textPrimary : const Color(0xFF09090B);
+    final textMuted = isDark ? AppColor.textSecondary : const Color(0xFF71717A);
+    final divColor = isDark ? AppColor.darkBorder : const Color(0xFFF4F4F5);
     final amountColor = isExpense ? AppColor.expense : AppColor.income;
+    final iconBg = isDark ? AppColor.darkElevated : const Color(0xFFF4F4F8);
+    final iconFg = isDark ? AppColor.textSecondary : const Color(0xFF71717A);
 
     return Scaffold(
       backgroundColor: bg,
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
+        backgroundColor: bg,
         elevation: 0,
-        title: Text(
-          'Transaction Details',
-          style: AppTypography.heading2(textPrimary),
-        ),
+        scrolledUnderElevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios_new_rounded,
-              color: textPrimary, size: AppDimens.iconMD),
-          onPressed: () => Get.back(),
+          icon: PhosphorIcon(PhosphorIconsLight.arrowLeft, color: textPrimary, size: 20),
+          onPressed: Get.back,
         ),
+        title: Text('Details', style: TextStyle(color: textPrimary, fontSize: 17, fontWeight: FontWeight.w600)),
         actions: [
           IconButton(
-            icon: Icon(Icons.edit_outlined,
-                color: textSecondary, size: AppDimens.iconMD),
+            icon: PhosphorIcon(PhosphorIconsLight.pencilSimple, color: textMuted, size: 20),
             onPressed: () async {
-              final result = await Get.to(
-                () => EditTransactionScreen(
-                  transaction: transaction,
-                  categoryList: categoryList,
-                ),
-              );
+              final result = await Get.to(() => AddTransactionScreen(
+                    initialType: transaction['type'] ?? 'expense',
+                    transaction: transaction,
+                  ));
               if (result == true) {
-                await controller.getTransactions();
+                await ctrl.getTransactions();
                 Get.back();
               }
             },
           ),
           IconButton(
-            icon: Icon(Icons.delete_outline_rounded,
-                color: AppColor.expense, size: AppDimens.iconMD),
-            onPressed: () => _confirmDelete(
-                context, transactionController, isDark, textPrimary),
+            icon: const PhosphorIcon(PhosphorIconsLight.trash, color: AppColor.expense, size: 20),
+            onPressed: () => _confirmDelete(context, txCtrl, isDark, textPrimary, textMuted),
           ),
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppDimens.spaceLG),
+        padding: const EdgeInsets.fromLTRB(20, 8, 20, 40),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Hero card
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(
-                vertical: AppDimens.spaceXXXL,
-                horizontal: AppDimens.spaceXXL,
-              ),
-              decoration: BoxDecoration(
-                color: cardBg,
-                borderRadius: BorderRadius.circular(AppDimens.radiusXXL),
-                border: Border.all(color: borderColor),
-              ),
+            // Amount hero — centered
+            Center(
               child: Column(
                 children: [
+                  const SizedBox(height: 20),
                   Container(
-                    width: 72,
-                    height: 72,
-                    decoration: BoxDecoration(
-                      color: catColor.withOpacity(0.15),
-                      borderRadius: BorderRadius.circular(AppDimens.radiusXL),
-                    ),
-                    child: Icon(
-                      controller.getCategoryIcon(category, categoryList),
-                      color: catColor,
-                      size: AppDimens.iconHero,
-                    ),
+                    width: 56, height: 56,
+                    decoration: BoxDecoration(color: iconBg, borderRadius: BorderRadius.circular(14)),
+                    child: Icon(ctrl.getCategoryIcon(category, categoryList), color: iconFg, size: 24),
                   ),
-                  const SizedBox(height: AppDimens.spaceLG),
+                  const SizedBox(height: 16),
+                  if (description.isNotEmpty)
+                    Text(description,
+                        style: TextStyle(color: textPrimary, fontSize: 17, fontWeight: FontWeight.w600),
+                        textAlign: TextAlign.center),
+                  const SizedBox(height: 8),
                   Text(
-                    transaction['description']?.toString() ?? '',
-                    style: AppTypography.heading2(textPrimary),
-                    textAlign: TextAlign.center,
+                    '${isExpense ? '-' : '+'}${ctrl.currencySymbol.value}$amount',
+                    style: TextStyle(color: amountColor, fontSize: 36, fontWeight: FontWeight.w800, letterSpacing: -1.5),
                   ),
-                  const SizedBox(height: AppDimens.spaceSM),
-                  Text(
-                    isExpense ? '-₹$amount' : '+₹$amount',
-                    style: AppTypography.amountDisplay(amountColor),
-                  ),
+                  const SizedBox(height: 4),
+                  Text(DateFormat('MMMM d, yyyy').format(date), style: TextStyle(color: textMuted, fontSize: 13)),
+                  const SizedBox(height: 32),
                 ],
               ),
             ),
 
-            const SizedBox(height: AppDimens.spaceLG),
-
-            // Details list
-            Container(
-              decoration: BoxDecoration(
-                color: cardBg,
-                borderRadius: BorderRadius.circular(AppDimens.radiusXXL),
-                border: Border.all(color: borderColor),
-              ),
-              child: Column(
-                children: [
-                  _buildDetailRow(
-                    label: 'Category',
-                    value: category,
-                    textPrimary: textPrimary,
-                    textSecondary: textSecondary,
-                    borderColor: borderColor,
-                    showBorder: true,
-                  ),
-                  _buildDetailRow(
-                    label: 'Type',
-                    value: isExpense ? 'Expense' : 'Income',
-                    textPrimary: textPrimary,
-                    textSecondary: textSecondary,
-                    borderColor: borderColor,
-                    showBorder: true,
-                    valueColor: amountColor,
-                  ),
-                  _buildDetailRow(
-                    label: 'Date',
-                    value: DateFormat('MMMM d, yyyy').format(date),
-                    textPrimary: textPrimary,
-                    textSecondary: textSecondary,
-                    borderColor: borderColor,
-                    showBorder: false,
-                  ),
-                ],
-              ),
-            ),
+            Divider(height: 1, color: divColor),
+            _Row(label: 'Category', value: category.isNotEmpty ? category : '—', primary: textPrimary, muted: textMuted, div: divColor),
+            _Row(label: 'Type', value: isExpense ? 'Expense' : 'Income', primary: amountColor, muted: textMuted, div: divColor),
+            _Row(label: 'Date', value: DateFormat('EEE, d MMM yyyy').format(date), primary: textPrimary, muted: textMuted, div: divColor, last: true),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildDetailRow({
-    required String label,
-    required String value,
-    required Color textPrimary,
-    required Color textSecondary,
-    required Color borderColor,
-    required bool showBorder,
-    Color? valueColor,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppDimens.spaceXXL,
-        vertical: AppDimens.spaceLG,
-      ),
-      decoration: BoxDecoration(
-        border: showBorder
-            ? Border(bottom: BorderSide(color: borderColor, width: 1))
-            : null,
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label, style: AppTypography.body(textSecondary)),
-          Text(
-            value,
-            style: AppTypography.bodySemiBoldTabular(valueColor ?? textPrimary),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _confirmDelete(
-    BuildContext context,
-    TransactionController transactionController,
-    bool isDark,
-    Color textPrimary,
-  ) async {
-    final confirm = await Get.dialog<bool>(
-      AlertDialog(
-        backgroundColor: isDark ? AppColor.darkCard : AppColor.lightSurface,
-        title: Text(
-          'Delete Transaction',
-          style: AppTypography.heading2(textPrimary),
-        ),
-        content: Text(
-          'Are you sure you want to delete this transaction?',
-          style: AppTypography.body(
-              isDark ? AppColor.textSecondary : AppColor.lightTextSecondary),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Get.back(result: false),
-            child: Text('Cancel',
-                style: AppTypography.body(
-                    isDark ? AppColor.textSecondary : AppColor.lightTextSecondary)),
-          ),
-          TextButton(
-            onPressed: () => Get.back(result: true),
-            child: Text('Delete',
-                style: AppTypography.bodySemiBold(AppColor.expense)),
-          ),
-        ],
-      ),
-    );
-
-    if (confirm == true) {
-      await transactionController
-          .deleteTransaction(transaction['id'].toString());
-      Get.back();
+  Future<void> _confirmDelete(BuildContext ctx, TransactionController txCtrl, bool isDark, Color primary, Color muted) async {
+    final ok = await Get.dialog<bool>(AlertDialog(
+      backgroundColor: isDark ? AppColor.darkCard : Colors.white,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      title: Text('Delete?', style: TextStyle(color: primary, fontSize: 18, fontWeight: FontWeight.w700)),
+      content: Text('This will be permanently deleted.', style: TextStyle(color: muted, fontSize: 14)),
+      actions: [
+        TextButton(onPressed: () => Get.back(result: false), child: Text('Cancel', style: TextStyle(color: muted))),
+        TextButton(onPressed: () => Get.back(result: true), child: const Text('Delete', style: TextStyle(color: AppColor.expense, fontWeight: FontWeight.w600))),
+      ],
+    ));
+    if (ok == true) {
+      Get.dialog(
+        const Center(child: CircularProgressIndicator(color: AppColor.primary)),
+        barrierDismissible: false,
+      );
+      await txCtrl.deleteTransaction(transaction['id'].toString());
+      Get.back(); // dismiss loader
+      Get.back(); // pop details screen
     }
   }
+}
+
+class _Row extends StatelessWidget {
+  final String label;
+  final String value;
+  final Color primary;
+  final Color muted;
+  final Color div;
+  final bool last;
+  const _Row({required this.label, required this.value, required this.primary, required this.muted, required this.div, this.last = false});
+
+  @override
+  Widget build(BuildContext context) => Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            child: Row(children: [
+              Text(label, style: TextStyle(color: muted, fontSize: 14)),
+              const Spacer(),
+              Text(value, style: TextStyle(color: primary, fontSize: 14, fontWeight: FontWeight.w600)),
+            ]),
+          ),
+          if (!last) Divider(height: 1, color: div),
+        ],
+      );
 }

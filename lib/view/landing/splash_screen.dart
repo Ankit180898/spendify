@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:spendify/config/app_color.dart';
-import 'package:spendify/config/app_theme.dart';
 import 'package:spendify/controller/splash/splash_controller.dart';
 
 class SplashScreen extends StatelessWidget {
@@ -12,44 +12,32 @@ class SplashScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     Get.put(SplashController());
 
-    return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: const SystemUiOverlayStyle(
+    return const AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.light,
-        systemNavigationBarColor: AppColor.darkBg,
-        systemNavigationBarIconBrightness: Brightness.light,
+        statusBarIconBrightness: Brightness.dark,
       ),
       child: Scaffold(
-        backgroundColor: AppColor.darkBg,
+        backgroundColor: Colors.white,
         body: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Logo mark — gradient circle with $ icon
-              Container(
-                width: 88,
-                height: 88,
-                decoration: BoxDecoration(
-                  gradient: AppColor.primaryGradient,
-                  borderRadius:
-                      BorderRadius.circular(AppDimens.radiusXXXL),
-                  boxShadow: AppShadows.primaryStrong,
-                ),
-                child: const Icon(
-                  Icons.account_balance_wallet_rounded,
-                  color: Colors.white,
-                  size: AppDimens.iconXXL,
-                ),
-              ),
-              const SizedBox(height: AppDimens.spaceXXL),
+              _Logo(),
+              SizedBox(height: 20),
               Text(
                 'Spendify',
-                style: AppTypography.display(AppColor.textPrimary),
+                style: TextStyle(
+                  color: Color(0xFF09090B),
+                  fontSize: 28,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -1.0,
+                ),
               ),
-              const SizedBox(height: AppDimens.spaceXS),
+              SizedBox(height: 6),
               Text(
                 'Smart money. Clear picture.',
-                style: AppTypography.body(AppColor.textSecondary),
+                style: TextStyle(color: Color(0xFF71717A), fontSize: 14),
               ),
             ],
           ),
@@ -57,4 +45,22 @@ class SplashScreen extends StatelessWidget {
       ),
     );
   }
+}
+
+class _Logo extends StatelessWidget {
+  const _Logo();
+  @override
+  Widget build(BuildContext context) => Container(
+        width: 60,
+        height: 60,
+        decoration: BoxDecoration(
+          color: AppColor.primary,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: const PhosphorIcon(
+          PhosphorIconsLight.wallet,
+          color: Colors.white,
+          size: 26,
+        ),
+      );
 }

@@ -56,7 +56,7 @@ class _GoalsScreenState extends State<GoalsScreen>
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final textPrimary = isDark ? AppColor.textPrimary : AppColor.lightTextPrimary;
-    final bg = isDark ? AppColor.darkBg : AppColor.lightBg;
+    final bg = isDark ? AppColor.darkBg : Colors.white;
     final tabBorder = isDark ? AppColor.darkBorder : AppColor.lightBorder;
 
     final spendingC = Get.find<GoalsController>();
@@ -260,21 +260,27 @@ class _BudgetSummaryCard extends StatelessWidget {
             : AppColor.income;
     final monthName = DateFormat('MMMM yyyy').format(DateTime.now());
 
+    final cardBg = isDark ? AppColor.darkCard : const Color(0xFFF9F9FB);
+    final border = isDark ? AppColor.darkBorder : const Color(0xFFE4E4E7);
+    final textPrimary = isDark ? AppColor.textPrimary : const Color(0xFF09090B);
+    final textMuted = isDark ? AppColor.textSecondary : const Color(0xFF71717A);
+
     return Container(
       padding: const EdgeInsets.all(AppDimens.spaceXL),
       decoration: BoxDecoration(
-        gradient: isDark ? AppColor.darkHeaderGradient : AppColor.primaryGradient,
+        color: cardBg,
         borderRadius: BorderRadius.circular(AppDimens.radiusXL),
+        border: Border.all(color: border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const PhosphorIcon(PhosphorIconsLight.calendar, color: Colors.white70,
+              PhosphorIcon(PhosphorIconsLight.calendar, color: textMuted,
                   size: AppDimens.iconSM),
               const SizedBox(width: AppDimens.spaceXS),
-              Text(monthName, style: AppTypography.caption(Colors.white70)),
+              Text(monthName, style: AppTypography.caption(textMuted)),
             ],
           ),
           const SizedBox(height: AppDimens.spaceXL),
@@ -283,21 +289,21 @@ class _BudgetSummaryCard extends StatelessWidget {
               Expanded(
                 child: _SummaryCol(
                   label: 'Budgeted',
-                  value: '₹${fmt.format(totalLimit)}',
-                  color: Colors.white,
+                  value: '${Get.find<HomeController>().currencySymbol.value}${fmt.format(totalLimit)}',
+                  color: textPrimary,
                 ),
               ),
               Expanded(
                 child: _SummaryCol(
                   label: 'Spent',
-                  value: '₹${fmt.format(totalSpent)}',
-                  color: Colors.white,
+                  value: '${Get.find<HomeController>().currencySymbol.value}${fmt.format(totalSpent)}',
+                  color: textPrimary,
                 ),
               ),
               Expanded(
                 child: _SummaryCol(
                   label: isOver ? 'Over by' : 'Remaining',
-                  value: '₹${fmt.format(remaining.abs())}',
+                  value: '${Get.find<HomeController>().currencySymbol.value}${fmt.format(remaining.abs())}',
                   color: isOver ? AppColor.expense : AppColor.income,
                 ),
               ),
@@ -308,15 +314,15 @@ class _BudgetSummaryCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(AppDimens.radiusCircle),
             child: LinearProgressIndicator(
               value: totalProgress,
-              minHeight: 6,
-              backgroundColor: Colors.white.withOpacity(0.2),
+              minHeight: 5,
+              backgroundColor: barColor.withValues(alpha: 0.12),
               valueColor: AlwaysStoppedAnimation<Color>(barColor),
             ),
           ),
           const SizedBox(height: AppDimens.spaceXS),
           Text(
             '${(totalProgress * 100).toStringAsFixed(0)}% of total budget used',
-            style: AppTypography.label(Colors.white70),
+            style: AppTypography.label(textMuted),
           ),
         ],
       ),
@@ -340,7 +346,7 @@ class _SummaryCol extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: AppTypography.label(Colors.white54)),
+        Text(label, style: AppTypography.label(color.withValues(alpha: 0.5))),
         const SizedBox(height: AppDimens.spaceXXS),
         Text(value,
             style: AppTypography.bodySemiBold(color),
@@ -378,9 +384,8 @@ class _BudgetRow extends StatelessWidget {
     final isNear = !isOver && progress >= 0.8;
     final barColor =
         isOver ? AppColor.expense : isNear ? AppColor.warning : AppColor.income;
-    final categoryColor = goal.category == 'All'
-        ? AppColor.primary
-        : AppColor.categoryColor(goal.category);
+    final iconBg = isDark ? AppColor.darkElevated : const Color(0xFFF4F4F8);
+    final iconFg = isDark ? AppColor.textSecondary : const Color(0xFF71717A);
 
     return Dismissible(
       key: Key(goal.id),
@@ -388,7 +393,7 @@ class _BudgetRow extends StatelessWidget {
       background: Container(
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: AppDimens.spaceXXL),
-        color: AppColor.expense.withOpacity(0.15),
+        color: AppColor.expense.withValues(alpha: 0.10),
         child: const PhosphorIcon(PhosphorIconsLight.trash, color: AppColor.expense),
       ),
       onDismissed: (_) => controller.deleteGoal(goal.id),
@@ -401,12 +406,12 @@ class _BudgetRow extends StatelessWidget {
               width: 36,
               height: 36,
               decoration: BoxDecoration(
-                color: categoryColor.withOpacity(0.12),
+                color: iconBg,
                 borderRadius: BorderRadius.circular(AppDimens.radiusSM),
               ),
               child: PhosphorIcon(
                 _categoryIcon(goal.category),
-                color: categoryColor,
+                color: iconFg,
                 size: AppDimens.iconMD,
               ),
             ),
@@ -427,7 +432,7 @@ class _BudgetRow extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        '₹${fmt.format(spent)} / ₹${fmt.format(goal.limitAmount)}',
+                        '${Get.find<HomeController>().currencySymbol.value}${fmt.format(spent)} / ${Get.find<HomeController>().currencySymbol.value}${fmt.format(goal.limitAmount)}',
                         style: AppTypography.caption(
                             isOver ? AppColor.expense : textSecondary),
                       ),
@@ -440,7 +445,7 @@ class _BudgetRow extends StatelessWidget {
                         height: 4,
                         width: constraints.maxWidth,
                         decoration: BoxDecoration(
-                          color: barColor.withOpacity(0.15),
+                          color: barColor.withValues(alpha: 0.12),
                           borderRadius:
                               BorderRadius.circular(AppDimens.radiusCircle),
                         ),
@@ -611,7 +616,7 @@ class _SavingsGoalCard extends StatelessWidget {
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: AppDimens.spaceLG),
         decoration: BoxDecoration(
-          color: AppColor.expense.withOpacity(0.15),
+          color: AppColor.expense.withValues(alpha: 0.10),
           borderRadius: BorderRadius.circular(AppDimens.radiusXL),
         ),
         child: const PhosphorIcon(PhosphorIconsLight.trash, color: AppColor.expense),
@@ -622,10 +627,7 @@ class _SavingsGoalCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: cardBg,
           borderRadius: BorderRadius.circular(AppDimens.radiusXL),
-          border: Border.all(
-            color: isComplete ? AppColor.income.withOpacity(0.4) : border,
-            width: isComplete ? 1.5 : 1,
-          ),
+          border: Border.all(color: border),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -655,7 +657,7 @@ class _SavingsGoalCard extends StatelessWidget {
                         horizontal: AppDimens.spaceMD,
                         vertical: AppDimens.spaceXXS + 2),
                     decoration: BoxDecoration(
-                      color: AppColor.income.withOpacity(0.15),
+                      color: AppColor.income.withValues(alpha: 0.12),
                       borderRadius:
                           BorderRadius.circular(AppDimens.radiusCircle),
                     ),
@@ -671,9 +673,9 @@ class _SavingsGoalCard extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('₹${fmt.format(goal.savedAmount)} saved',
+                Text('${Get.find<HomeController>().currencySymbol.value}${fmt.format(goal.savedAmount)} saved',
                     style: AppTypography.bodySemiBoldTabular(textPrimary)),
-                Text('of ₹${fmt.format(goal.targetAmount)}',
+                Text('of ${Get.find<HomeController>().currencySymbol.value}${fmt.format(goal.targetAmount)}',
                     style: AppTypography.caption(textSecondary)),
               ],
             ),
@@ -686,7 +688,7 @@ class _SavingsGoalCard extends StatelessWidget {
                   height: 8,
                   width: constraints.maxWidth,
                   decoration: BoxDecoration(
-                    color: barColor.withOpacity(0.15),
+                    color: barColor.withValues(alpha: 0.12),
                     borderRadius:
                         BorderRadius.circular(AppDimens.radiusCircle),
                   ),
@@ -725,7 +727,7 @@ class _SavingsGoalCard extends StatelessWidget {
                           horizontal: AppDimens.spaceMD,
                           vertical: AppDimens.spaceXS),
                       decoration: BoxDecoration(
-                        color: AppColor.primary.withOpacity(0.12),
+                        color: AppColor.primary.withValues(alpha: 0.10),
                         borderRadius:
                             BorderRadius.circular(AppDimens.radiusCircle),
                       ),
@@ -970,7 +972,7 @@ class _AddBudgetSheetState extends State<_AddBudgetSheet> {
                         vertical: AppDimens.spaceSM),
                     decoration: BoxDecoration(
                       color: isSelected
-                          ? AppColor.primary.withOpacity(0.15)
+                          ? AppColor.primary.withValues(alpha: 0.12)
                           : chipBg,
                       borderRadius:
                           BorderRadius.circular(AppDimens.radiusMD),
@@ -1144,7 +1146,7 @@ class _AddSavingsSheetState extends State<_AddSavingsSheet> {
                       height: 44,
                       decoration: BoxDecoration(
                         color: isSelected
-                            ? AppColor.primary.withOpacity(0.15)
+                            ? AppColor.primary.withValues(alpha: 0.12)
                             : (isDark
                                 ? AppColor.darkCard
                                 : AppColor.lightBg),
@@ -1235,7 +1237,7 @@ class _AddSavingsSheetState extends State<_AddSavingsSheet> {
                         GestureDetector(
                           onTap: () =>
                               setState(() => _targetDate = null),
-                          child: Icon(Icons.close,
+                          child: PhosphorIcon(PhosphorIconsLight.x,
                               size: AppDimens.iconSM,
                               color: textSecondary),
                         ),
@@ -1359,7 +1361,7 @@ class _AddMoneySheetState extends State<_AddMoneySheet> {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis),
                       Text(
-                        '₹${fmt.format(remaining)} still needed',
+                        '${Get.find<HomeController>().currencySymbol.value}${fmt.format(remaining)} still needed',
                         style: AppTypography.caption(textSecondary),
                       ),
                     ],

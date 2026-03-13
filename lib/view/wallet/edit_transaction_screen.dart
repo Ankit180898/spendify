@@ -5,6 +5,7 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:spendify/config/app_color.dart';
 import 'package:spendify/config/app_theme.dart';
+import 'package:spendify/controller/home_controller/home_controller.dart';
 import 'package:spendify/controller/wallet_controller/wallet_controller.dart';
 import 'package:spendify/model/categories_model.dart';
 
@@ -82,7 +83,7 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bg = isDark ? AppColor.darkBg : AppColor.lightBg;
+    final bg = isDark ? AppColor.darkBg : Colors.white;
     final textPrimary =
         isDark ? AppColor.textPrimary : AppColor.lightTextPrimary;
     final border = isDark ? AppColor.darkBorder : AppColor.lightBorder;
@@ -220,9 +221,9 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Text('₹',
+              Text(Get.find<HomeController>().currencySymbol.value,
                   style: AppTypography.amountDisplay(
-                      amountColor.withOpacity(0.6))),
+                      amountColor.withValues(alpha: 0.6))),
               const SizedBox(width: AppDimens.spaceXS),
               Flexible(
                 child: IntrinsicWidth(
@@ -237,7 +238,7 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
                     decoration: InputDecoration(
                       hintText: '0.00',
                       hintStyle: AppTypography.amountDisplay(
-                          textPrimary.withOpacity(0.18)),
+                          textPrimary.withValues(alpha: 0.15)),
                       border: InputBorder.none,
                       enabledBorder: InputBorder.none,
                       focusedBorder: InputBorder.none,
@@ -251,18 +252,7 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
             ],
           ),
           const SizedBox(height: AppDimens.spaceMD),
-          Container(
-            height: 1,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  dividerColor.withOpacity(0),
-                  dividerColor,
-                  dividerColor.withOpacity(0),
-                ],
-              ),
-            ),
-          ),
+          Divider(height: 1, color: dividerColor),
         ],
       );
     });
@@ -314,7 +304,7 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
             width: 36,
             height: 36,
             decoration: BoxDecoration(
-              color: AppColor.primary.withOpacity(0.10),
+              color: AppColor.primary.withValues(alpha: 0.10),
               shape: BoxShape.circle,
             ),
             child: const PhosphorIcon(PhosphorIconsLight.pencilSimple,
@@ -331,7 +321,7 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
               decoration: InputDecoration(
                 hintText: 'Enter custom category…',
                 hintStyle: AppTypography.bodyLarge(
-                    textSecondary.withOpacity(0.6)),
+                    textSecondary.withValues(alpha: 0.6)),
                 border: InputBorder.none,
                 enabledBorder: InputBorder.none,
                 focusedBorder: InputBorder.none,
@@ -348,11 +338,10 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
   }
 
   Widget _buildCategoryCell(_CategoryItem cat, bool isDark) {
-    final catColor = AppColor.categoryColor(cat.name);
-    final textSecondary =
-        isDark ? AppColor.textSecondary : AppColor.lightTextSecondary;
-    final bg = isDark ? AppColor.darkCard : AppColor.lightBg;
-    final border = isDark ? AppColor.darkBorder : AppColor.lightBorder;
+    final iconBg = isDark ? AppColor.darkCard : const Color(0xFFF4F4F5);
+    final iconFg = isDark ? AppColor.textSecondary : const Color(0xFF71717A);
+    final textMuted = isDark ? AppColor.textSecondary : const Color(0xFF71717A);
+    final border = isDark ? AppColor.darkBorder : const Color(0xFFE4E4E7);
 
     return Obx(() {
       final isSelected = cat.name == 'Others'
@@ -372,36 +361,26 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
           }
         },
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
+          duration: const Duration(milliseconds: 180),
           decoration: BoxDecoration(
-            color: isSelected ? catColor.withOpacity(0.12) : bg,
+            color: isSelected ? AppColor.primary.withValues(alpha: 0.08) : iconBg,
             borderRadius: BorderRadius.circular(AppDimens.radiusLG),
             border: Border.all(
-              color: isSelected ? catColor : border,
+              color: isSelected ? AppColor.primary : border,
               width: isSelected ? 1.5 : 1.0,
             ),
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                width: 42,
-                height: 42,
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? catColor.withOpacity(0.20)
-                      : catColor.withOpacity(0.10),
-                  shape: BoxShape.circle,
-                ),
-                child: PhosphorIcon(cat.icon,
-                    color: catColor, size: AppDimens.iconMD),
-              ),
+              PhosphorIcon(cat.icon,
+                  color: isSelected ? AppColor.primary : iconFg,
+                  size: AppDimens.iconMD),
               const SizedBox(height: AppDimens.spaceXS + 2),
               Text(
                 cat.name.split(' ').first,
                 style: AppTypography.label(
-                    isSelected ? catColor : textSecondary),
+                    isSelected ? AppColor.primary : textMuted),
                 textAlign: TextAlign.center,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -441,7 +420,7 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
               width: 36,
               height: 36,
               decoration: BoxDecoration(
-                color: AppColor.primary.withOpacity(0.10),
+                color: AppColor.primary.withValues(alpha: 0.10),
                 shape: BoxShape.circle,
               ),
               child: const PhosphorIcon(PhosphorIconsLight.calendar,
@@ -494,7 +473,7 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
             width: 36,
             height: 36,
             decoration: BoxDecoration(
-              color: AppColor.primary.withOpacity(0.10),
+              color: AppColor.primary.withValues(alpha: 0.10),
               shape: BoxShape.circle,
             ),
             child: const PhosphorIcon(PhosphorIconsLight.pencilSimple,
@@ -509,7 +488,7 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
               decoration: InputDecoration(
                 hintText: 'Transaction name or note…',
                 hintStyle: AppTypography.bodyLarge(
-                    textSecondary.withOpacity(0.6)),
+                    textSecondary.withValues(alpha: 0.6)),
                 border: InputBorder.none,
                 enabledBorder: InputBorder.none,
                 focusedBorder: InputBorder.none,
@@ -531,8 +510,7 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
     return Obx(() {
       final isLoading = controller.isLoading.isTrue;
       final isExpense = _selectedType.value == 'expense';
-      final gradient =
-          isExpense ? AppColor.expenseGradient : AppColor.incomeGradient;
+      final btnColor = isExpense ? AppColor.expense : AppColor.income;
 
       return GestureDetector(
         onTap: isLoading
@@ -549,17 +527,8 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
             width: double.infinity,
             height: AppDimens.buttonHeight,
             decoration: BoxDecoration(
-              gradient: gradient,
+              color: btnColor,
               borderRadius: BorderRadius.circular(AppDimens.radiusMD),
-              boxShadow: [
-                BoxShadow(
-                  color:
-                      (isExpense ? AppColor.expense : AppColor.income)
-                          .withOpacity(0.35),
-                  blurRadius: 20,
-                  offset: const Offset(0, 6),
-                ),
-              ],
             ),
             child: Center(
               child: isLoading
@@ -655,7 +624,7 @@ class _TypePill extends StatelessWidget {
         ),
         decoration: BoxDecoration(
           color: isSelected
-              ? selectedColor.withOpacity(0.12)
+              ? selectedColor.withValues(alpha: 0.10)
               : Colors.transparent,
           borderRadius: BorderRadius.circular(AppDimens.radiusMD),
           border: Border.all(
