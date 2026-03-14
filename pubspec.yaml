@@ -44,6 +44,10 @@ dependencies:
   syncfusion_flutter_charts: ^27.1.50
   flutter_local_notifications: ^18.0.0
   timezone: ^0.9.4
+  speech_to_text: ^7.0.0
+  flutter_sms_inbox: ^1.0.0
+  permission_handler: ^11.3.0
+  showcaseview: ^3.0.0
 
 dev_dependencies:
   flutter_lints: ^3.0.0

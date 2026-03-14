@@ -104,16 +104,17 @@ class GoalsController extends GetxController {
       final pct = goal.limitAmount > 0 ? spent / goal.limitAmount : 0.0;
       final label = goal.category == 'All' ? 'Total spending' : goal.category;
 
+      final sym = Get.find<HomeController>().currencySymbol.value;
       if (pct >= 1.0) {
         final title = 'Limit exceeded!';
         final body =
-            '$label has crossed your ₹${goal.limitAmount.toStringAsFixed(0)} ${goal.period} limit';
+            '$label has crossed your $sym${goal.limitAmount.toStringAsFixed(0)} ${goal.period} limit';
         CustomToast.errorToast(title, body);
         NotificationService.showBudgetAlert(title: title, body: body);
       } else if (pct >= 0.9) {
         final title = 'Approaching limit';
         final body =
-            '$label is at ${(pct * 100).toStringAsFixed(0)}% of your ₹${goal.limitAmount.toStringAsFixed(0)} ${goal.period} limit';
+            '$label is at ${(pct * 100).toStringAsFixed(0)}% of your $sym${goal.limitAmount.toStringAsFixed(0)} ${goal.period} limit';
         CustomToast.errorToast(title, body);
         NotificationService.showBudgetAlert(title: title, body: body);
       }

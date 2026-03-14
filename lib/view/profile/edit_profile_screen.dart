@@ -298,6 +298,97 @@ class _OccupationSection extends StatelessWidget {
   }
 }
 
+// ── Budget field ──────────────────────────────────────────────────────────────
+
+class _BudgetField extends StatefulWidget {
+  final EditProfileController ctrl;
+  final Color surfaceColor;
+  final Color borderColor;
+  final Color textColor;
+  final Color hintColor;
+
+  const _BudgetField({
+    required this.ctrl,
+    required this.surfaceColor,
+    required this.borderColor,
+    required this.textColor,
+    required this.hintColor,
+  });
+
+  @override
+  State<_BudgetField> createState() => _BudgetFieldState();
+}
+
+class _BudgetFieldState extends State<_BudgetField> {
+  final _focusNode = FocusNode();
+  bool _focused = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _focusNode.addListener(() {
+      setState(() => _focused = _focusNode.hasFocus);
+    });
+  }
+
+  @override
+  void dispose() {
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => Obx(() => AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        decoration: BoxDecoration(
+          color: widget.surfaceColor,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: _focused ? AppColor.primary : widget.borderColor,
+            width: _focused ? 1.5 : 1.0,
+          ),
+        ),
+        child: Row(
+          children: [
+            Text(
+              widget.ctrl.currencySymbol.value,
+              style: TextStyle(
+                color: _focused ? AppColor.primary : widget.textColor,
+                fontSize: 22,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: TextField(
+                controller: widget.ctrl.budgetController,
+                focusNode: _focusNode,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                style: TextStyle(color: widget.textColor, fontSize: 22, fontWeight: FontWeight.w600),
+                decoration: InputDecoration(
+                  hintText: '0',
+                  hintStyle: TextStyle(color: widget.hintColor, fontSize: 22, fontWeight: FontWeight.w400),
+                  border: InputBorder.none,
+                  enabledBorder: InputBorder.none,
+                  focusedBorder: InputBorder.none,
+                  disabledBorder: InputBorder.none,
+                  errorBorder: InputBorder.none,
+                  focusedErrorBorder: InputBorder.none,
+                  filled: false,
+                  isDense: false,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 14),
+                ),
+                inputFormatters: [
+                  FilteringTextInputFormatter.allow(RegExp(r'[\d,.]')),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ));
+}
+
 // ── Budget ────────────────────────────────────────────────────────────────────
 
 class _BudgetSection extends StatelessWidget {
@@ -324,51 +415,13 @@ class _BudgetSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Obx(() => Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                decoration: BoxDecoration(
-                  color: surface,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: AppColor.primary, width: 1.5),
-                ),
-                child: Row(
-                  children: [
-                    Text(ctrl.currencySymbol.value,
-                        style: const TextStyle(
-                            color: AppColor.primary,
-                            fontSize: 22,
-                            fontWeight: FontWeight.w600)),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: TextField(
-                        controller: ctrl.budgetController,
-                        keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true),
-                        style: TextStyle(
-                            color: textColor,
-                            fontSize: 22,
-                            fontWeight: FontWeight.w600),
-                        decoration: InputDecoration(
-                          hintText: '0',
-                          hintStyle: TextStyle(
-                              color: hintColor,
-                              fontSize: 22,
-                              fontWeight: FontWeight.w400),
-                          border: InputBorder.none,
-                          isDense: false,
-                          contentPadding:
-                              const EdgeInsets.symmetric(vertical: 14),
-                        ),
-                        inputFormatters: [
-                          FilteringTextInputFormatter.allow(
-                              RegExp(r'[\d,.]')),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              )),
+          _BudgetField(
+            ctrl: ctrl,
+            surfaceColor: surface,
+            borderColor: border,
+            textColor: textColor,
+            hintColor: hintColor,
+          ),
           const SizedBox(height: 16),
           Text('Quick select',
               style: TextStyle(

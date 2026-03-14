@@ -102,6 +102,7 @@ class EditProfileController extends GetxController {
         hc.currencySymbol.value = currencySymbol.value;
         hc.monthlyBudget.value = budget;
         hc.selectedCategories.value = selectedCategories.toList();
+        hc.occupation.value = occupation.value;
       } catch (_) {}
 
       CustomToast.successToast('Saved', 'Preferences updated');

@@ -58,6 +58,17 @@ class ProfileScreen extends StatelessWidget {
                           Text(name, style: TextStyle(color: textPrimary, fontSize: 16, fontWeight: FontWeight.w600)),
                           const SizedBox(height: 2),
                           Text(email, style: TextStyle(color: textMuted, fontSize: 13), maxLines: 1, overflow: TextOverflow.ellipsis),
+                          if (ctrl.occupation.value.isNotEmpty) ...[
+                            const SizedBox(height: 4),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: AppColor.primary.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(100),
+                              ),
+                              child: Text(ctrl.occupation.value, style: const TextStyle(color: AppColor.primary, fontSize: 11, fontWeight: FontWeight.w500)),
+                            ),
+                          ],
                         ],
                       ),
                     ),

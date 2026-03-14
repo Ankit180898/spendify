@@ -3,9 +3,11 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:intl/intl.dart';
+import 'package:speech_to_text/speech_to_text.dart';
 import 'package:spendify/config/app_color.dart';
 import 'package:spendify/controller/home_controller/home_controller.dart';
 import 'package:spendify/controller/wallet_controller/wallet_controller.dart';
+import 'package:spendify/services/voice_parser_service.dart';
 
 class AddTransactionScreen extends StatefulWidget {
   final String initialType;
@@ -27,19 +29,90 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   final _noteFocus = FocusNode();
   bool _noteVisible = false;
 
+  // Voice input
+  final _speech = SpeechToText();
+  bool _speechAvailable = false;
+  final _voiceText = ''.obs;
+  final _isListening = false.obs;
+
+
+  Future<void> _initSpeech() async {
+    try {
+      _speechAvailable = await _speech.initialize();
+    } catch (_) {
+      _speechAvailable = false;
+    }
+  }
+
+  Future<void> _startVoiceInput() async {
+    if (!_speechAvailable) {
+      try {
+        _speechAvailable = await _speech.initialize();
+      } catch (_) {
+        _speechAvailable = false;
+      }
+    }
+
+    _voiceText.value = '';
+    _isListening.value = false;
+
+    final isDark = Get.isDarkMode;
+    final sheetBg = isDark ? AppColor.darkElevated : Colors.white;
+
+    await Get.bottomSheet(
+      _speechAvailable
+          ? _VoiceSheet(speech: _speech, voiceText: _voiceText, isListening: _isListening, isDark: isDark)
+          : _TextInputSheet(voiceText: _voiceText, isDark: isDark),
+      backgroundColor: sheetBg,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      isScrollControlled: true,
+    );
+
+    _isListening.value = false;
+    if (_speech.isListening) { await _speech.stop(); }
+
+    final text = _voiceText.value.trim();
+    if (text.isEmpty) { return; }
+
+    final result = VoiceParserService.parse(text);
+
+    if (result.amount != null) {
+      final amtStr = result.amount! % 1 == 0
+          ? result.amount!.toInt().toString()
+          : result.amount!.toString();
+      _amount.value = amtStr;
+      controller.amountController.text = amtStr;
+    }
+    if (result.category != null) {
+      controller.selectedCategory.value = result.category!;
+    }
+    if (result.description != null && result.description!.isNotEmpty) {
+      controller.titleController.text = result.description!;
+      setState(() => _noteVisible = true);
+    }
+    _setType(result.type == 'expense');
+  }
+
   bool get _isEditMode => widget.transaction != null;
   String get _transactionId => widget.transaction!['id'].toString();
 
   static const _cats = [
-    _Cat('Food & Drinks', PhosphorIconsLight.coffee,       Color(0xFFEAB308)),
-    _Cat('Groceries',     PhosphorIconsLight.shoppingCart, Color(0xFF22C55E)),
-    _Cat('Transport',     PhosphorIconsLight.bus,           Color(0xFF8B5CF6)),
-    _Cat('Bills & Fees',  PhosphorIconsLight.receipt,      Color(0xFFF97316)),
-    _Cat('Health',        PhosphorIconsLight.heart,         Color(0xFFEF4444)),
-    _Cat('Car',           PhosphorIconsLight.car,           Color(0xFF6366F1)),
-    _Cat('Investments',   PhosphorIconsLight.chartBar,      Color(0xFF3B82F6)),
-    _Cat('Gifts',         PhosphorIconsLight.gift,          Color(0xFFEC4899)),
-    _Cat('Others',        PhosphorIconsLight.squaresFour,   Color(0xFF71717A)),
+    _Cat('Food & Drinks',  PhosphorIconsLight.coffee,          Color(0xFFEAB308)),
+    _Cat('Groceries',      PhosphorIconsLight.shoppingCart,    Color(0xFF22C55E)),
+    _Cat('Transport',      PhosphorIconsLight.bus,             Color(0xFF8B5CF6)),
+    _Cat('Bills & Fees',   PhosphorIconsLight.receipt,         Color(0xFFF97316)),
+    _Cat('Health',         PhosphorIconsLight.heart,           Color(0xFFEF4444)),
+    _Cat('Car',            PhosphorIconsLight.car,             Color(0xFF6366F1)),
+    _Cat('Shopping',       PhosphorIconsLight.shoppingBag,     Color(0xFFEC4899)),
+    _Cat('Entertainment',  PhosphorIconsLight.popcorn,         Color(0xFF14B8A6)),
+    _Cat('Investments',    PhosphorIconsLight.chartBar,        Color(0xFF3B82F6)),
+    _Cat('Education',      PhosphorIconsLight.graduationCap,   Color(0xFF8B5CF6)),
+    _Cat('Travel',         PhosphorIconsLight.airplaneTakeoff, Color(0xFF06B6D4)),
+    _Cat('Gifts',          PhosphorIconsLight.gift,            Color(0xFFFF7849)),
+    _Cat('Subscriptions',  PhosphorIconsLight.infinity,        Color(0xFFA855F7)),
+    _Cat('Others',         PhosphorIconsLight.squaresFour,     Color(0xFF71717A)),
   ];
 
   @override
@@ -65,6 +138,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       controller.selectedType.value = widget.initialType;
     }
     _noteFocus.addListener(() => setState(() {}));
+    _initSpeech();
   }
 
   @override
@@ -79,7 +153,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     if (key == '⌫') {
       if (cur.isNotEmpty) _amount.value = cur.substring(0, cur.length - 1);
     } else if (key == '.') {
-      if (!cur.contains('.')) _amount.value = cur.isEmpty ? '0.' : cur + '.';
+      if (!cur.contains('.')) { _amount.value = cur.isEmpty ? '0.' : '$cur.'; }
     } else {
       if (cur == '0') {
         _amount.value = key;
@@ -165,7 +239,16 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                                     ),
                                   )),
                             ),
-                            const SizedBox(width: 48),
+                            // Voice input button
+                            IconButton(
+                              icon: const PhosphorIcon(
+                                PhosphorIconsLight.microphone,
+                                color: AppColor.primary,
+                                size: 22,
+                              ),
+                              tooltip: 'Add by voice',
+                              onPressed: _startVoiceInput,
+                            ),
                           ],
                         ),
                       ),
@@ -660,6 +743,372 @@ class _Numpad extends StatelessWidget {
             }).toList(),
           );
         }).toList(),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Voice input bottom sheet
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Voice sheet — real device with mic
+
+class _VoiceSheet extends StatefulWidget {
+  final bool isDark;
+  final SpeechToText speech;
+  final RxString voiceText;
+  final RxBool isListening;
+
+  const _VoiceSheet({
+    required this.isDark,
+    required this.speech,
+    required this.voiceText,
+    required this.isListening,
+  });
+
+  @override
+  State<_VoiceSheet> createState() => _VoiceSheetState();
+}
+
+class _VoiceSheetState extends State<_VoiceSheet>
+    with TickerProviderStateMixin {
+  late final AnimationController _pulse1;
+  late final AnimationController _pulse2;
+  // Curves: expand quickly, fade out slowly
+  late final Animation<double> _scale1;
+  late final Animation<double> _alpha1;
+  late final Animation<double> _scale2;
+  late final Animation<double> _alpha2;
+
+  @override
+  void initState() {
+    super.initState();
+    _pulse1 = AnimationController(vsync: this, duration: const Duration(milliseconds: 1600))..repeat();
+    _pulse2 = AnimationController(vsync: this, duration: const Duration(milliseconds: 1600));
+    Future.delayed(const Duration(milliseconds: 800), () { if (mounted) { _pulse2.repeat(); } });
+
+    _scale1 = Tween(begin: 1.0, end: 2.2).animate(CurvedAnimation(parent: _pulse1, curve: Curves.easeOut));
+    _alpha1 = Tween(begin: 0.55, end: 0.0).animate(CurvedAnimation(parent: _pulse1, curve: Curves.easeIn));
+    _scale2 = Tween(begin: 1.0, end: 2.2).animate(CurvedAnimation(parent: _pulse2, curve: Curves.easeOut));
+    _alpha2 = Tween(begin: 0.55, end: 0.0).animate(CurvedAnimation(parent: _pulse2, curve: Curves.easeIn));
+
+    _startListening();
+  }
+
+  @override
+  void dispose() {
+    _pulse1.dispose();
+    _pulse2.dispose();
+    if (widget.speech.isListening) { widget.speech.stop(); }
+    super.dispose();
+  }
+
+  void _startListening() {
+    widget.speech.listen(
+      onResult: (result) => widget.voiceText.value = result.recognizedWords,
+      listenFor: const Duration(seconds: 25),
+      pauseFor: const Duration(seconds: 5),
+      localeId: 'en_IN',
+      listenOptions: SpeechListenOptions(cancelOnError: true, partialResults: true),
+    );
+    widget.isListening.value = true;
+  }
+
+  Future<void> _stop() async {
+    await widget.speech.stop();
+    widget.isListening.value = false;
+    if (mounted) { Get.back(); }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final textPrimary = widget.isDark ? AppColor.textPrimary : const Color(0xFF09090B);
+    final textMuted = widget.isDark ? AppColor.textSecondary : const Color(0xFF71717A);
+    final transcriptBg = widget.isDark ? AppColor.darkCard : const Color(0xFFF4F4F5);
+
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Handle
+            Container(
+              width: 40, height: 4,
+              margin: const EdgeInsets.only(bottom: 28),
+              decoration: BoxDecoration(
+                color: widget.isDark ? AppColor.darkBorder : const Color(0xFFE4E4E7),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+
+            // Mic with radiating pulse rings
+            SizedBox(
+              width: 120, height: 120,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  // Pulse ring 2 (offset start)
+                  AnimatedBuilder(
+                    animation: _pulse2,
+                    builder: (_, __) => Transform.scale(
+                      scale: _scale2.value,
+                      child: Container(
+                        width: 68, height: 68,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: AppColor.primary.withValues(alpha: _alpha2.value),
+                        ),
+                      ),
+                    ),
+                  ),
+                  // Pulse ring 1
+                  AnimatedBuilder(
+                    animation: _pulse1,
+                    builder: (_, __) => Transform.scale(
+                      scale: _scale1.value,
+                      child: Container(
+                        width: 68, height: 68,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: AppColor.primary.withValues(alpha: _alpha1.value),
+                        ),
+                      ),
+                    ),
+                  ),
+                  // Solid mic button
+                  Container(
+                    width: 68, height: 68,
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: AppColor.primaryGradient,
+                    ),
+                    child: const Center(
+                      child: PhosphorIcon(PhosphorIconsLight.microphone, color: Colors.white, size: 28),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            Text('Listening…',
+                style: TextStyle(color: textPrimary, fontSize: 20, fontWeight: FontWeight.w700)),
+            const SizedBox(height: 4),
+            Text('Speak naturally — amount, place, category',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: textMuted, fontSize: 13)),
+            const SizedBox(height: 18),
+
+            // Live transcript
+            Obx(() {
+              final text = widget.voiceText.value;
+              return AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                width: double.infinity,
+                constraints: const BoxConstraints(minHeight: 56),
+                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+                decoration: BoxDecoration(
+                  color: transcriptBg,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: text.isNotEmpty
+                        ? AppColor.primary.withValues(alpha: 0.5)
+                        : Colors.transparent,
+                    width: 1.5,
+                  ),
+                ),
+                child: Text(
+                  text.isEmpty ? 'Start speaking…' : text,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: text.isEmpty ? textMuted : textPrimary,
+                    fontSize: text.isEmpty ? 14 : 16,
+                    fontWeight: text.isEmpty ? FontWeight.w400 : FontWeight.w600,
+                    fontStyle: text.isEmpty ? FontStyle.italic : FontStyle.normal,
+                  ),
+                ),
+              );
+            }),
+            const SizedBox(height: 20),
+
+            // Done button
+            GestureDetector(
+              onTap: _stop,
+              child: Container(
+                width: double.infinity, height: 52,
+                decoration: BoxDecoration(
+                  color: AppColor.primary,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: const Center(
+                  child: Text('Done',
+                      style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600)),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Text input sheet — simulator / no mic fallback
+
+class _TextInputSheet extends StatefulWidget {
+  final bool isDark;
+  final RxString voiceText;
+
+  const _TextInputSheet({required this.isDark, required this.voiceText});
+
+  @override
+  State<_TextInputSheet> createState() => _TextInputSheetState();
+}
+
+class _TextInputSheetState extends State<_TextInputSheet> {
+  late final TextEditingController _tc;
+
+  static const _examples = ['₹200 Zomato', '500 petrol', '1000 groceries', 'Netflix 649', '250 auto'];
+
+  @override
+  void initState() {
+    super.initState();
+    _tc = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _tc.dispose();
+    super.dispose();
+  }
+
+  void _apply() {
+    final t = _tc.text.trim();
+    if (t.isEmpty) { return; }
+    widget.voiceText.value = t;
+    Get.back();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final textPrimary = widget.isDark ? AppColor.textPrimary : const Color(0xFF09090B);
+    final textMuted = widget.isDark ? AppColor.textSecondary : const Color(0xFF71717A);
+    final inputBg = widget.isDark ? AppColor.darkCard : const Color(0xFFF4F4F5);
+    final chipBg = widget.isDark ? AppColor.darkCard : const Color(0xFFF4F4F5);
+    final border = widget.isDark ? AppColor.darkBorder : const Color(0xFFE4E4E7);
+
+    return Padding(
+      padding: EdgeInsets.fromLTRB(24, 16, 24, MediaQuery.of(context).viewInsets.bottom + 32),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Handle
+          Center(
+            child: Container(
+              width: 40, height: 4,
+              margin: const EdgeInsets.only(bottom: 24),
+              decoration: BoxDecoration(
+                color: widget.isDark ? AppColor.darkBorder : const Color(0xFFE4E4E7),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+
+          // Icon + title row
+          Row(
+            children: [
+              Container(
+                width: 44, height: 44,
+                decoration: BoxDecoration(
+                  gradient: AppColor.primaryGradient,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: const Center(
+                  child: PhosphorIcon(PhosphorIconsLight.microphone, color: Colors.white, size: 22),
+                ),
+              ),
+              const SizedBox(width: 14),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Quick Add', style: TextStyle(color: textPrimary, fontSize: 17, fontWeight: FontWeight.w700)),
+                  Text('Describe in plain words', style: TextStyle(color: textMuted, fontSize: 13)),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+
+          // Text field
+          TextField(
+            controller: _tc,
+            autofocus: true,
+            style: TextStyle(color: textPrimary, fontSize: 15),
+            cursorColor: AppColor.primary,
+            onSubmitted: (_) => _apply(),
+            textCapitalization: TextCapitalization.sentences,
+            decoration: InputDecoration(
+              hintText: 'e.g. 200 Zomato or 500 petrol',
+              hintStyle: TextStyle(color: textMuted, fontSize: 14),
+              filled: true,
+              fillColor: inputBg,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: BorderSide.none,
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: const BorderSide(color: AppColor.primary, width: 1.5),
+              ),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              suffixIcon: IconButton(
+                icon: PhosphorIcon(PhosphorIconsLight.xCircle, color: textMuted, size: 18),
+                onPressed: _tc.clear,
+              ),
+            ),
+          ),
+          const SizedBox(height: 14),
+
+          // Example chips
+          Text('Try these:', style: TextStyle(color: textMuted, fontSize: 12, fontWeight: FontWeight.w500)),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: _examples.map((e) => GestureDetector(
+              onTap: () => setState(() => _tc.text = e),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: chipBg,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: border),
+                ),
+                child: Text(e, style: TextStyle(color: textPrimary, fontSize: 13)),
+              ),
+            )).toList(),
+          ),
+          const SizedBox(height: 20),
+
+          // Apply button
+          GestureDetector(
+            onTap: _apply,
+            child: Container(
+              width: double.infinity, height: 52,
+              decoration: BoxDecoration(
+                gradient: AppColor.primaryGradient,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: const Center(
+                child: Text('Parse & Fill', style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w600)),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
