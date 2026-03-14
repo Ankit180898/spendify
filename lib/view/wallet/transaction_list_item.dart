@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:spendify/config/app_color.dart';
 import 'package:spendify/controller/home_controller/home_controller.dart';
 import 'package:spendify/model/categories_model.dart';
@@ -27,9 +28,10 @@ class TransactionListItem extends StatelessWidget {
 
     final textPrimary = isDark ? AppColor.textPrimary : const Color(0xFF18181B);
     final textMuted = isDark ? AppColor.textSecondary : const Color(0xFF71717A);
-    final iconBg = isDark ? AppColor.darkElevated : const Color(0xFFF4F4F8);
-    final iconFg = isDark ? AppColor.textSecondary : const Color(0xFF71717A);
     final amountColor = isExpense ? AppColor.expense : AppColor.income;
+    final catColor = isExpense
+        ? AppColor.categoryColor(category)
+        : AppColor.income;
 
     return InkWell(
       onTap: () => Get.to(() => TransactionDetailsScreen(transaction: tx, categoryList: categoryList)),
@@ -40,8 +42,13 @@ class TransactionListItem extends StatelessWidget {
             Container(
               width: 38,
               height: 38,
-              decoration: BoxDecoration(color: iconBg, borderRadius: BorderRadius.circular(10)),
-              child: Icon(ctrl.getCategoryIcon(category, categoryList), color: iconFg, size: 17),
+              decoration: BoxDecoration(
+                color: catColor.withValues(alpha: 0.12),
+                shape: BoxShape.circle,
+              ),
+              child: Center(
+                child: PhosphorIcon(ctrl.getCategoryIcon(category, categoryList), color: catColor, size: 17),
+              ),
             ),
             const SizedBox(width: 12),
             Expanded(

@@ -48,13 +48,19 @@ TextStyle normalText(double size, Color color) => GoogleFonts.dmSans(
           TextStyle(color: color, fontSize: size, fontWeight: FontWeight.w400),
     );
 
-   List<CategoriesModel> categoryList = [
-    CategoriesModel(name: 'Investments', icon: PhosphorIconsLight.chartBar),
-    CategoriesModel(name: 'Health', icon: PhosphorIconsLight.heart),
-    CategoriesModel(name: 'Bills & Fees', icon: PhosphorIconsLight.receipt),
-    CategoriesModel(name: 'Food & Drinks', icon: PhosphorIconsLight.coffee),
-    CategoriesModel(name: 'Car', icon: PhosphorIconsLight.car),
-    CategoriesModel(name: 'Groceries', icon: PhosphorIconsLight.shoppingCart),
-    CategoriesModel(name: 'Gifts', icon: PhosphorIconsLight.gift),
-    CategoriesModel(name: 'Transport', icon: PhosphorIconsLight.bus),
+  List<CategoriesModel> categoryList = [
+    CategoriesModel(name: 'Food & Drinks',  icon: PhosphorIconsLight.forkKnife),
+    CategoriesModel(name: 'Groceries',      icon: PhosphorIconsLight.shoppingCart),
+    CategoriesModel(name: 'Transport',      icon: PhosphorIconsLight.bus),
+    CategoriesModel(name: 'Car',            icon: PhosphorIconsLight.car),
+    CategoriesModel(name: 'Shopping',       icon: PhosphorIconsLight.bag),
+    CategoriesModel(name: 'Bills & Fees',   icon: PhosphorIconsLight.lightning),
+    CategoriesModel(name: 'Health',         icon: PhosphorIconsLight.pill),
+    CategoriesModel(name: 'Entertainment',  icon: PhosphorIconsLight.filmSlate),
+    CategoriesModel(name: 'Travel',         icon: PhosphorIconsLight.airplane),
+    CategoriesModel(name: 'Investments',    icon: PhosphorIconsLight.trendUp),
+    CategoriesModel(name: 'Education',      icon: PhosphorIconsLight.graduationCap),
+    CategoriesModel(name: 'Subscriptions',  icon: PhosphorIconsLight.repeat),
+    CategoriesModel(name: 'Gifts',          icon: PhosphorIconsLight.gift),
+    CategoriesModel(name: 'Others',         icon: PhosphorIconsLight.tag),
   ];

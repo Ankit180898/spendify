@@ -8,6 +8,7 @@ import 'package:spendify/config/app_color.dart';
 import 'package:spendify/controller/home_controller/home_controller.dart';
 import 'package:spendify/controller/wallet_controller/wallet_controller.dart';
 import 'package:spendify/services/voice_parser_service.dart';
+import 'package:spendify/utils/utils.dart';
 
 class AddTransactionScreen extends StatefulWidget {
   final String initialType;
@@ -99,22 +100,9 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   bool get _isEditMode => widget.transaction != null;
   String get _transactionId => widget.transaction!['id'].toString();
 
-  static const _cats = [
-    _Cat('Food & Drinks',  PhosphorIconsLight.coffee,          Color(0xFFEAB308)),
-    _Cat('Groceries',      PhosphorIconsLight.shoppingCart,    Color(0xFF22C55E)),
-    _Cat('Transport',      PhosphorIconsLight.bus,             Color(0xFF8B5CF6)),
-    _Cat('Bills & Fees',   PhosphorIconsLight.receipt,         Color(0xFFF97316)),
-    _Cat('Health',         PhosphorIconsLight.heart,           Color(0xFFEF4444)),
-    _Cat('Car',            PhosphorIconsLight.car,             Color(0xFF6366F1)),
-    _Cat('Shopping',       PhosphorIconsLight.shoppingBag,     Color(0xFFEC4899)),
-    _Cat('Entertainment',  PhosphorIconsLight.popcorn,         Color(0xFF14B8A6)),
-    _Cat('Investments',    PhosphorIconsLight.chartBar,        Color(0xFF3B82F6)),
-    _Cat('Education',      PhosphorIconsLight.graduationCap,   Color(0xFF8B5CF6)),
-    _Cat('Travel',         PhosphorIconsLight.airplaneTakeoff, Color(0xFF06B6D4)),
-    _Cat('Gifts',          PhosphorIconsLight.gift,            Color(0xFFFF7849)),
-    _Cat('Subscriptions',  PhosphorIconsLight.infinity,        Color(0xFFA855F7)),
-    _Cat('Others',         PhosphorIconsLight.squaresFour,     Color(0xFF71717A)),
-  ];
+  static List<_Cat> get _cats => categoryList
+      .map((c) => _Cat(c.name, c.icon as PhosphorIconData, AppColor.categoryColor(c.name)))
+      .toList();
 
   @override
   void initState() {
@@ -145,6 +133,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   @override
   void dispose() {
     _noteFocus.dispose();
+    if (_speech.isListening) _speech.cancel();
     super.dispose();
   }
 
@@ -195,7 +184,8 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     final textPrimary = isDark ? AppColor.textPrimary : const Color(0xFF09090B);
     final textMuted = isDark ? AppColor.textSecondary : const Color(0xFF71717A);
     final divColor = isDark ? AppColor.darkBorder : const Color(0xFFF4F4F5);
-    final noteActive = _noteFocus.hasFocus;
+    final keyboardVisible = MediaQuery.of(context).viewInsets.bottom > 0;
+    final noteActive = _noteFocus.hasFocus && keyboardVisible;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle(

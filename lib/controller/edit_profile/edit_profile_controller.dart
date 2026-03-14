@@ -55,7 +55,7 @@ class EditProfileController extends GetxController {
         }
       }
     } catch (e) {
-      print('EditProfile load error: $e');
+      debugPrint('EditProfile load error: $e');
     } finally {
       isLoading.value = false;
     }
@@ -108,7 +108,7 @@ class EditProfileController extends GetxController {
       CustomToast.successToast('Saved', 'Preferences updated');
       Get.back();
     } catch (e) {
-      print('EditProfile save error: $e');
+      debugPrint('EditProfile save error: $e');
       CustomToast.errorToast('Error', 'Could not save preferences. Try again.');
     } finally {
       isSaving.value = false;

@@ -6,6 +6,7 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:spendify/config/app_color.dart';
 import 'package:spendify/config/app_theme.dart';
 import 'package:spendify/controller/home_controller/home_controller.dart';
+import 'package:spendify/model/categories_model.dart';
 import 'package:spendify/utils/utils.dart';
 import 'package:spendify/view/wallet/transaction_details_screen.dart';
 
@@ -186,43 +187,11 @@ class _StatisticsScreenState extends State<StatisticsScreen>
 
 PhosphorIconData _categoryIcon(String category, bool isIncome) {
   if (isIncome) return PhosphorIconsLight.wallet;
-  final k = category.toLowerCase().trim();
-  if (k.contains('food') || k.contains('restaurant') || k.contains('drink')) {
-    return PhosphorIconsLight.forkKnife;
-  }
-  if (k.contains('grocer') || k.contains('super') || k.contains('market')) {
-    return PhosphorIconsLight.shoppingCart;
-  }
-  if (k.contains('transport') || k.contains('uber') || k.contains('cab') ||
-      k.contains('train') || k.contains('bus')) {
-    return PhosphorIconsLight.bus;
-  }
-  if (k.contains('car') || k.contains('fuel') || k.contains('vehicle')) {
-    return PhosphorIconsLight.car;
-  }
-  if (k.contains('health') || k.contains('medical') || k.contains('pharma')) {
-    return PhosphorIconsLight.pill;
-  }
-  if (k.contains('invest')) return PhosphorIconsLight.trendUp;
-  if (k.contains('bill') || k.contains('util') || k.contains('electric')) {
-    return PhosphorIconsLight.lightning;
-  }
-  if (k.contains('gift') || k.contains('present')) {
-    return PhosphorIconsLight.gift;
-  }
-  if (k.contains('entertain') || k.contains('movie') || k.contains('ott')) {
-    return PhosphorIconsLight.filmSlate;
-  }
-  if (k.contains('shop') || k.contains('cloth')) {
-    return PhosphorIconsLight.bag;
-  }
-  if (k.contains('rent') || k.contains('home') || k.contains('house')) {
-    return PhosphorIconsLight.house;
-  }
-  if (k.contains('salary') || k.contains('income')) {
-    return PhosphorIconsLight.wallet;
-  }
-  return PhosphorIconsLight.tag;
+  final match = categoryList.firstWhere(
+    (c) => c.name == category,
+    orElse: () => CategoriesModel(name: category, icon: PhosphorIconsLight.tag),
+  );
+  return match.icon as PhosphorIconData;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -996,7 +965,7 @@ class _TransactionsSection extends StatelessWidget {
   }
 
   String _title(Map<String, dynamic> tx) {
-    final t = tx['title'];
+    final t = tx['description'];
     if (t != null && (t as String).isNotEmpty) return t;
     final cat = (tx['category'] as String?) ?? '';
     if (cat.isNotEmpty) return cat;

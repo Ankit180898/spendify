@@ -6,7 +6,9 @@ import 'package:get/get.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:spendify/main.dart';
+import 'package:spendify/routes/app_pages.dart';
 import 'package:spendify/widgets/bottom_navigation.dart';
+
 import 'package:spendify/widgets/toast/custom_toast.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -39,7 +41,7 @@ class LoginController extends GetxController {
       );
 
       isGoogleLoading.value = false;
-      Get.offAll(const BottomNav());
+      await _navigateAfterAuth();
     } catch (e) {
       isGoogleLoading.value = false;
       CustomToast.errorToast('Sign-in failed', e.toString());
@@ -70,7 +72,7 @@ class LoginController extends GetxController {
       );
 
       isAppleLoading.value = false;
-      Get.offAll(const BottomNav());
+      await _navigateAfterAuth();
     } catch (e) {
       isAppleLoading.value = false;
       if (e is SignInWithAppleAuthorizationException &&
@@ -78,6 +80,25 @@ class LoginController extends GetxController {
         return;
       }
       CustomToast.errorToast('Sign-in failed', e.toString());
+    }
+  }
+
+  Future<void> _navigateAfterAuth() async {
+    final userId = supabaseC.auth.currentUser?.id;
+    if (userId == null) return;
+    try {
+      final profile = await supabaseC
+          .from('user_profiles')
+          .select('onboarding_complete')
+          .eq('user_id', userId)
+          .maybeSingle();
+      if (profile != null && profile['onboarding_complete'] == true) {
+        Get.offAll(const BottomNav());
+      } else {
+        Get.offAllNamed(Routes.ONBOARDING);
+      }
+    } catch (_) {
+      Get.offAllNamed(Routes.ONBOARDING);
     }
   }
 

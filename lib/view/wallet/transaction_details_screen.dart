@@ -25,7 +25,7 @@ class TransactionDetailsScreen extends StatelessWidget {
     final isExpense = transaction['type'] == 'expense';
     final category = transaction['category'] as String? ?? '';
     final amount = transaction['amount'].toString();
-    final date = DateTime.parse(transaction['date']);
+    final date = DateTime.tryParse(transaction['date']?.toString() ?? '') ?? DateTime.now();
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final description = transaction['description']?.toString() ?? '';
 
