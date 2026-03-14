@@ -10,7 +10,11 @@
       "Bash(find '/Users/ankitkumar/Developer/Flutter projects/expense tracker/spendify' -name *.dart -path *phosphor*)",
       "Read(//phosphor_flutter/,/**)",
       "Read(//Users/ankitkumar/**)",
-      "Bash(flutter pub:*)"
+      "Bash(flutter pub:*)",
+      "Bash(grep -n \"currencySymbol\\\\|$\\\\|₹\" lib/view/goals/goals_screen.dart)",
+      "Bash(grep -h \"^import\\\\|^export\" lib/**/*.dart)",
+      "Bash(grep -v \"^$\")",
+      "Bash(grep -r \"serverClientId\\\\|hardcoded\" '/Users/ankitkumar/Developer/Flutter projects/expense tracker/spendify/lib' --include=*.dart)"
     ]
   }
 }

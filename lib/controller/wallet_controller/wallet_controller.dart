@@ -56,8 +56,12 @@ class TransactionController extends GetxController {
       }
 
       // Add resource
+      if (currentUser == null) {
+        if (!silent) CustomToast.errorToast('Error', 'Not signed in');
+        return;
+      }
       await supabaseC.from('transactions').insert({
-        'user_id': currentUser!.id,
+        'user_id': currentUser.id,
         'amount': amount,
         'description': titleController.text,
         'type': selectedType.value,
@@ -115,13 +119,16 @@ class TransactionController extends GetxController {
 
   Future<void> updateBalance(double amount, String type) async {
     try {
-      final response =
-          await supabaseC.from("users").select('balance').eq('id', supabaseC.auth.currentUser!.id).single();
+      final uid = supabaseC.auth.currentUser?.id;
+      if (uid == null) return;
 
-      final currentBalance = (response['balance'] as num).toDouble();
+      final response =
+          await supabaseC.from("users").select('balance').eq('id', uid).single();
+
+      final currentBalance = ((response['balance'] as num?)?.toDouble()) ?? 0.0;
       final newBalance = type == 'income' ? currentBalance + amount : currentBalance - amount;
 
-      await supabaseC.from("users").update({'balance': newBalance}).eq('id', supabaseC.auth.currentUser!.id);
+      await supabaseC.from("users").update({'balance': newBalance}).eq('id', uid);
 
       // Update local value
       homeC.totalBalance.value = newBalance;

@@ -9,6 +9,7 @@ import 'package:spendify/controller/home_controller/home_controller.dart';
 import 'package:spendify/controller/sms_controller/sms_controller.dart';
 import 'package:spendify/controller/wallet_controller/wallet_controller.dart';
 import 'package:spendify/services/sms_parser_service.dart';
+import 'package:spendify/utils/utils.dart';
 
 class SmsImportScreen extends StatefulWidget {
   const SmsImportScreen({super.key});
@@ -28,73 +29,80 @@ class _SmsImportScreenState extends State<SmsImportScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) => _smsCtrl.scanSms());
   }
 
-  Future<void> _importSelected() async {
-    final selected = _smsCtrl.detectedTransactions
-        .where((t) => t.isSelected)
-        .toList();
-    if (selected.isEmpty) { return; }
+Future<void> _importSelected() async {
+  final selected = _smsCtrl.detectedTransactions
+      .where((t) => t.isSelected)
+      .toList();
+  if (selected.isEmpty) return;
 
-    setState(() => _importing = true);
-    int successCount = 0;
+  setState(() => _importing = true);
+  int successCount = 0;
+  final List<SmsTransaction> successfullyImported = [];
 
-    for (final tx in selected) {
-      try {
-        // Temporarily fill the transaction controller fields
-        _txCtrl.amountController.text = tx.amount.toString();
-        _txCtrl.titleController.text = tx.merchant;
-        _txCtrl.selectedCategory.value = tx.category;
-        _txCtrl.selectedType.value = tx.type;
-        _txCtrl.selectedDate.value = tx.date.toIso8601String();
-        await _txCtrl.addResource(silent: true);
-        successCount++;
-      } catch (_) {}
-    }
-
-    // Mark successfully imported messages so they never appear again
-    await _smsCtrl.markAsImported(selected);
-
-    setState(() => _importing = false);
-    _txCtrl.resetForm();
-
-    Get.back();
-    Get.find<HomeController>().fetchTotalBalanceData();
-
-    Get.snackbar(
-      'Imported',
-      '$successCount transaction${successCount == 1 ? '' : 's'} added successfully.',
-      snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: AppColor.income,
-      colorText: Colors.white,
-      margin: const EdgeInsets.all(16),
-      borderRadius: 12,
-      duration: const Duration(seconds: 3),
-    );
+  for (final tx in selected) {
+    try {
+      _txCtrl.amountController.text = tx.amount.toString();
+      _txCtrl.titleController.text = tx.merchant;
+      _txCtrl.selectedCategory.value = tx.category;
+      _txCtrl.selectedType.value = tx.type;
+      _txCtrl.selectedDate.value = tx.date.toIso8601String();
+      await _txCtrl.addResource(silent: true);
+      successCount++;
+      successfullyImported.add(tx);
+    } catch (_) {}
   }
 
+  await _smsCtrl.markAsImported(successfullyImported);
+  _smsCtrl.removeImported(successfullyImported);
+
+  setState(() => _importing = false);
+  _txCtrl.resetForm();
+
+  // ✅ This refreshes transactions list AND balance — home screen updates correctly
+  await Get.find<HomeController>().getTransactions();
+
+  if (_smsCtrl.detectedTransactions.isEmpty) {
+    Get.back();
+  }
+
+  Get.snackbar(
+    'Imported',
+    '$successCount transaction${successCount == 1 ? '' : 's'} added successfully.',
+    snackPosition: SnackPosition.BOTTOM,
+    backgroundColor: AppColor.income,
+    colorText: Colors.white,
+    margin: const EdgeInsets.all(16),
+    borderRadius: 12,
+    duration: const Duration(seconds: 3),
+  );
+}
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bg = isDark ? AppColor.darkBg : Colors.white;
     final textPrimary = isDark ? AppColor.textPrimary : const Color(0xFF09090B);
-    final textMuted = isDark ? AppColor.textSecondary : const Color(0xFF71717A);
+    final textMuted =
+        isDark ? AppColor.textSecondary : const Color(0xFF71717A);
     final cardBg = isDark ? AppColor.darkCard : const Color(0xFFF9F9F9);
     final border = isDark ? AppColor.darkBorder : const Color(0xFFE4E4E7);
 
     if (!Platform.isAndroid) {
-      return _NotAvailableScreen(isDark: isDark, textPrimary: textPrimary, textMuted: textMuted);
+      return _NotAvailableScreen(
+          isDark: isDark, textPrimary: textPrimary, textMuted: textMuted);
     }
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
-        statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+        statusBarIconBrightness:
+            isDark ? Brightness.light : Brightness.dark,
       ),
       child: Scaffold(
         backgroundColor: bg,
         body: SafeArea(
           child: Column(
             children: [
-              // Header
+              // ── Header ──────────────────────────────────────────────────
               Padding(
                 padding: const EdgeInsets.fromLTRB(4, 8, 16, 0),
                 child: Row(
@@ -116,8 +124,9 @@ class _SmsImportScreenState extends State<SmsImportScreen> {
                       ),
                     ),
                     Obx(() {
-                      final hasAny = _smsCtrl.detectedTransactions.isNotEmpty;
-                      if (!hasAny) { return const SizedBox(width: 48); }
+                      final hasAny =
+                          _smsCtrl.detectedTransactions.isNotEmpty;
+                      if (!hasAny) return const SizedBox(width: 48);
                       final allSelected = _smsCtrl.detectedTransactions
                           .every((t) => t.isSelected);
                       return TextButton(
@@ -137,7 +146,7 @@ class _SmsImportScreenState extends State<SmsImportScreen> {
                 ),
               ),
 
-              // Subtitle
+              // ── Subtitle ─────────────────────────────────────────────────
               Padding(
                 padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
                 child: Obx(() {
@@ -152,7 +161,7 @@ class _SmsImportScreenState extends State<SmsImportScreen> {
                 }),
               ),
 
-              // Content
+              // ── Content ───────────────────────────────────────────────────
               Expanded(
                 child: Obx(() {
                   if (_smsCtrl.isLoading.value) {
@@ -166,7 +175,8 @@ class _SmsImportScreenState extends State<SmsImportScreen> {
                           ),
                           const SizedBox(height: 16),
                           Text('Reading SMS…',
-                              style: TextStyle(color: textMuted, fontSize: 14)),
+                              style:
+                                  TextStyle(color: textMuted, fontSize: 14)),
                         ],
                       ),
                     );
@@ -191,7 +201,8 @@ class _SmsImportScreenState extends State<SmsImportScreen> {
                             Text(
                               _smsCtrl.errorMessage.value,
                               textAlign: TextAlign.center,
-                              style: TextStyle(color: textMuted, fontSize: 14),
+                              style:
+                                  TextStyle(color: textMuted, fontSize: 14),
                             ),
                             const SizedBox(height: 24),
                             GestureDetector(
@@ -217,44 +228,50 @@ class _SmsImportScreenState extends State<SmsImportScreen> {
                     );
                   }
 
-                  return ListView.separated(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    itemCount: _smsCtrl.detectedTransactions.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 8),
-                    itemBuilder: (_, i) {
-                      final tx = _smsCtrl.detectedTransactions[i];
-                      return _SmsTransactionCard(
-                        tx: tx,
-                        isDark: isDark,
-                        cardBg: cardBg,
-                        border: border,
-                        textPrimary: textPrimary,
-                        textMuted: textMuted,
-                        onTap: () {
-                          HapticFeedback.selectionClick();
-                          _smsCtrl.toggleSelection(i);
-                        },
-                        onCategoryChange: (newCat) {
-                          _smsCtrl.detectedTransactions[i].category != newCat;
-                          // Update in place
-                          final updated = SmsTransaction(
-                            rawMessage: tx.rawMessage,
-                            amount: tx.amount,
-                            type: tx.type,
-                            merchant: tx.merchant,
-                            category: newCat,
-                            date: tx.date,
-                            isSelected: tx.isSelected,
-                          );
-                          _smsCtrl.detectedTransactions[i] = updated;
-                        },
-                      );
-                    },
+                  // Pull-to-refresh to re-scan for new SMS
+                  return RefreshIndicator(
+                    onRefresh: _smsCtrl.scanSms,
+                    color: AppColor.primary,
+                    child: ListView.separated(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      itemCount: _smsCtrl.detectedTransactions.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 8),
+                      itemBuilder: (_, i) {
+                        final tx = _smsCtrl.detectedTransactions[i];
+                        return _SmsTransactionCard(
+                          tx: tx,
+                          isDark: isDark,
+                          cardBg: cardBg,
+                          border: border,
+                          textPrimary: textPrimary,
+                          textMuted: textMuted,
+                          onTap: () {
+                            HapticFeedback.selectionClick();
+                            _smsCtrl.toggleSelection(i);
+                          },
+                          onCategoryChange: (newCat) {
+                            // FIX: was a dead `!=` comparison — now correctly
+                            // replaces the item in the observable list
+                            final updated = SmsTransaction(
+                              rawMessage: tx.rawMessage,
+                              amount: tx.amount,
+                              type: tx.type,
+                              merchant: tx.merchant,
+                              category: newCat,
+                              date: tx.date,
+                              isSelected: tx.isSelected,
+                            );
+                            _smsCtrl.detectedTransactions[i] = updated;
+                          },
+                        );
+                      },
+                    ),
                   );
                 }),
               ),
 
-              // Import button
+              // ── Import button ─────────────────────────────────────────────
               Obx(() {
                 final count = _smsCtrl.selectedCount;
                 if (_smsCtrl.detectedTransactions.isEmpty) {
@@ -330,11 +347,8 @@ class _SmsTransactionCard extends StatelessWidget {
     required this.onCategoryChange,
   });
 
-  static const _allCategories = [
-    'Food & Drinks', 'Groceries', 'Transport', 'Bills & Fees', 'Health',
-    'Car', 'Shopping', 'Entertainment', 'Investments', 'Education',
-    'Travel', 'Gifts', 'Subscriptions', 'Others',
-  ];
+  static List<String> get _allCategories =>
+      categoryList.map((c) => c.name).toList();
 
   @override
   Widget build(BuildContext context) {
@@ -353,7 +367,9 @@ class _SmsTransactionCard extends StatelessWidget {
               : cardBg,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: tx.isSelected ? accentColor.withValues(alpha: 0.4) : border,
+            color: tx.isSelected
+                ? accentColor.withValues(alpha: 0.4)
+                : border,
             width: tx.isSelected ? 1.5 : 1.0,
           ),
         ),
@@ -366,7 +382,9 @@ class _SmsTransactionCard extends StatelessWidget {
               decoration: BoxDecoration(
                 color: tx.isSelected
                     ? accentColor
-                    : (isDark ? AppColor.darkElevated : const Color(0xFFE4E4E7)),
+                    : (isDark
+                        ? AppColor.darkElevated
+                        : const Color(0xFFE4E4E7)),
                 shape: BoxShape.circle,
               ),
               child: tx.isSelected
@@ -395,7 +413,7 @@ class _SmsTransactionCard extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        '${isExpense ? '-' : '+'}₹${tx.amount.toStringAsFixed(tx.amount.truncateToDouble() == tx.amount ? 0 : 2)}',
+                        '${isExpense ? '-' : '+'}${Get.find<HomeController>().currencySymbol.value}${tx.amount.toStringAsFixed(tx.amount.truncateToDouble() == tx.amount ? 0 : 2)}',
                         style: TextStyle(
                           color: accentColor,
                           fontSize: 14,
@@ -461,27 +479,35 @@ class _SmsTransactionCard extends StatelessWidget {
               height: 4,
               margin: const EdgeInsets.only(bottom: 16),
               decoration: BoxDecoration(
-                color: isDark ? AppColor.darkBorder : const Color(0xFFE4E4E7),
+                color: isDark
+                    ? AppColor.darkBorder
+                    : const Color(0xFFE4E4E7),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
           ),
-          ..._allCategories.map((cat) => ListTile(
-                title: Text(cat,
-                    style: TextStyle(
-                        color: isDark
-                            ? AppColor.textPrimary
-                            : const Color(0xFF09090B),
-                        fontSize: 14)),
-                trailing: cat == tx.category
-                    ? const Icon(Icons.check, color: AppColor.primary, size: 18)
-                    : null,
-                onTap: () {
-                  Navigator.pop(context);
-                  onCategoryChange(cat);
-                },
-                dense: true,
-              )),
+          ..._allCategories.map(
+            (cat) => ListTile(
+              title: Text(
+                cat,
+                style: TextStyle(
+                  color: isDark
+                      ? AppColor.textPrimary
+                      : const Color(0xFF09090B),
+                  fontSize: 14,
+                ),
+              ),
+              trailing: cat == tx.category
+                  ? const Icon(Icons.check,
+                      color: AppColor.primary, size: 18)
+                  : null,
+              onTap: () {
+                Navigator.pop(context);
+                onCategoryChange(cat);
+              },
+              dense: true,
+            ),
+          ),
         ],
       ),
     );
@@ -535,9 +561,10 @@ class _NotAvailableScreen extends StatelessWidget {
                         'SMS scanning is not available on iOS.',
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                            color: textMuted,
-                            fontSize: 15,
-                            fontWeight: FontWeight.w500),
+                          color: textMuted,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                       const SizedBox(height: 8),
                       Text(

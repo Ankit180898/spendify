@@ -37,11 +37,37 @@ class SmsParserService {
     'added to', 'transferred to your',
   ];
 
-  // Merchant extraction: "at MERCHANT", "to MERCHANT", "from MERCHANT"
+  // Merchant extraction: "at/to/towards/for MERCHANT"
   static final _merchantRegex = RegExp(
-    r'(?:at|to|from|for|with|via)\s+([A-Z][A-Z0-9\s&\-\.]{1,30}?)(?:\s+on\s|\s+dated|\s+ref|\s+txn|\s*[-–,.]|$)',
+    r'(?:at|to|towards)\s+([A-Za-z][A-Za-z0-9\s&\-\.]{1,30}?)(?:\s+on\s|\s+dated|\s+ref|\s+txn|\s+via|\s*[-–,.]|$)',
     caseSensitive: false,
   );
+
+  // UPI slash format: UPI/refno/MERCHANT NAME or UPI/MERCHANT/refno
+  static final _upiSlashRegex = RegExp(
+    r'UPI/\d+/([A-Za-z][A-Za-z0-9\s\.\-]{2,30}?)(?:/|$)',
+    caseSensitive: false,
+  );
+
+  // UPI VPA: name@bank → extract the name part
+  static final _vpaRegex = RegExp(
+    r'\b([A-Za-z][A-Za-z0-9\.\-]{1,25})@[a-z]{2,}',
+  );
+
+  // UPI/NEFT info field: "Info: MERCHANT/..."  or  "Remarks: MERCHANT"
+  static final _infoRegex = RegExp(
+    r'(?:info|remarks|narration|description|details|particulars)\s*[:\-]\s*([A-Za-z][A-Za-z0-9\s&\.\-]{2,30}?)(?:/|\||,|;|$)',
+    caseSensitive: false,
+  );
+
+  // Words that are never valid merchant names
+  static const _invalidMerchants = {
+    'rs', 'inr', 'your', 'you', 'account', 'a/c', 'ac', 'bank', 'card',
+    'the', 'this', 'our', 'upi', 'vpa', 'neft', 'imps', 'rtgs',
+    'available', 'avl', 'bal', 'balance', 'amount', 'amt', 'payment',
+    'transaction', 'transfer', 'money', 'fund', 'wallet', 'saving',
+    'current', 'credit', 'debit', 'mr', 'mrs', 'dear', 'customer',
+  };
 
   // Date patterns
   static final _datePatterns = [
@@ -95,12 +121,12 @@ class SmsParserService {
     'bhim': 'Others',
   };
 
-  static List<SmsTransaction> parseAll(List<String> messages) {
+  static List<SmsTransaction> parseAll(List<String> messages, {String sender = ''}) {
     final results = <SmsTransaction>[];
-    final seen = <String>{}; // deduplicate by amount+merchant
+    final seen = <String>{};
 
     for (final msg in messages) {
-      final tx = _parse(msg);
+      final tx = _parse(msg, sender: sender);
       if (tx != null) {
         final key = '${tx.amount}_${tx.merchant}';
         if (!seen.contains(key)) {
@@ -110,12 +136,36 @@ class SmsParserService {
       }
     }
 
-    // Most recent first
     results.sort((a, b) => b.date.compareTo(a.date));
     return results;
   }
 
-  static SmsTransaction? _parse(String message) {
+  // Maps common Indian bank sender IDs → readable names
+  static const _senderBankNames = {
+    'hdfc': 'HDFC Bank', 'hdfcbk': 'HDFC Bank',
+    'sbi': 'SBI', 'sbiinb': 'SBI',
+    'icici': 'ICICI Bank', 'icicib': 'ICICI Bank',
+    'axis': 'Axis Bank', 'axisbk': 'Axis Bank',
+    'kotak': 'Kotak Bank', 'kotakb': 'Kotak Bank',
+    'pnb': 'PNB', 'bob': 'Bank of Baroda',
+    'canara': 'Canara Bank', 'union': 'Union Bank',
+    'indus': 'IndusInd Bank', 'indusb': 'IndusInd Bank',
+    'yes': 'Yes Bank', 'yesbk': 'Yes Bank',
+    'idfc': 'IDFC Bank', 'idfcbk': 'IDFC Bank',
+    'rbl': 'RBL Bank', 'federal': 'Federal Bank',
+    'paytm': 'Paytm', 'phonepe': 'PhonePe',
+    'gpay': 'Google Pay', 'amazon': 'Amazon Pay',
+  };
+
+  static String? _bankFromSender(String sender) {
+    final lower = sender.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
+    for (final entry in _senderBankNames.entries) {
+      if (lower.contains(entry.key)) return entry.value;
+    }
+    return null;
+  }
+
+  static SmsTransaction? _parse(String message, {String sender = ''}) {
     final lower = message.toLowerCase();
 
     // Must contain a recognizable amount
@@ -140,21 +190,79 @@ class SmsParserService {
 
     final type = isCredit && !isDebit ? 'income' : 'expense';
 
-    // Extract merchant
+    // Extract merchant — try multiple strategies in priority order
     String merchant = 'Unknown';
+
+    // 1. "at/to/towards MERCHANT" regex
     final merchantMatch = _merchantRegex.firstMatch(message);
     if (merchantMatch != null) {
-      merchant = merchantMatch.group(1)!.trim();
-      // Clean trailing noise
-      merchant = merchant.replaceAll(RegExp(r'\s+(on|via|ref|txn).*$', caseSensitive: false), '').trim();
+      final raw = merchantMatch.group(1)!
+          .replaceAll(RegExp(r'\s+(on|via|ref|txn).*$', caseSensitive: false), '')
+          .trim();
+      if (!_isInvalidMerchant(raw)) merchant = _toTitleCase(raw);
     }
-    // Fallback: look for known merchant names in the raw message
+
+    // 2. UPI slash format: UPI/refno/MERCHANT
+    if (merchant == 'Unknown') {
+      final upiMatch = _upiSlashRegex.firstMatch(message);
+      if (upiMatch != null) {
+        final raw = upiMatch.group(1)!.trim();
+        if (!_isInvalidMerchant(raw)) merchant = _toTitleCase(raw);
+      }
+    }
+
+    // 3. Info/Remarks field: "Info: MERCHANT/ref"
+    if (merchant == 'Unknown') {
+      final infoMatch = _infoRegex.firstMatch(message);
+      if (infoMatch != null) {
+        final raw = infoMatch.group(1)!.trim();
+        if (!_isInvalidMerchant(raw)) merchant = _toTitleCase(raw);
+      }
+    }
+
+    // 4. VPA name: extract the local part before @ (e.g. "swiggy@icici" → "Swiggy")
+    if (merchant == 'Unknown') {
+      final vpaMatch = _vpaRegex.firstMatch(message);
+      if (vpaMatch != null) {
+        final raw = vpaMatch.group(1)!.trim();
+        if (!_isInvalidMerchant(raw)) {
+          merchant = _toTitleCase(raw);
+        }
+      }
+    }
+
+    // 5. Known merchant keyword in the message
     if (merchant == 'Unknown') {
       for (final known in _merchantCategories.keys) {
         if (lower.contains(known)) {
           merchant = known[0].toUpperCase() + known.substring(1);
           break;
         }
+      }
+    }
+
+    // 6. Contextual fallbacks for common transaction types
+    if (merchant == 'Unknown') {
+      if (lower.contains('atm') || lower.contains('cash withdrawal')) {
+        merchant = 'ATM Withdrawal';
+      } else if (lower.contains('emi') || lower.contains('loan')) {
+        merchant = 'EMI Payment';
+      } else if (lower.contains('recharge') || lower.contains('mobile recharge')) {
+        merchant = 'Mobile Recharge';
+      } else if (lower.contains('electricity') || lower.contains('water bill') ||
+          lower.contains('broadband') || lower.contains('gas bill')) {
+        merchant = 'Utility Bill';
+      } else if (lower.contains('insurance')) {
+        merchant = 'Insurance';
+      } else if (lower.contains('salary') || lower.contains('payroll')) {
+        merchant = 'Salary';
+      } else if (lower.contains('neft') || lower.contains('imps') ||
+          lower.contains('rtgs') || lower.contains('transfer')) {
+        merchant = 'Bank Transfer';
+      } else {
+        // Last resort: derive bank name from SMS sender ID (e.g. "VM-HDFCBK" → "HDFC Bank")
+        final bankName = _bankFromSender(sender);
+        if (bankName != null) merchant = '$bankName Txn';
       }
     }
 
@@ -188,8 +296,30 @@ class SmsParserService {
         lower.contains('medical')) { return 'Health'; }
     if (lower.contains('school') || lower.contains('college') || lower.contains('tuition')) return 'Education';
     if (lower.contains('flight') || lower.contains('hotel') || lower.contains('resort')) return 'Travel';
-    if (lower.contains('salary') || lower.contains('credit') && lower.contains('account')) return 'Others';
+    if (lower.contains('salary') || lower.contains('payroll')) return 'Others';
+    if (lower.contains('atm') || lower.contains('cash withdrawal')) return 'Others';
+    if (lower.contains('emi') || lower.contains('loan')) return 'Bills & Fees';
+    if (lower.contains('insurance')) return 'Bills & Fees';
+    if (lower.contains('recharge')) return 'Bills & Fees';
     return 'Others';
+  }
+
+  static String _toTitleCase(String s) {
+    return s.trim().split(RegExp(r'\s+')).map((w) {
+      if (w.isEmpty) return w;
+      return w[0].toUpperCase() + w.substring(1).toLowerCase();
+    }).join(' ');
+  }
+
+  static bool _isInvalidMerchant(String name) {
+    final lower = name.toLowerCase().trim();
+    if (lower.isEmpty || lower.length < 2) return true;
+    if (_invalidMerchants.contains(lower)) return true;
+    // Reject if it starts with a digit or is purely numeric
+    if (RegExp(r'^\d').hasMatch(lower)) return true;
+    // Reject common bank account noise
+    if (RegExp(r'^(xx|ending|no\.|#)').hasMatch(lower)) return true;
+    return false;
   }
 
   static DateTime? _extractDate(String lower) {

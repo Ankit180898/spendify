@@ -9,6 +9,7 @@ import 'package:spendify/config/app_theme.dart';
 import 'package:spendify/controller/goals_controller/goals_controller.dart';
 import 'package:spendify/controller/home_controller/home_controller.dart';
 import 'package:spendify/controller/savings_controller/savings_controller.dart';
+import 'package:spendify/model/categories_model.dart';
 import 'package:spendify/model/savings_goal_model.dart';
 import 'package:spendify/model/spending_goal_model.dart';
 import 'package:spendify/utils/utils.dart';
@@ -55,7 +56,8 @@ class _GoalsScreenState extends State<GoalsScreen>
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textPrimary = isDark ? AppColor.textPrimary : AppColor.lightTextPrimary;
+    final textPrimary =
+        isDark ? AppColor.textPrimary : AppColor.lightTextPrimary;
     final bg = isDark ? AppColor.darkBg : Colors.white;
     final tabBorder = isDark ? AppColor.darkBorder : AppColor.lightBorder;
 
@@ -69,6 +71,7 @@ class _GoalsScreenState extends State<GoalsScreen>
         title: Text('Goals', style: AppTypography.heading2(textPrimary)),
         actions: [
           IconButton(
+            tooltip: _tabIndex == 0 ? 'Add budget limit' : 'Add savings goal',
             onPressed: () {
               HapticFeedback.lightImpact();
               if (_tabIndex == 0) {
@@ -139,14 +142,12 @@ class _BudgetTab extends StatelessWidget {
     final now = DateTime.now();
     final start = DateTime(now.year, now.month, 1);
     final end = DateTime(now.year, now.month + 1, 0, 23, 59, 59);
-    return hc.allTransactions
-        .where((t) {
-          if (t['type'] != 'expense') return false;
-          final d = t['parsedDate'] as DateTime?;
-          if (d == null) return false;
-          return !d.isBefore(start) && !d.isAfter(end);
-        })
-        .fold(0.0, (sum, t) => sum + double.parse(t['amount'].toString()));
+    return hc.allTransactions.where((t) {
+      if (t['type'] != 'expense') return false;
+      final d = t['parsedDate'] as DateTime?;
+      if (d == null) return false;
+      return !d.isBefore(start) && !d.isAfter(end);
+    }).fold(0.0, (sum, t) => sum + double.parse(t['amount'].toString()));
   }
 
   @override
@@ -202,8 +203,7 @@ class _BudgetTab extends StatelessWidget {
             if (hasMonthlyBudget)
               Padding(
                 padding: const EdgeInsets.fromLTRB(
-                    AppDimens.spaceLG, AppDimens.spaceLG,
-                    AppDimens.spaceLG, 0),
+                    AppDimens.spaceLG, AppDimens.spaceLG, AppDimens.spaceLG, 0),
                 child: _MonthlyBudgetCard(
                   budget: monthlyBudget,
                   spent: monthExpense,
@@ -225,8 +225,8 @@ class _BudgetTab extends StatelessWidget {
               // Category rows
               Container(
                 clipBehavior: Clip.antiAlias,
-                margin: const EdgeInsets.symmetric(
-                    horizontal: AppDimens.spaceLG),
+                margin:
+                    const EdgeInsets.symmetric(horizontal: AppDimens.spaceLG),
                 decoration: BoxDecoration(
                   color: cardBg,
                   borderRadius: BorderRadius.circular(AppDimens.radiusXL),
@@ -247,8 +247,7 @@ class _BudgetTab extends StatelessWidget {
                           height: 1,
                           thickness: 1,
                           color: dividerColor,
-                          indent:
-                              AppDimens.spaceLG + 36 + AppDimens.spaceMD,
+                          indent: AppDimens.spaceLG + 36 + AppDimens.spaceMD,
                         ),
                     ],
                   ],
@@ -256,8 +255,8 @@ class _BudgetTab extends StatelessWidget {
               ),
               const SizedBox(height: AppDimens.spaceLG),
               Padding(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: AppDimens.spaceLG),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: AppDimens.spaceLG),
                 child: Text(
                   'Swipe left on a row to delete a budget limit.',
                   style: AppTypography.caption(isDark
@@ -270,8 +269,8 @@ class _BudgetTab extends StatelessWidget {
               // Has monthly budget but no category limits
               const SizedBox(height: AppDimens.spaceLG),
               Padding(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: AppDimens.spaceLG),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: AppDimens.spaceLG),
                 child: Text(
                   'Tap + to add category spending limits.',
                   style: AppTypography.caption(isDark
@@ -332,8 +331,8 @@ class _BudgetSummaryCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              PhosphorIcon(PhosphorIconsLight.calendar, color: textMuted,
-                  size: AppDimens.iconSM),
+              PhosphorIcon(PhosphorIconsLight.calendar,
+                  color: textMuted, size: AppDimens.iconSM),
               const SizedBox(width: AppDimens.spaceXS),
               Text(monthName, style: AppTypography.caption(textMuted)),
             ],
@@ -344,21 +343,24 @@ class _BudgetSummaryCard extends StatelessWidget {
               Expanded(
                 child: _SummaryCol(
                   label: 'Budgeted',
-                  value: '${Get.find<HomeController>().currencySymbol.value}${fmt.format(totalLimit)}',
+                  value:
+                      '${Get.find<HomeController>().currencySymbol.value}${fmt.format(totalLimit)}',
                   color: textPrimary,
                 ),
               ),
               Expanded(
                 child: _SummaryCol(
                   label: 'Spent',
-                  value: '${Get.find<HomeController>().currencySymbol.value}${fmt.format(totalSpent)}',
+                  value:
+                      '${Get.find<HomeController>().currencySymbol.value}${fmt.format(totalSpent)}',
                   color: textPrimary,
                 ),
               ),
               Expanded(
                 child: _SummaryCol(
                   label: isOver ? 'Over by' : 'Remaining',
-                  value: '${Get.find<HomeController>().currencySymbol.value}${fmt.format(remaining.abs())}',
+                  value:
+                      '${Get.find<HomeController>().currencySymbol.value}${fmt.format(remaining.abs())}',
                   color: isOver ? AppColor.expense : AppColor.income,
                 ),
               ),
@@ -440,10 +442,8 @@ class _MonthlyBudgetCard extends StatelessWidget {
 
     final cardBg = isDark ? AppColor.darkCard : const Color(0xFFF9F9FB);
     final border = isDark ? AppColor.darkBorder : const Color(0xFFE4E4E7);
-    final textPrimary =
-        isDark ? AppColor.textPrimary : const Color(0xFF09090B);
-    final textMuted =
-        isDark ? AppColor.textSecondary : const Color(0xFF71717A);
+    final textPrimary = isDark ? AppColor.textPrimary : const Color(0xFF09090B);
+    final textMuted = isDark ? AppColor.textSecondary : const Color(0xFF71717A);
     final monthName = DateFormat('MMMM yyyy').format(DateTime.now());
 
     return Container(
@@ -549,8 +549,11 @@ class _BudgetRow extends StatelessWidget {
         goal.limitAmount > 0 ? (spent / goal.limitAmount).clamp(0.0, 1.0) : 0.0;
     final isOver = spent > goal.limitAmount;
     final isNear = !isOver && progress >= 0.8;
-    final barColor =
-        isOver ? AppColor.expense : isNear ? AppColor.warning : AppColor.income;
+    final barColor = isOver
+        ? AppColor.expense
+        : isNear
+            ? AppColor.warning
+            : AppColor.income;
     final iconBg = isDark ? AppColor.darkElevated : const Color(0xFFF4F4F8);
     final iconFg = isDark ? AppColor.textSecondary : const Color(0xFF71717A);
 
@@ -561,7 +564,8 @@ class _BudgetRow extends StatelessWidget {
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: AppDimens.spaceXXL),
         color: AppColor.expense.withValues(alpha: 0.10),
-        child: const PhosphorIcon(PhosphorIconsLight.trash, color: AppColor.expense),
+        child: const PhosphorIcon(PhosphorIconsLight.trash,
+            color: AppColor.expense),
       ),
       onDismissed: (_) => controller.deleteGoal(goal.id),
       child: Padding(
@@ -592,7 +596,9 @@ class _BudgetRow extends StatelessWidget {
                     children: [
                       Expanded(
                         child: Text(
-                          goal.category == 'All' ? 'Total Spending' : goal.category,
+                          goal.category == 'All'
+                              ? 'Total Spending'
+                              : goal.category,
                           style: AppTypography.bodySemiBold(textPrimary),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -657,10 +663,14 @@ class _BudgetRow extends StatelessWidget {
     if (category == 'All') return PhosphorIconsLight.wallet;
     final k = category.toLowerCase();
     if (k.contains('invest')) return PhosphorIconsLight.chartBar;
-    if (k.contains('health') || k.contains('medical')) return PhosphorIconsLight.heart;
-    if (k.contains('bill') || k.contains('fee')) return PhosphorIconsLight.receipt;
-    if (k.contains('food') || k.contains('drink')) return PhosphorIconsLight.coffee;
-    if (k.contains('car') || k.contains('vehicle')) return PhosphorIconsLight.car;
+    if (k.contains('health') || k.contains('medical'))
+      return PhosphorIconsLight.heart;
+    if (k.contains('bill') || k.contains('fee'))
+      return PhosphorIconsLight.receipt;
+    if (k.contains('food') || k.contains('drink'))
+      return PhosphorIconsLight.coffee;
+    if (k.contains('car') || k.contains('vehicle'))
+      return PhosphorIconsLight.car;
     if (k.contains('grocer')) return PhosphorIconsLight.shoppingCart;
     if (k.contains('gift')) return PhosphorIconsLight.gift;
     if (k.contains('transport')) return PhosphorIconsLight.bus;
@@ -715,8 +725,7 @@ class _SavingsTab extends StatelessWidget {
               isDark: isDark,
               textPrimary: textPrimary,
               textSecondary: textSecondary,
-              onAddMoney: () =>
-                  _showAddMoneySheet(context, controller, goal),
+              onAddMoney: () => _showAddMoneySheet(context, controller, goal),
             );
           },
         ),
@@ -768,12 +777,17 @@ class _SavingsGoalCard extends StatelessWidget {
     // Days remaining calculation
     String? daysLabel;
     if (goal.targetDate != null) {
-      final days = goal.targetDate!.difference(DateTime.now()).inDays;
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+      final deadline = DateTime(goal.targetDate!.year, goal.targetDate!.month, goal.targetDate!.day);
+      final days = deadline.difference(today).inDays;
       daysLabel = days < 0
           ? 'Past due'
           : days == 0
               ? 'Due today'
-              : '$days days left';
+              : days == 1
+                  ? 'Due tomorrow'
+                  : '$days days left';
     }
 
     return Dismissible(
@@ -786,7 +800,8 @@ class _SavingsGoalCard extends StatelessWidget {
           color: AppColor.expense.withValues(alpha: 0.10),
           borderRadius: BorderRadius.circular(AppDimens.radiusXL),
         ),
-        child: const PhosphorIcon(PhosphorIconsLight.trash, color: AppColor.expense),
+        child: const PhosphorIcon(PhosphorIconsLight.trash,
+            color: AppColor.expense),
       ),
       onDismissed: (_) => controller.deleteGoal(goal.id),
       child: Container(
@@ -829,8 +844,7 @@ class _SavingsGoalCard extends StatelessWidget {
                           BorderRadius.circular(AppDimens.radiusCircle),
                     ),
                     child: Text('Achieved! 🎉',
-                        style:
-                            AppTypography.captionSemiBold(AppColor.income)),
+                        style: AppTypography.captionSemiBold(AppColor.income)),
                   ),
               ],
             ),
@@ -840,9 +854,11 @@ class _SavingsGoalCard extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('${Get.find<HomeController>().currencySymbol.value}${fmt.format(goal.savedAmount)} saved',
+                Text(
+                    '${Get.find<HomeController>().currencySymbol.value}${fmt.format(goal.savedAmount)} saved',
                     style: AppTypography.bodySemiBoldTabular(textPrimary)),
-                Text('of ${Get.find<HomeController>().currencySymbol.value}${fmt.format(goal.targetAmount)}',
+                Text(
+                    'of ${Get.find<HomeController>().currencySymbol.value}${fmt.format(goal.targetAmount)}',
                     style: AppTypography.caption(textSecondary)),
               ],
             ),
@@ -856,8 +872,7 @@ class _SavingsGoalCard extends StatelessWidget {
                   width: constraints.maxWidth,
                   decoration: BoxDecoration(
                     color: barColor.withValues(alpha: 0.12),
-                    borderRadius:
-                        BorderRadius.circular(AppDimens.radiusCircle),
+                    borderRadius: BorderRadius.circular(AppDimens.radiusCircle),
                   ),
                 ),
                 AnimatedContainer(
@@ -867,8 +882,7 @@ class _SavingsGoalCard extends StatelessWidget {
                   width: constraints.maxWidth * progress,
                   decoration: BoxDecoration(
                     color: barColor,
-                    borderRadius:
-                        BorderRadius.circular(AppDimens.radiusCircle),
+                    borderRadius: BorderRadius.circular(AppDimens.radiusCircle),
                   ),
                 ),
               ]);
@@ -1059,10 +1073,8 @@ class _AddBudgetSheetState extends State<_AddBudgetSheet> {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color:
-                      isDark ? AppColor.darkBorder : AppColor.lightBorder,
-                  borderRadius:
-                      BorderRadius.circular(AppDimens.radiusCircle),
+                  color: isDark ? AppColor.darkBorder : AppColor.lightBorder,
+                  borderRadius: BorderRadius.circular(AppDimens.radiusCircle),
                 ),
               ),
             ),
@@ -1074,7 +1086,6 @@ class _AddBudgetSheetState extends State<_AddBudgetSheet> {
               controller: _amountController,
               keyboardType:
                   const TextInputType.numberWithOptions(decimal: true),
-              autofocus: true,
               decoration: InputDecoration(
                 labelText: 'Limit amount',
                 prefixIcon: Align(
@@ -1084,7 +1095,9 @@ class _AddBudgetSheetState extends State<_AddBudgetSheet> {
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
-                      color: isDark ? AppColor.textSecondary : AppColor.lightTextSecondary,
+                      color: isDark
+                          ? AppColor.textSecondary
+                          : AppColor.lightTextSecondary,
                     ),
                   ),
                 ),
@@ -1098,8 +1111,7 @@ class _AddBudgetSheetState extends State<_AddBudgetSheet> {
               children: ['monthly', 'weekly'].map((p) {
                 final isSelected = _selectedPeriod == p;
                 return Padding(
-                  padding:
-                      const EdgeInsets.only(right: AppDimens.spaceSM),
+                  padding: const EdgeInsets.only(right: AppDimens.spaceSM),
                   child: GestureDetector(
                     onTap: () => setState(() => _selectedPeriod = p),
                     child: AnimatedContainer(
@@ -1109,8 +1121,7 @@ class _AddBudgetSheetState extends State<_AddBudgetSheet> {
                           vertical: AppDimens.spaceSM),
                       decoration: BoxDecoration(
                         color: isSelected ? AppColor.primary : chipBg,
-                        borderRadius:
-                            BorderRadius.circular(AppDimens.radiusMD),
+                        borderRadius: BorderRadius.circular(AppDimens.radiusMD),
                         border: Border.all(
                           color: isSelected
                               ? AppColor.primary
@@ -1131,41 +1142,61 @@ class _AddBudgetSheetState extends State<_AddBudgetSheet> {
               }).toList(),
             ),
             const SizedBox(height: AppDimens.spaceXL),
-            Text('Category',
-                style: AppTypography.bodySemiBold(textPrimary)),
+            Text('Category', style: AppTypography.bodySemiBold(textPrimary)),
             const SizedBox(height: AppDimens.spaceSM),
             Wrap(
               spacing: AppDimens.spaceSM,
               runSpacing: AppDimens.spaceSM,
               children: _categories.map((cat) {
                 final isSelected = _selectedCategory == cat;
+                final catColor = AppColor.categoryColor(cat);
+                final catEntry = categoryList.firstWhere(
+                  (c) => c.name == cat,
+                  orElse: () => CategoriesModel(name: cat, icon: PhosphorIconsLight.tag),
+                );
                 return GestureDetector(
-                  onTap: () =>
-                      setState(() => _selectedCategory = cat),
+                  onTap: () => setState(() => _selectedCategory = cat),
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 200),
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: AppDimens.spaceMD,
-                        vertical: AppDimens.spaceSM),
+                    padding: const EdgeInsets.fromLTRB(8, 6, 12, 6),
                     decoration: BoxDecoration(
                       color: isSelected
-                          ? AppColor.primary.withValues(alpha: 0.12)
+                          ? catColor.withValues(alpha: 0.10)
                           : chipBg,
-                      borderRadius:
-                          BorderRadius.circular(AppDimens.radiusMD),
+                      borderRadius: BorderRadius.circular(100),
                       border: Border.all(
                         color: isSelected
-                            ? AppColor.primary
-                            : (isDark
-                                ? AppColor.darkBorder
-                                : AppColor.lightBorder),
+                            ? catColor
+                            : (isDark ? AppColor.darkBorder : AppColor.lightBorder),
+                        width: 1.5,
                       ),
                     ),
-                    child: Text(
-                      cat,
-                      style: AppTypography.body(
-                        isSelected ? AppColor.primary : textSecondary,
-                      ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 22,
+                          height: 22,
+                          decoration: BoxDecoration(
+                            color: catColor.withValues(alpha: 0.15),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Center(
+                            child: PhosphorIcon(
+                              catEntry.icon as PhosphorIconData,
+                              color: catColor,
+                              size: 12,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          cat.split(' ').first,
+                          style: AppTypography.body(
+                            isSelected ? catColor : textSecondary,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 );
@@ -1213,9 +1244,24 @@ class _AddSavingsSheetState extends State<_AddSavingsSheet> {
   bool _isSaving = false;
 
   static const _emojis = [
-    '🎯', '🏖️', '✈️', '🚗', '🏠', '💍',
-    '📱', '🎓', '🏋️', '💊', '🛍️', '🍕',
-    '🎮', '🎸', '🐶', '🌱', '📷', '🎁',
+    '🎯',
+    '🏖️',
+    '✈️',
+    '🚗',
+    '🏠',
+    '💍',
+    '📱',
+    '🎓',
+    '🏋️',
+    '💊',
+    '🛍️',
+    '🍕',
+    '🎮',
+    '🎸',
+    '🐶',
+    '🌱',
+    '📷',
+    '🎁',
   ];
 
   @override
@@ -1295,163 +1341,148 @@ class _AddSavingsSheetState extends State<_AddSavingsSheet> {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color:
-                      isDark ? AppColor.darkBorder : AppColor.lightBorder,
-                  borderRadius:
-                      BorderRadius.circular(AppDimens.radiusCircle),
+                  color: isDark ? AppColor.darkBorder : AppColor.lightBorder,
+                  borderRadius: BorderRadius.circular(AppDimens.radiusCircle),
                 ),
               ),
             ),
             const SizedBox(height: AppDimens.spaceXXL),
             Text('New savings goal',
                 style: AppTypography.heading2(textPrimary)),
-              const SizedBox(height: AppDimens.spaceXXL),
+            const SizedBox(height: AppDimens.spaceXXL),
 
-              // Emoji picker
-              Text('Icon', style: AppTypography.bodySemiBold(textPrimary)),
-              const SizedBox(height: AppDimens.spaceSM),
-              Wrap(
-                spacing: AppDimens.spaceSM,
-                runSpacing: AppDimens.spaceSM,
-                children: _emojis.map((e) {
-                  final isSelected = _selectedEmoji == e;
-                  return GestureDetector(
-                    onTap: () => setState(() => _selectedEmoji = e),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 150),
-                      width: 44,
-                      height: 44,
-                      decoration: BoxDecoration(
-                        color: isSelected
-                            ? AppColor.primary.withValues(alpha: 0.12)
-                            : (isDark
-                                ? AppColor.darkCard
-                                : AppColor.lightBg),
-                        borderRadius:
-                            BorderRadius.circular(AppDimens.radiusMD),
-                        border: Border.all(
-                          color: isSelected
-                              ? AppColor.primary
-                              : Colors.transparent,
-                          width: 1.5,
-                        ),
-                      ),
-                      child: Center(
-                        child: Text(e,
-                            style: const TextStyle(fontSize: 20)),
+            // Emoji picker
+            Text('Icon', style: AppTypography.bodySemiBold(textPrimary)),
+            const SizedBox(height: AppDimens.spaceSM),
+            Wrap(
+              spacing: AppDimens.spaceSM,
+              runSpacing: AppDimens.spaceSM,
+              children: _emojis.map((e) {
+                final isSelected = _selectedEmoji == e;
+                return GestureDetector(
+                  onTap: () => setState(() => _selectedEmoji = e),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 150),
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? AppColor.primary.withValues(alpha: 0.12)
+                          : (isDark ? AppColor.darkCard : AppColor.lightBg),
+                      borderRadius: BorderRadius.circular(AppDimens.radiusMD),
+                      border: Border.all(
+                        color:
+                            isSelected ? AppColor.primary : Colors.transparent,
+                        width: 1.5,
                       ),
                     ),
-                  );
-                }).toList(),
-              ),
-              const SizedBox(height: AppDimens.spaceXL),
-
-              // Goal name
-              TextField(
-                controller: _nameController,
-                textCapitalization: TextCapitalization.words,
-                decoration: const InputDecoration(
-                  labelText: 'Goal name',
-                  hintText: 'e.g. Vacation to Bali',
-                  prefixIcon: PhosphorIcon(PhosphorIconsLight.pencilSimple),
-                ),
-              ),
-              const SizedBox(height: AppDimens.spaceMD),
-
-              // Target amount
-              TextField(
-                controller: _amountController,
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
-                decoration: InputDecoration(
-                  labelText: 'Target amount',
-                  hintText: 'e.g. 50000',
-                  prefixIcon: Align(
-                    widthFactor: 1.0,
-                    child: Text(
-                      Get.find<HomeController>().currencySymbol.value,
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                        color: isDark ? AppColor.textSecondary : AppColor.lightTextSecondary,
-                      ),
+                    child: Center(
+                      child: Text(e, style: const TextStyle(fontSize: 20)),
                     ),
                   ),
-                ),
-              ),
-              const SizedBox(height: AppDimens.spaceMD),
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: AppDimens.spaceXL),
 
-              // Target date (optional)
-              GestureDetector(
-                onTap: _pickDate,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: AppDimens.spaceLG,
-                      vertical: AppDimens.spaceMD),
-                  decoration: BoxDecoration(
-                    color: isDark
-                        ? AppColor.darkSurface
-                        : AppColor.lightSurface,
-                    borderRadius:
-                        BorderRadius.circular(AppDimens.radiusMD),
-                    border: Border.all(
+            // Goal name
+            TextField(
+              controller: _nameController,
+              textCapitalization: TextCapitalization.words,
+              decoration: const InputDecoration(
+                labelText: 'Goal name',
+                hintText: 'e.g. Vacation to Bali',
+                prefixIcon: PhosphorIcon(PhosphorIconsLight.pencilSimple),
+              ),
+            ),
+            const SizedBox(height: AppDimens.spaceMD),
+
+            // Target amount
+            TextField(
+              controller: _amountController,
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
+              decoration: InputDecoration(
+                labelText: 'Target amount',
+                hintText: 'e.g. 50000',
+                prefixIcon: Align(
+                  widthFactor: 1.0,
+                  child: Text(
+                    Get.find<HomeController>().currencySymbol.value,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
                       color: isDark
-                          ? AppColor.darkBorder
-                          : AppColor.lightBorder,
+                          ? AppColor.textSecondary
+                          : AppColor.lightTextSecondary,
                     ),
                   ),
-                  child: Row(
-                    children: [
-                      PhosphorIcon(PhosphorIconsLight.calendar,
-                          color: textSecondary,
-                          size: AppDimens.iconMD),
-                      const SizedBox(width: AppDimens.spaceMD),
-                      Text(
-                        _targetDate == null
-                            ? 'Target date (optional)'
-                            : DateFormat('d MMM yyyy')
-                                .format(_targetDate!),
-                        style: AppTypography.body(
-                          _targetDate == null
-                              ? (isDark
-                                  ? AppColor.textTertiary
-                                  : AppColor.lightTextTertiary)
-                              : textPrimary,
-                        ),
-                      ),
-                      const Spacer(),
-                      if (_targetDate != null)
-                        GestureDetector(
-                          onTap: () =>
-                              setState(() => _targetDate = null),
-                          child: PhosphorIcon(PhosphorIconsLight.x,
-                              size: AppDimens.iconSM,
-                              color: textSecondary),
-                        ),
-                    ],
+                ),
+              ),
+            ),
+            const SizedBox(height: AppDimens.spaceMD),
+
+            // Target date (optional)
+            GestureDetector(
+              onTap: _pickDate,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: AppDimens.spaceLG, vertical: AppDimens.spaceMD),
+                decoration: BoxDecoration(
+                  color: isDark ? AppColor.darkSurface : AppColor.lightSurface,
+                  borderRadius: BorderRadius.circular(AppDimens.radiusMD),
+                  border: Border.all(
+                    color: isDark ? AppColor.darkBorder : AppColor.lightBorder,
                   ),
                 ),
-              ),
-              const SizedBox(height: AppDimens.spaceXXXL),
-
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _isSaving ? null : _save,
-                  child: _isSaving
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                              strokeWidth: 2, color: Colors.white),
-                        )
-                      : const Text('Create goal'),
+                child: Row(
+                  children: [
+                    PhosphorIcon(PhosphorIconsLight.calendar,
+                        color: textSecondary, size: AppDimens.iconMD),
+                    const SizedBox(width: AppDimens.spaceMD),
+                    Text(
+                      _targetDate == null
+                          ? 'Target date (optional)'
+                          : DateFormat('d MMM yyyy').format(_targetDate!),
+                      style: AppTypography.body(
+                        _targetDate == null
+                            ? (isDark
+                                ? AppColor.textTertiary
+                                : AppColor.lightTextTertiary)
+                            : textPrimary,
+                      ),
+                    ),
+                    const Spacer(),
+                    if (_targetDate != null)
+                      GestureDetector(
+                        onTap: () => setState(() => _targetDate = null),
+                        child: PhosphorIcon(PhosphorIconsLight.x,
+                            size: AppDimens.iconSM, color: textSecondary),
+                      ),
+                  ],
                 ),
               ),
-              const SizedBox(height: AppDimens.spaceMD),
-            ],
-          ),
+            ),
+            const SizedBox(height: AppDimens.spaceXXXL),
+
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: _isSaving ? null : _save,
+                child: _isSaving
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: Colors.white),
+                      )
+                    : const Text('Create goal'),
+              ),
+            ),
+            const SizedBox(height: AppDimens.spaceMD),
+          ],
         ),
+      ),
     );
   }
 }
@@ -1481,8 +1512,8 @@ class _AddMoneySheetState extends State<_AddMoneySheet> {
   Future<void> _save() async {
     final amount = double.tryParse(_amountController.text.trim());
     if (amount == null || amount <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Enter a valid amount')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Enter a valid amount')));
       return;
     }
     setState(() => _isSaving = true);
@@ -1526,18 +1557,15 @@ class _AddMoneySheetState extends State<_AddMoneySheet> {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color:
-                      isDark ? AppColor.darkBorder : AppColor.lightBorder,
-                  borderRadius:
-                      BorderRadius.circular(AppDimens.radiusCircle),
+                  color: isDark ? AppColor.darkBorder : AppColor.lightBorder,
+                  borderRadius: BorderRadius.circular(AppDimens.radiusCircle),
                 ),
               ),
             ),
             const SizedBox(height: AppDimens.spaceXXL),
             Row(
               children: [
-                Text(widget.goal.emoji,
-                    style: const TextStyle(fontSize: 24)),
+                Text(widget.goal.emoji, style: const TextStyle(fontSize: 24)),
                 const SizedBox(width: AppDimens.spaceMD),
                 Expanded(
                   child: Column(
@@ -1563,8 +1591,10 @@ class _AddMoneySheetState extends State<_AddMoneySheet> {
                   const TextInputType.numberWithOptions(decimal: true),
               autofocus: true,
               decoration: InputDecoration(
-                labelText: 'Amount to add (${Get.find<HomeController>().currencySymbol.value})',
-                prefixIcon: const PhosphorIcon(PhosphorIconsLight.currencyDollar),
+                labelText:
+                    'Amount to add (${Get.find<HomeController>().currencySymbol.value})',
+                prefixIcon:
+                    Text(Get.find<HomeController>().currencySymbol.value),
                 hintText: 'e.g. 1000',
               ),
             ),

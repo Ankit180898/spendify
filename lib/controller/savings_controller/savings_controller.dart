@@ -19,7 +19,8 @@ class SavingsController extends GetxController {
   Future<void> fetchGoals() async {
     isLoading.value = true;
     try {
-      final userId = supabaseC.auth.currentUser!.id;
+      final userId = supabaseC.auth.currentUser?.id;
+      if (userId == null) return;
       final response = await supabaseC
           .from('savings_goals')
           .select()
@@ -41,7 +42,8 @@ class SavingsController extends GetxController {
     DateTime? targetDate,
   }) async {
     try {
-      final userId = supabaseC.auth.currentUser!.id;
+      final userId = supabaseC.auth.currentUser?.id;
+      if (userId == null) return;
       await supabaseC.from('savings_goals').insert({
         'user_id': userId,
         'name': name,
@@ -76,7 +78,8 @@ class SavingsController extends GetxController {
 
   Future<void> addSavings(String goalId, double amount) async {
     try {
-      final goal = goals.firstWhere((g) => g.id == goalId);
+      final goal = goals.firstWhereOrNull((g) => g.id == goalId);
+      if (goal == null) return;
       final newSaved = goal.savedAmount + amount;
       await supabaseC
           .from('savings_goals')

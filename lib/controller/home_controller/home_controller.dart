@@ -57,6 +57,12 @@ class HomeController extends GetxController {
   var currentPeriodName = ''.obs;
   var previousPeriodName = ''.obs;
   @override
+  void onClose() {
+    clearCache();
+    super.onClose();
+  }
+
+  @override
   void onInit() async {
     super.onInit();
     await getProfile();
@@ -131,10 +137,13 @@ class HomeController extends GetxController {
     try {
       debugPrint('Fetching transactions with limit: ${limit.value}');
 
+      final userId = supabaseC.auth.currentUser?.id;
+      if (userId == null) return;
+
       final response = await supabaseC
           .from("transactions")
           .select()
-          .eq('user_id', supabaseC.auth.currentUser!.id)
+          .eq('user_id', userId)
           .order('date', ascending: false)
           .limit(limit.value);
 
@@ -221,37 +230,11 @@ class HomeController extends GetxController {
       }
 
       // Sort transactions by date
-      filteredTransactions.value.sort((a, b) => DateTime.parse(b['date']).compareTo(DateTime.parse(a['date'])));
+      filteredTransactions.sort((a, b) => DateTime.parse(b['date']).compareTo(DateTime.parse(a['date'])));
     } catch (e) {
       debugPrint('Error filtering transactions: $e');
       filteredTransactions.value = [];
     }
-  }
-
-  // Compute transactions for year only when year changes
-  List<Map<String, dynamic>> _getTransactionsForYear(int year) {
-    if (!_transactionsByYear.containsKey(year)) {
-      _transactionsByYear[year] = transactions.where((t) => DateTime.parse(t['date']).year == year).toList();
-    }
-    return _transactionsByYear[year] ?? [];
-  }
-
-  // Compute monthly transactions only when needed
-  List<Map<String, dynamic>> _getTransactionsForMonth() {
-    final now = DateTime.now();
-    final monthKey = '${now.year}-${now.month}';
-
-    if (!_transactionsByMonth.containsKey(monthKey)) {
-      final startOfMonth = DateTime(now.year, now.month, 1);
-      final endOfMonth = DateTime(now.year, now.month + 1, 0);
-
-      _transactionsByMonth[monthKey] = transactions.where((t) {
-        final date = DateTime.parse(t['date']);
-        return date.isAfter(startOfMonth.subtract(const Duration(days: 1))) &&
-            date.isBefore(endOfMonth.add(const Duration(days: 1)));
-      }).toList();
-    }
-    return _transactionsByMonth[monthKey] ?? [];
   }
 
   // Clear cache when transactions are updated
@@ -356,7 +339,7 @@ class HomeController extends GetxController {
       }).toList();
 
       // Sort transactions by date
-      filteredTransactions.value.sort((a, b) => DateTime.parse(b['date']).compareTo(DateTime.parse(a['date'])));
+      filteredTransactions.sort((a, b) => DateTime.parse(b['date']).compareTo(DateTime.parse(a['date'])));
     } catch (e) {
       debugPrint('Error filtering transactions by month: $e');
       filteredTransactions.value = [];
@@ -367,10 +350,13 @@ class HomeController extends GetxController {
   Future<void> fetchTotalBalanceData() async {
     try {
       // Get all transactions for balance calculation without pagination
+      final userId = supabaseC.auth.currentUser?.id;
+      if (userId == null) return;
+
       final response = await supabaseC
           .from("transactions")
           .select()
-          .eq('user_id', supabaseC.auth.currentUser!.id)
+          .eq('user_id', userId)
           .order('date', ascending: false);
 
       // Store all transactions for stats screen (no pagination limit)
@@ -391,11 +377,11 @@ class HomeController extends GetxController {
 
       // Calculate total income
       totalIncome.value = allIncomeTransactions.fold(
-          0.0, (double sum, transaction) => sum + double.parse(transaction['amount'].toString()));
+          0.0, (double sum, transaction) => sum + ((transaction['amount'] as num?)?.toDouble() ?? 0.0));
 
       // Calculate total expense
       totalExpense.value = allExpenseTransactions.fold(
-          0.0, (double sum, transaction) => sum + double.parse(transaction['amount'].toString()));
+          0.0, (double sum, transaction) => sum + ((transaction['amount'] as num?)?.toDouble() ?? 0.0));
 
       // Set total balance as income - expense
       totalBalance.value = totalIncome.value - totalExpense.value;

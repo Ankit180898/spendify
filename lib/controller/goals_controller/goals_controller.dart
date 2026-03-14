@@ -22,7 +22,8 @@ class GoalsController extends GetxController {
   Future<void> fetchGoals() async {
     isLoading.value = true;
     try {
-      final userId = supabaseC.auth.currentUser!.id;
+      final userId = supabaseC.auth.currentUser?.id;
+      if (userId == null) return;
       final response = await supabaseC
           .from('spending_goals')
           .select()
@@ -44,7 +45,8 @@ class GoalsController extends GetxController {
     required String period,
   }) async {
     try {
-      final userId = supabaseC.auth.currentUser!.id;
+      final userId = supabaseC.auth.currentUser?.id;
+      if (userId == null) return;
       await supabaseC.from('spending_goals').insert({
         'user_id': userId,
         'category': category,
@@ -91,10 +93,11 @@ class GoalsController extends GetxController {
           if (goal.category != 'All' && t['category'] != goal.category) {
             return false;
           }
-          final date = DateTime.parse(t['date']);
+          final date = DateTime.tryParse(t['date'] ?? '');
+          if (date == null) return false;
           return !date.isBefore(start) && !date.isAfter(end);
         })
-        .fold(0.0, (sum, t) => sum + (t['amount'] as num).toDouble());
+        .fold(0.0, (sum, t) => sum + ((t['amount'] as num?)?.toDouble() ?? 0.0));
   }
 
   /// Called after every expense transaction. Alerts the user if any goal is breached.

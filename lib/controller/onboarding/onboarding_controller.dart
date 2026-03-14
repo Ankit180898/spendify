@@ -121,7 +121,7 @@ class OnboardingController extends GetxController {
 
       Get.offAll(() => const BottomNav());
     } catch (e) {
-      print('Onboarding save error: $e');
+      debugPrint('Onboarding save error: $e');
       CustomToast.errorToast('Error', 'Could not save preferences. Try again.');
     } finally {
       isSaving.value = false;
@@ -147,7 +147,7 @@ class OnboardingController extends GetxController {
       });
       Get.offAll(() => const BottomNav());
     } catch (e) {
-      print('Onboarding skip error: $e');
+      debugPrint('Onboarding skip error: $e');
       Get.offAll(() => const BottomNav());
     } finally {
       isSaving.value = false;
