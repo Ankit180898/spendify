@@ -1,10 +1,11 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:spendify/config/app_color.dart';
 import 'package:spendify/controller/auth_controller/login_controller.dart';
-import 'package:spendify/routes/app_pages.dart';
 
 class LoginScreen extends StatelessWidget {
   const LoginScreen({super.key});
@@ -16,7 +17,7 @@ class LoginScreen extends StatelessWidget {
     final bg = isDark ? AppColor.darkBg : Colors.white;
     final textPrimary = isDark ? AppColor.textPrimary : const Color(0xFF09090B);
     final textMuted = isDark ? AppColor.textSecondary : const Color(0xFF71717A);
-    final inputBg = isDark ? AppColor.darkCard : const Color(0xFFF4F4F5);
+    final cardBg = isDark ? AppColor.darkCard : const Color(0xFFF4F4F5);
     final border = isDark ? AppColor.darkBorder : const Color(0xFFE4E4E7);
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
@@ -26,146 +27,89 @@ class LoginScreen extends StatelessWidget {
       ),
       child: Scaffold(
         backgroundColor: bg,
-        resizeToAvoidBottomInset: true,
-        bottomNavigationBar: Container(
-          color: bg,
-          padding: const EdgeInsets.fromLTRB(24, 12, 24, 0),
-          child: SafeArea(
-            top: false,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text("Don't have an account?",
-                    style: TextStyle(color: textMuted, fontSize: 14)),
-                TextButton(
-                  onPressed: () => Get.offAllNamed(Routes.REGISTER),
-                  style: TextButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 6)),
-                  child: const Text('Register',
-                      style: TextStyle(color: AppColor.primary, fontSize: 14, fontWeight: FontWeight.w600)),
-                ),
-              ],
-            ),
-          ),
-        ),
         body: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 28),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                const SizedBox(height: 48),
+                const Spacer(flex: 2),
+
+                // Logo
                 Container(
-                  width: 48,
-                  height: 48,
+                  width: 64,
+                  height: 64,
                   decoration: BoxDecoration(
                     color: AppColor.primary,
-                    borderRadius: BorderRadius.circular(13),
+                    borderRadius: BorderRadius.circular(18),
                   ),
                   child: const PhosphorIcon(
                     PhosphorIconsLight.wallet,
                     color: Colors.white,
-                    size: 22,
+                    size: 28,
                   ),
                 ),
-                const SizedBox(height: 28),
-                Text('Welcome back',
-                    style: TextStyle(
-                      color: textPrimary,
-                      fontSize: 26,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: -0.8,
-                    )),
-                const SizedBox(height: 6),
-                Text('Sign in to continue to Spendify',
-                    style: TextStyle(color: textMuted, fontSize: 14)),
-                const SizedBox(height: 36),
+                const SizedBox(height: 24),
 
-                Text('Email',
-                    style: TextStyle(color: textPrimary, fontSize: 13, fontWeight: FontWeight.w500)),
+                Text(
+                  'Welcome to Spendify',
+                  style: TextStyle(
+                    color: textPrimary,
+                    fontSize: 26,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.8,
+                  ),
+                ),
                 const SizedBox(height: 8),
-                _Field(
-                  controller: controller.emailC,
-                  hint: 'you@example.com',
-                  keyboardType: TextInputType.emailAddress,
-                  inputBg: inputBg,
-                  border: border,
-                  textPrimary: textPrimary,
-                  textMuted: textMuted,
-                  autofillHints: const [AutofillHints.email],
-                  autocorrect: false,
-                  enableSuggestions: false,
+                Text(
+                  'Sign in to track your finances',
+                  style: TextStyle(color: textMuted, fontSize: 15),
+                ),
+
+                const Spacer(flex: 2),
+
+                // Google button
+                Obx(() => _SocialButton(
+                        onTap: controller.isGoogleLoading.isFalse &&
+                                controller.isAppleLoading.isFalse
+                            ? controller.signInWithGoogle
+                            : null,
+                        isLoading: controller.isGoogleLoading.isTrue,
+                        label: 'Continue with Google',
+                        icon: _GoogleIcon(),
+                        cardBg: cardBg,
+                        border: border,
+                        textPrimary: textPrimary,
+                      )),
+                const SizedBox(height: 12),
+
+                // Apple button (iOS only)
+                if (Platform.isIOS)
+                  Obx(() => _SocialButton(
+                        onTap: controller.isGoogleLoading.isFalse &&
+                                controller.isAppleLoading.isFalse
+                            ? controller.signInWithApple
+                            : null,
+                        isLoading: controller.isAppleLoading.isTrue,
+                        label: 'Continue with Apple',
+                        icon: Icon(
+                          Icons.apple,
+                          color: textPrimary,
+                          size: 22,
+                        ),
+                        cardBg: cardBg,
+                        border: border,
+                        textPrimary: textPrimary,
+                      )),
+
+                const Spacer(flex: 1),
+
+                Text(
+                  'By signing in, you agree to our Terms & Privacy Policy.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: textMuted, fontSize: 12, height: 1.5),
                 ),
                 const SizedBox(height: 16),
-
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text('Password',
-                        style: TextStyle(color: textPrimary, fontSize: 13, fontWeight: FontWeight.w500)),
-                    TextButton(
-                      onPressed: () => Get.toNamed(Routes.FORGOT_PASSWORD),
-                      style: TextButton.styleFrom(
-                        padding: EdgeInsets.zero,
-                        minimumSize: Size.zero,
-                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      ),
-                      child: const Text('Forgot password?',
-                          style: TextStyle(color: AppColor.primary, fontSize: 13, fontWeight: FontWeight.w500)),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Obx(() => _Field(
-                      controller: controller.passwordC,
-                      hint: '••••••••',
-                      obscure: controller.isHidden.value,
-                      inputBg: inputBg,
-                      border: border,
-                      textPrimary: textPrimary,
-                      textMuted: textMuted,
-                      autofillHints: const [AutofillHints.password],
-                      autocorrect: false,
-                      enableSuggestions: false,
-                      suffix: GestureDetector(
-                        onTap: () => controller.isHidden.value = !controller.isHidden.value,
-                        child: PhosphorIcon(
-                          controller.isHidden.value
-                              ? PhosphorIconsLight.eye
-                              : PhosphorIconsLight.eyeSlash,
-                          color: textMuted,
-                          size: 18,
-                        ),
-                      ),
-                    )),
-                const SizedBox(height: 32),
-
-                Obx(() => SizedBox(
-                      width: double.infinity,
-                      height: 52,
-                      child: ElevatedButton(
-                        onPressed: controller.isLoading.isFalse
-                            ? () => controller.login()
-                            : null,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColor.primary,
-                          foregroundColor: Colors.white,
-                          disabledBackgroundColor: AppColor.primary.withValues(alpha: 0.5),
-                          elevation: 0,
-                          shadowColor: Colors.transparent,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        child: controller.isLoading.isTrue
-                            ? const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                              )
-                            : const Text('Sign In',
-                                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
-                      ),
-                    )),
               ],
             ),
           ),
@@ -175,98 +119,143 @@ class LoginScreen extends StatelessWidget {
   }
 }
 
-class _Field extends StatefulWidget {
-  final TextEditingController controller;
-  final String hint;
-  final Color inputBg;
+class _SocialButton extends StatelessWidget {
+  final VoidCallback? onTap;
+  final bool isLoading;
+  final String label;
+  final Widget icon;
+  final Color cardBg;
   final Color border;
   final Color textPrimary;
-  final Color textMuted;
-  final bool obscure;
-  final TextInputType? keyboardType;
-  final Widget? suffix;
-  final List<String>? autofillHints;
-  final bool autocorrect;
-  final bool enableSuggestions;
 
-  const _Field({
-    required this.controller,
-    required this.hint,
-    required this.inputBg,
+  const _SocialButton({
+    required this.onTap,
+    required this.isLoading,
+    required this.label,
+    required this.icon,
+    required this.cardBg,
     required this.border,
     required this.textPrimary,
-    required this.textMuted,
-    this.obscure = false,
-    this.keyboardType,
-    this.suffix,
-    this.autofillHints,
-    this.autocorrect = true,
-    this.enableSuggestions = true,
   });
 
   @override
-  State<_Field> createState() => _FieldState();
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedOpacity(
+        duration: const Duration(milliseconds: 150),
+        opacity: onTap == null ? 0.5 : 1.0,
+        child: Container(
+          width: double.infinity,
+          height: 54,
+          decoration: BoxDecoration(
+            color: cardBg,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: border),
+          ),
+          child: isLoading
+              ? const Center(
+                  child: SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      color: AppColor.primary,
+                      strokeWidth: 2,
+                    ),
+                  ),
+                )
+              : Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    SizedBox(width: 22, height: 22, child: icon),
+                    const SizedBox(width: 12),
+                    Text(
+                      label,
+                      style: TextStyle(
+                        color: textPrimary,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+        ),
+      ),
+    );
+  }
 }
 
-class _FieldState extends State<_Field> {
-  final _focusNode = FocusNode();
-  bool _focused = false;
+class _GoogleIcon extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cutoutColor = isDark ? AppColor.darkCard : const Color(0xFFF4F4F5);
+    return CustomPaint(painter: _GooglePainter(cutoutColor: cutoutColor));
+  }
+}
+
+class _GooglePainter extends CustomPainter {
+  final Color cutoutColor;
+  const _GooglePainter({required this.cutoutColor});
 
   @override
-  void initState() {
-    super.initState();
-    _focusNode.addListener(() {
-      setState(() => _focused = _focusNode.hasFocus);
-    });
+  void paint(Canvas canvas, Size size) {
+    final s = size.width;
+    final cx = s / 2;
+    final cy = s / 2;
+    final r = s / 2;
+
+    final bluePaint = Paint()
+      ..color = const Color(0xFF4285F4)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = s * 0.18
+      ..strokeCap = StrokeCap.butt;
+
+    final redPaint = Paint()
+      ..color = const Color(0xFFEA4335)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = s * 0.18
+      ..strokeCap = StrokeCap.butt;
+
+    final yellowPaint = Paint()
+      ..color = const Color(0xFFFBBC05)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = s * 0.18
+      ..strokeCap = StrokeCap.butt;
+
+    final greenPaint = Paint()
+      ..color = const Color(0xFF34A853)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = s * 0.18
+      ..strokeCap = StrokeCap.butt;
+
+    final rect = Rect.fromCircle(center: Offset(cx, cy), radius: r * 0.72);
+
+    canvas.drawArc(rect, -0.52, 1.57, false, bluePaint);
+    canvas.drawArc(rect, 1.05, 1.57, false, greenPaint);
+    canvas.drawArc(rect, 2.62, 1.57, false, yellowPaint);
+    canvas.drawArc(rect, 4.19, 1.57, false, redPaint);
+
+    // Inner cutout circle
+    canvas.drawCircle(
+      Offset(cx, cy),
+      r * 0.42,
+      Paint()
+        ..color = cutoutColor
+        ..style = PaintingStyle.fill,
+    );
+
+    // Horizontal bar (right side of G)
+    canvas.drawRect(
+      Rect.fromLTWH(
+          cx, cy - s * 0.09, r * 0.72 - r * 0.42 + s * 0.18 / 2, s * 0.18),
+      Paint()
+        ..color = const Color(0xFF4285F4)
+        ..style = PaintingStyle.fill,
+    );
   }
 
   @override
-  void dispose() {
-    _focusNode.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) => AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        decoration: BoxDecoration(
-          color: widget.inputBg,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: _focused ? AppColor.primary : widget.border,
-            width: _focused ? 1.5 : 1.0,
-          ),
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 14),
-        child: Row(
-          children: [
-            Expanded(
-              child: TextField(
-                controller: widget.controller,
-                focusNode: _focusNode,
-                obscureText: widget.obscure,
-                keyboardType: widget.keyboardType,
-                autocorrect: widget.autocorrect,
-                enableSuggestions: widget.enableSuggestions,
-                autofillHints: widget.autofillHints,
-                style: TextStyle(color: widget.textPrimary, fontSize: 14),
-                cursorColor: AppColor.primary,
-                decoration: InputDecoration(
-                  border: InputBorder.none,
-                  enabledBorder: InputBorder.none,
-                  focusedBorder: InputBorder.none,
-                  disabledBorder: InputBorder.none,
-                  errorBorder: InputBorder.none,
-                  focusedErrorBorder: InputBorder.none,
-                  filled: false,
-                  hintText: widget.hint,
-                  hintStyle: TextStyle(color: widget.textMuted, fontSize: 14),
-                  contentPadding: const EdgeInsets.symmetric(vertical: 14),
-                ),
-              ),
-            ),
-            if (widget.suffix != null) ...[const SizedBox(width: 8), widget.suffix!],
-          ],
-        ),
-      );
+  bool shouldRepaint(_GooglePainter oldDelegate) =>
+      oldDelegate.cutoutColor != cutoutColor;
 }

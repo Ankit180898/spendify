@@ -50,6 +50,9 @@ class _SmsImportScreenState extends State<SmsImportScreen> {
       } catch (_) {}
     }
 
+    // Mark successfully imported messages so they never appear again
+    await _smsCtrl.markAsImported(selected);
+
     setState(() => _importing = false);
     _txCtrl.resetForm();
 
@@ -172,7 +175,7 @@ class _SmsImportScreenState extends State<SmsImportScreen> {
                   if (_smsCtrl.errorMessage.isNotEmpty &&
                       _smsCtrl.detectedTransactions.isEmpty) {
                     return Center(
-                      child: Padding(
+                      child: SingleChildScrollView(
                         padding: const EdgeInsets.all(32),
                         child: Column(
                           mainAxisSize: MainAxisSize.min,

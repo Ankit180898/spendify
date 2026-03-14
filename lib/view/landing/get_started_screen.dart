@@ -112,7 +112,7 @@ class GetStartedScreen extends StatelessWidget {
                   width: double.infinity,
                   height: 54,
                   child: ElevatedButton(
-                    onPressed: () => Get.offAllNamed(Routes.REGISTER),
+                    onPressed: () => Get.offAllNamed(Routes.LOGIN),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColor.primary,
                       foregroundColor: Colors.white,
@@ -126,15 +126,6 @@ class GetStartedScreen extends StatelessWidget {
                       'Get Started',
                       style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                     ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                GestureDetector(
-                  onTap: () => Get.offAllNamed(Routes.LOGIN),
-                  child: const Text(
-                    'Already have an account? Sign in',
-                    style: TextStyle(color: textMuted, fontSize: 14),
                   ),
                 ),
               ],

@@ -13,11 +13,8 @@ class WalkthroughController extends GetxController {
   static const _prefKey = 'walkthrough_shown_v1';
 
   List<GlobalKey> get orderedKeys => [
-        // balanceKey,
-        // quickActionsKey,
-        // addBtnKey,
-        // statsNavKey,
-        // goalsNavKey,
+        balanceKey,
+        quickActionsKey,
         addBtnKey,
         statsNavKey,
         goalsNavKey,
