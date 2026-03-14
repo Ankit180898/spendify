@@ -56,11 +56,15 @@ class SavingsController extends GetxController {
         final created = goals.firstWhereOrNull((g) =>
             g.name == name && g.targetAmount == targetAmount);
         if (created != null) {
-          await NotificationService.scheduleSavingsReminder(
-            goalId: created.id,
-            goalName: created.name,
-            targetDate: targetDate,
-          );
+          try {
+            await NotificationService.scheduleSavingsReminder(
+              goalId: created.id,
+              goalName: created.name,
+              targetDate: targetDate,
+            );
+          } catch (e) {
+            debugPrint('Notification scheduling skipped: $e');
+          }
         }
       }
       CustomToast.successToast('Goal created', 'Savings goal added');

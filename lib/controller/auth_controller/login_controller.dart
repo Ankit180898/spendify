@@ -1,41 +1,97 @@
-import 'package:flutter/material.dart';
+import 'dart:convert';
+import 'dart:math';
+
+import 'package:crypto/crypto.dart';
 import 'package:get/get.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:spendify/main.dart';
 import 'package:spendify/widgets/bottom_navigation.dart';
 import 'package:spendify/widgets/toast/custom_toast.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class LoginController extends GetxController {
-  RxBool isLoading = false.obs;
-  RxBool isHidden = true.obs;
-  var emailC = TextEditingController();
-  var passwordC = TextEditingController();
-  @override
-  void dispose() {
-    super.dispose();
-    emailC.dispose();
-    passwordC.dispose();
+  RxBool isGoogleLoading = false.obs;
+  RxBool isAppleLoading = false.obs;
+
+  Future<void> signInWithGoogle() async {
+    isGoogleLoading.value = true;
+    try {
+      final GoogleSignIn googleSignIn = GoogleSignIn(
+        serverClientId:
+            '1022798183394-tq8i6uqjn86e4l6df8ebp7pudgrefb18.apps.googleusercontent.com',
+      );
+      final googleUser = await googleSignIn.signIn();
+      if (googleUser == null) {
+        isGoogleLoading.value = false;
+        return;
+      }
+      final googleAuth = await googleUser.authentication;
+      final idToken = googleAuth.idToken;
+      final accessToken = googleAuth.accessToken;
+
+      if (idToken == null) throw Exception('No ID token from Google');
+
+      await supabaseC.auth.signInWithIdToken(
+        provider: OAuthProvider.google,
+        idToken: idToken,
+        accessToken: accessToken,
+      );
+
+      isGoogleLoading.value = false;
+      Get.offAll(const BottomNav());
+    } catch (e) {
+      isGoogleLoading.value = false;
+      CustomToast.errorToast('Sign-in failed', e.toString());
+    }
   }
 
-  Future<bool?> login() async {
-    if (emailC.text.isNotEmpty && passwordC.text.isNotEmpty) {
-      isLoading.value = true;
-      try {
-        await supabaseC.auth
-            .signInWithPassword(email: emailC.text, password: passwordC.text);
+  Future<void> signInWithApple() async {
+    isAppleLoading.value = true;
+    try {
+      final rawNonce = _generateNonce();
+      final hashedNonce = _sha256ofString(rawNonce);
 
-        isLoading.value = false;
-        Get.offAll(const BottomNav());
+      final credential = await SignInWithApple.getAppleIDCredential(
+        scopes: [
+          AppleIDAuthorizationScopes.email,
+          AppleIDAuthorizationScopes.fullName,
+        ],
+        nonce: hashedNonce,
+      );
 
-        return true;
-      } catch (e) {
-        isLoading.value = false;
-        emailC.clear();
-        passwordC.clear();
-        CustomToast.errorToast('Error', e.toString());
+      final idToken = credential.identityToken;
+      if (idToken == null) throw Exception('No identity token from Apple');
+
+      await supabaseC.auth.signInWithIdToken(
+        provider: OAuthProvider.apple,
+        idToken: idToken,
+        nonce: rawNonce,
+      );
+
+      isAppleLoading.value = false;
+      Get.offAll(const BottomNav());
+    } catch (e) {
+      isAppleLoading.value = false;
+      if (e is SignInWithAppleAuthorizationException &&
+          e.code == AuthorizationErrorCode.canceled) {
+        return;
       }
-    } else {
-      CustomToast.errorToast("ERROR", "Email and password are required");
+      CustomToast.errorToast('Sign-in failed', e.toString());
     }
-    return null;
+  }
+
+  String _generateNonce([int length = 32]) {
+    const charset =
+        '0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._';
+    final random = Random.secure();
+    return List.generate(length, (_) => charset[random.nextInt(charset.length)])
+        .join();
+  }
+
+  String _sha256ofString(String input) {
+    final bytes = utf8.encode(input);
+    final digest = sha256.convert(bytes);
+    return digest.toString();
   }
 }

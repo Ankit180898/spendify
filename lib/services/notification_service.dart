@@ -103,7 +103,7 @@ class NotificationService {
         '$goalName deadline is in 7 days!',
         tz.TZDateTime.from(sevenDaysBefore, tz.local),
         details,
-        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
         uiLocalNotificationDateInterpretation:
             UILocalNotificationDateInterpretation.absoluteTime,
       );
@@ -116,7 +116,7 @@ class NotificationService {
         '$goalName deadline is tomorrow!',
         tz.TZDateTime.from(oneDayBefore, tz.local),
         details,
-        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
         uiLocalNotificationDateInterpretation:
             UILocalNotificationDateInterpretation.absoluteTime,
       );

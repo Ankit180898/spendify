@@ -20,6 +20,7 @@ class OnboardingScreen extends StatelessWidget {
       ),
       child: Scaffold(
         backgroundColor: isDark ? AppColor.darkBg : Colors.white,
+        resizeToAvoidBottomInset: false,
         body: SafeArea(
           child: Column(
             children: [

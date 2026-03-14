@@ -44,3 +44,7 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Google Sign-In config files (contain sensitive credentials)
+android/app/google-services.json
+ios/Runner/GoogleService-Info.plist

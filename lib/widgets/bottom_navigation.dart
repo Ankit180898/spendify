@@ -50,11 +50,13 @@ class _BottomNavState extends State<BottomNav> {
   void _maybeStartShowcase(BuildContext ctx) {
     if (_showcaseTriggered) return;
     _showcaseTriggered = true;
+    // Capture showcase state before the async gap to avoid stale context
+    final showcaseState = ShowCaseWidget.of(ctx);
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
       final ctrl = Get.find<WalkthroughController>();
       if (await ctrl.shouldShow()) {
-        ShowCaseWidget.of(ctx).startShowCase(ctrl.orderedKeys);
+        if (mounted) showcaseState.startShowCase(ctrl.orderedKeys);
         ctrl.markShown();
       }
     });

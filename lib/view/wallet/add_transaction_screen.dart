@@ -28,6 +28,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   final _amount = ''.obs;
   final _noteFocus = FocusNode();
   bool _noteVisible = false;
+  bool _noteAutofocus = false; // true only when user explicitly taps "Add a note"
 
   // Voice input
   final _speech = SpeechToText();
@@ -361,8 +362,10 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                                     PhosphorIconsLight.plus,
                                     color: textMuted,
                                     size: 15),
-                                onTap: () =>
-                                    setState(() => _noteVisible = true),
+                                onTap: () => setState(() {
+                                  _noteVisible = true;
+                                  _noteAutofocus = true;
+                                }),
                               )
                             else
                               _buildInfoRow(
@@ -374,7 +377,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                                 label: TextField(
                                   controller: controller.titleController,
                                   focusNode: _noteFocus,
-                                  autofocus: true,
+                                  autofocus: _noteAutofocus,
                                   style: TextStyle(
                                       color: textPrimary, fontSize: 14),
                                   cursorColor: AppColor.primary,
@@ -385,6 +388,10 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                                     border: InputBorder.none,
                                     enabledBorder: InputBorder.none,
                                     focusedBorder: InputBorder.none,
+                                    disabledBorder: InputBorder.none,
+                                    errorBorder: InputBorder.none,
+                                    focusedErrorBorder: InputBorder.none,
+                                    filled: false,
                                     contentPadding: EdgeInsets.zero,
                                     isCollapsed: true,
                                   ),

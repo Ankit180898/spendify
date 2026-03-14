@@ -1076,8 +1076,18 @@ class _AddBudgetSheetState extends State<_AddBudgetSheet> {
                   const TextInputType.numberWithOptions(decimal: true),
               autofocus: true,
               decoration: InputDecoration(
-                labelText: 'Limit amount (${Get.find<HomeController>().currencySymbol.value})',
-                prefixIcon: const PhosphorIcon(PhosphorIconsLight.currencyDollar),
+                labelText: 'Limit amount',
+                prefixIcon: Align(
+                  widthFactor: 1.0,
+                  child: Text(
+                    Get.find<HomeController>().currencySymbol.value,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: isDark ? AppColor.textSecondary : AppColor.lightTextSecondary,
+                    ),
+                  ),
+                ),
                 hintText: 'e.g. 5000',
               ),
             ),
@@ -1354,9 +1364,19 @@ class _AddSavingsSheetState extends State<_AddSavingsSheet> {
                 keyboardType:
                     const TextInputType.numberWithOptions(decimal: true),
                 decoration: InputDecoration(
-                  labelText: 'Target amount (${Get.find<HomeController>().currencySymbol.value})',
+                  labelText: 'Target amount',
                   hintText: 'e.g. 50000',
-                  prefixIcon: const PhosphorIcon(PhosphorIconsLight.currencyDollar),
+                  prefixIcon: Align(
+                    widthFactor: 1.0,
+                    child: Text(
+                      Get.find<HomeController>().currencySymbol.value,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        color: isDark ? AppColor.textSecondary : AppColor.lightTextSecondary,
+                      ),
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(height: AppDimens.spaceMD),
