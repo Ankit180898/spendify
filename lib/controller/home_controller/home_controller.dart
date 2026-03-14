@@ -28,6 +28,7 @@ class HomeController extends GetxController {
   var currencySymbol = '₹'.obs;
   var monthlyBudget = 0.0.obs;
   var selectedCategories = <String>[].obs;
+  var occupation = ''.obs;
 
   var isLoading = false.obs;
   var totalExpense = 0.0.obs;
@@ -89,19 +90,22 @@ class HomeController extends GetxController {
       try {
         final profile = await supabaseC
             .from('user_profiles')
-            .select('currency_symbol, monthly_budget, selected_categories')
+            .select('currency_symbol, monthly_budget, selected_categories, occupation')
             .eq('user_id', user.id)
             .maybeSingle();
         if (profile != null) {
           if (profile['currency_symbol'] != null) {
-            currencySymbol.value = profile['currency_symbol'];
+            currencySymbol.value = profile['currency_symbol'] as String;
           }
           monthlyBudget.value =
               (profile['monthly_budget'] as num?)?.toDouble() ?? 0.0;
           selectedCategories.value =
               List<String>.from(profile['selected_categories'] ?? []);
+          occupation.value = profile['occupation'] as String? ?? '';
         }
-      } catch (_) {}
+      } catch (e) {
+        debugPrint('HomeController: failed to load user_profiles — $e');
+      }
     } else {
       CustomToast.errorToast("Error", 'User not found');
     }

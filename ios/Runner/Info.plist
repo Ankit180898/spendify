@@ -4,6 +4,10 @@
 <dict>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Spendify needs microphone access to let you log expenses by voice.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Spendify uses speech recognition to convert your voice into expense entries.</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>

@@ -134,6 +134,21 @@ class _BudgetTab extends StatelessWidget {
 
   const _BudgetTab({required this.controller, required this.isDark});
 
+  /// This month's total expenses computed from allTransactions.
+  double _thisMonthExpense(HomeController hc) {
+    final now = DateTime.now();
+    final start = DateTime(now.year, now.month, 1);
+    final end = DateTime(now.year, now.month + 1, 0, 23, 59, 59);
+    return hc.allTransactions
+        .where((t) {
+          if (t['type'] != 'expense') return false;
+          final d = t['parsedDate'] as DateTime?;
+          if (d == null) return false;
+          return !d.isBefore(start) && !d.isAfter(end);
+        })
+        .fold(0.0, (sum, t) => sum + double.parse(t['amount'].toString()));
+  }
+
   @override
   Widget build(BuildContext context) {
     final textPrimary =
@@ -143,23 +158,30 @@ class _BudgetTab extends StatelessWidget {
     final cardBg = isDark ? AppColor.darkCard : AppColor.lightSurface;
     final dividerColor = isDark ? AppColor.darkBorder : AppColor.lightBorder;
 
+    final hc = Get.find<HomeController>();
+
     return Obx(() {
       if (controller.isLoading.value) {
         return const Center(child: CircularProgressIndicator());
       }
 
-      if (controller.goals.isEmpty) {
+      final monthlyBudget = hc.monthlyBudget.value;
+      final hasMonthlyBudget = monthlyBudget > 0;
+      final hasGoals = controller.goals.isNotEmpty;
+
+      // If nothing to show at all
+      if (!hasMonthlyBudget && !hasGoals) {
         return _EmptyView(
           icon: PhosphorIconsLight.wallet,
-          title: 'No budget limits yet',
+          title: 'No budget set yet',
           subtitle:
-              'Set monthly or weekly spending limits per category and get\nalerted when you go over.',
+              'Set a monthly budget in your preferences, or add category spending limits here.',
           textPrimary: textPrimary,
           textSecondary: textSecondary,
         );
       }
 
-      // Compute totals for summary
+      // Compute category-limit totals
       double totalLimit = 0;
       double totalSpent = 0;
       for (final g in controller.goals) {
@@ -169,63 +191,96 @@ class _BudgetTab extends StatelessWidget {
       final totalProgress =
           totalLimit > 0 ? (totalSpent / totalLimit).clamp(0.0, 1.0) : 0.0;
 
+      final monthExpense = _thisMonthExpense(hc);
+
       return RefreshIndicator(
         onRefresh: controller.fetchGoals,
         child: ListView(
           padding: const EdgeInsets.only(bottom: 100),
           children: [
-            // Summary card (Five Cents-style header)
-            Padding(
-              padding: const EdgeInsets.all(AppDimens.spaceLG),
-              child: _BudgetSummaryCard(
-                totalLimit: totalLimit,
-                totalSpent: totalSpent,
-                totalProgress: totalProgress,
-                isDark: isDark,
+            // ── Monthly budget overview card (from onboarding/prefs) ──────
+            if (hasMonthlyBudget)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                    AppDimens.spaceLG, AppDimens.spaceLG,
+                    AppDimens.spaceLG, 0),
+                child: _MonthlyBudgetCard(
+                  budget: monthlyBudget,
+                  spent: monthExpense,
+                  isDark: isDark,
+                ),
               ),
-            ),
-            // Category rows in a unified table
-            Container(
-              clipBehavior: Clip.antiAlias,
-              margin:
-                  const EdgeInsets.symmetric(horizontal: AppDimens.spaceLG),
-              decoration: BoxDecoration(
-                color: cardBg,
-                borderRadius: BorderRadius.circular(AppDimens.radiusXL),
-                border: Border.all(color: dividerColor),
+
+            // ── Category limits summary card ──────────────────────────────
+            if (hasGoals) ...[
+              Padding(
+                padding: const EdgeInsets.all(AppDimens.spaceLG),
+                child: _BudgetSummaryCard(
+                  totalLimit: totalLimit,
+                  totalSpent: totalSpent,
+                  totalProgress: totalProgress,
+                  isDark: isDark,
+                ),
               ),
-              child: Column(
-                children: [
-                  for (int i = 0; i < controller.goals.length; i++) ...[
-                    _BudgetRow(
-                      goal: controller.goals[i],
-                      controller: controller,
-                      isDark: isDark,
-                      textPrimary: textPrimary,
-                      textSecondary: textSecondary,
-                    ),
-                    if (i < controller.goals.length - 1)
-                      Divider(
-                        height: 1,
-                        thickness: 1,
-                        color: dividerColor,
-                        indent: AppDimens.spaceLG + 36 + AppDimens.spaceMD,
+              // Category rows
+              Container(
+                clipBehavior: Clip.antiAlias,
+                margin: const EdgeInsets.symmetric(
+                    horizontal: AppDimens.spaceLG),
+                decoration: BoxDecoration(
+                  color: cardBg,
+                  borderRadius: BorderRadius.circular(AppDimens.radiusXL),
+                  border: Border.all(color: dividerColor),
+                ),
+                child: Column(
+                  children: [
+                    for (int i = 0; i < controller.goals.length; i++) ...[
+                      _BudgetRow(
+                        goal: controller.goals[i],
+                        controller: controller,
+                        isDark: isDark,
+                        textPrimary: textPrimary,
+                        textSecondary: textSecondary,
                       ),
+                      if (i < controller.goals.length - 1)
+                        Divider(
+                          height: 1,
+                          thickness: 1,
+                          color: dividerColor,
+                          indent:
+                              AppDimens.spaceLG + 36 + AppDimens.spaceMD,
+                        ),
+                    ],
                   ],
-                ],
+                ),
               ),
-            ),
-            const SizedBox(height: AppDimens.spaceLG),
-            Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: AppDimens.spaceLG),
-              child: Text(
-                'Swipe left on a row to delete a budget limit.',
-                style: AppTypography.caption(
-                    isDark ? AppColor.textTertiary : AppColor.lightTextTertiary),
-                textAlign: TextAlign.center,
+              const SizedBox(height: AppDimens.spaceLG),
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: AppDimens.spaceLG),
+                child: Text(
+                  'Swipe left on a row to delete a budget limit.',
+                  style: AppTypography.caption(isDark
+                      ? AppColor.textTertiary
+                      : AppColor.lightTextTertiary),
+                  textAlign: TextAlign.center,
+                ),
               ),
-            ),
+            ] else if (hasMonthlyBudget) ...[
+              // Has monthly budget but no category limits
+              const SizedBox(height: AppDimens.spaceLG),
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: AppDimens.spaceLG),
+                child: Text(
+                  'Tap + to add category spending limits.',
+                  style: AppTypography.caption(isDark
+                      ? AppColor.textTertiary
+                      : AppColor.lightTextTertiary),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ],
           ],
         ),
       );
@@ -353,6 +408,118 @@ class _SummaryCol extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis),
       ],
+    );
+  }
+}
+
+// ── Monthly Budget Card (from onboarding/preferences) ────────────────────────
+
+class _MonthlyBudgetCard extends StatelessWidget {
+  final double budget;
+  final double spent;
+  final bool isDark;
+
+  const _MonthlyBudgetCard({
+    required this.budget,
+    required this.spent,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final fmt = NumberFormat('#,##0', 'en_IN');
+    final sym = Get.find<HomeController>().currencySymbol.value;
+    final remaining = budget - spent;
+    final isOver = remaining < 0;
+    final progress = (spent / budget).clamp(0.0, 1.0);
+    final barColor = progress >= 1.0
+        ? AppColor.expense
+        : progress >= 0.8
+            ? AppColor.warning
+            : AppColor.income;
+
+    final cardBg = isDark ? AppColor.darkCard : const Color(0xFFF9F9FB);
+    final border = isDark ? AppColor.darkBorder : const Color(0xFFE4E4E7);
+    final textPrimary =
+        isDark ? AppColor.textPrimary : const Color(0xFF09090B);
+    final textMuted =
+        isDark ? AppColor.textSecondary : const Color(0xFF71717A);
+    final monthName = DateFormat('MMMM yyyy').format(DateTime.now());
+
+    return Container(
+      padding: const EdgeInsets.all(AppDimens.spaceXL),
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: BorderRadius.circular(AppDimens.radiusXL),
+        border: Border.all(color: border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: AppColor.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const PhosphorIcon(
+                  PhosphorIconsLight.wallet,
+                  color: AppColor.primary,
+                  size: 14,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text('Monthly Budget',
+                  style: AppTypography.bodySemiBold(textPrimary)),
+              const Spacer(),
+              Text(monthName, style: AppTypography.caption(textMuted)),
+            ],
+          ),
+          const SizedBox(height: AppDimens.spaceXL),
+          Row(
+            children: [
+              Expanded(
+                child: _SummaryCol(
+                  label: 'Budget',
+                  value: '$sym${fmt.format(budget)}',
+                  color: textPrimary,
+                ),
+              ),
+              Expanded(
+                child: _SummaryCol(
+                  label: 'Spent',
+                  value: '$sym${fmt.format(spent)}',
+                  color: textPrimary,
+                ),
+              ),
+              Expanded(
+                child: _SummaryCol(
+                  label: isOver ? 'Over by' : 'Remaining',
+                  value: '$sym${fmt.format(remaining.abs())}',
+                  color: isOver ? AppColor.expense : AppColor.income,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppDimens.spaceXL),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(AppDimens.radiusCircle),
+            child: LinearProgressIndicator(
+              value: progress,
+              minHeight: 5,
+              backgroundColor: barColor.withValues(alpha: 0.12),
+              valueColor: AlwaysStoppedAnimation<Color>(barColor),
+            ),
+          ),
+          const SizedBox(height: AppDimens.spaceXS),
+          Text(
+            '${(progress * 100).toStringAsFixed(0)}% of monthly budget used',
+            style: AppTypography.label(textMuted),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -908,9 +1075,9 @@ class _AddBudgetSheetState extends State<_AddBudgetSheet> {
               keyboardType:
                   const TextInputType.numberWithOptions(decimal: true),
               autofocus: true,
-              decoration: const InputDecoration(
-                labelText: 'Limit amount (₹)',
-                prefixIcon: PhosphorIcon(PhosphorIconsLight.currencyDollar),
+              decoration: InputDecoration(
+                labelText: 'Limit amount (${Get.find<HomeController>().currencySymbol.value})',
+                prefixIcon: const PhosphorIcon(PhosphorIconsLight.currencyDollar),
                 hintText: 'e.g. 5000',
               ),
             ),
@@ -1186,10 +1353,10 @@ class _AddSavingsSheetState extends State<_AddSavingsSheet> {
                 controller: _amountController,
                 keyboardType:
                     const TextInputType.numberWithOptions(decimal: true),
-                decoration: const InputDecoration(
-                  labelText: 'Target amount (₹)',
+                decoration: InputDecoration(
+                  labelText: 'Target amount (${Get.find<HomeController>().currencySymbol.value})',
                   hintText: 'e.g. 50000',
-                  prefixIcon: PhosphorIcon(PhosphorIconsLight.currencyDollar),
+                  prefixIcon: const PhosphorIcon(PhosphorIconsLight.currencyDollar),
                 ),
               ),
               const SizedBox(height: AppDimens.spaceMD),
@@ -1375,9 +1542,9 @@ class _AddMoneySheetState extends State<_AddMoneySheet> {
               keyboardType:
                   const TextInputType.numberWithOptions(decimal: true),
               autofocus: true,
-              decoration: const InputDecoration(
-                labelText: 'Amount to add (₹)',
-                prefixIcon: PhosphorIcon(PhosphorIconsLight.currencyDollar),
+              decoration: InputDecoration(
+                labelText: 'Amount to add (${Get.find<HomeController>().currencySymbol.value})',
+                prefixIcon: const PhosphorIcon(PhosphorIconsLight.currencyDollar),
                 hintText: 'e.g. 1000',
               ),
             ),

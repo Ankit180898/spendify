@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:spendify/controller/home_controller/home_controller.dart';
 import 'package:spendify/main.dart';
 import 'package:spendify/model/savings_goal_model.dart';
 import 'package:spendify/services/notification_service.dart';
@@ -82,7 +83,8 @@ class SavingsController extends GetxController {
       if (newSaved >= goal.targetAmount) {
         CustomToast.successToast('Goal reached! 🎉', '${goal.name} is fully funded!');
       } else {
-        CustomToast.successToast('Added!', '₹${amount.toStringAsFixed(0)} saved toward ${goal.name}');
+        final sym = Get.find<HomeController>().currencySymbol.value;
+        CustomToast.successToast('Added!', '$sym${amount.toStringAsFixed(0)} saved toward ${goal.name}');
       }
     } catch (e) {
       debugPrint('Error updating savings: $e');

@@ -9,7 +9,8 @@
       "Read(//Users/ankitkumar/Developer/Flutter projects/expense tracker/spendify/$HOME/**)",
       "Bash(find '/Users/ankitkumar/Developer/Flutter projects/expense tracker/spendify' -name *.dart -path *phosphor*)",
       "Read(//phosphor_flutter/,/**)",
-      "Read(//Users/ankitkumar/**)"
+      "Read(//Users/ankitkumar/**)",
+      "Bash(flutter pub:*)"
     ]
   }
 }

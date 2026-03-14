@@ -131,27 +131,12 @@ class _FormView extends StatelessWidget {
 
         Text('Email', style: TextStyle(color: textPrimary, fontSize: 13, fontWeight: FontWeight.w500)),
         const SizedBox(height: 8),
-        Container(
-          decoration: BoxDecoration(
-            color: inputBg,
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: border),
-          ),
-          padding: const EdgeInsets.symmetric(horizontal: 14),
-          child: TextField(
-            controller: emailCtrl,
-            keyboardType: TextInputType.emailAddress,
-            style: TextStyle(color: textPrimary, fontSize: 14),
-            cursorColor: AppColor.primary,
-            decoration: InputDecoration(
-              border: InputBorder.none,
-              enabledBorder: InputBorder.none,
-              focusedBorder: InputBorder.none,
-              hintText: 'you@example.com',
-              hintStyle: TextStyle(color: textMuted, fontSize: 14),
-              contentPadding: const EdgeInsets.symmetric(vertical: 14),
-            ),
-          ),
+        _EmailField(
+          controller: emailCtrl,
+          inputBg: inputBg,
+          border: border,
+          textPrimary: textPrimary,
+          textMuted: textMuted,
         ),
         const SizedBox(height: 28),
 
@@ -176,6 +161,80 @@ class _FormView extends StatelessWidget {
       ],
     );
   }
+}
+
+class _EmailField extends StatefulWidget {
+  final TextEditingController controller;
+  final Color inputBg;
+  final Color border;
+  final Color textPrimary;
+  final Color textMuted;
+
+  const _EmailField({
+    required this.controller,
+    required this.inputBg,
+    required this.border,
+    required this.textPrimary,
+    required this.textMuted,
+  });
+
+  @override
+  State<_EmailField> createState() => _EmailFieldState();
+}
+
+class _EmailFieldState extends State<_EmailField> {
+  final _focusNode = FocusNode();
+  bool _focused = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _focusNode.addListener(() {
+      setState(() => _focused = _focusNode.hasFocus);
+    });
+  }
+
+  @override
+  void dispose() {
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        decoration: BoxDecoration(
+          color: widget.inputBg,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: _focused ? AppColor.primary : widget.border,
+            width: _focused ? 1.5 : 1.0,
+          ),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 14),
+        child: TextField(
+          controller: widget.controller,
+          focusNode: _focusNode,
+          keyboardType: TextInputType.emailAddress,
+          autocorrect: false,
+          enableSuggestions: false,
+          autofillHints: const [AutofillHints.email],
+          style: TextStyle(color: widget.textPrimary, fontSize: 14),
+          cursorColor: AppColor.primary,
+          decoration: InputDecoration(
+            border: InputBorder.none,
+            enabledBorder: InputBorder.none,
+            focusedBorder: InputBorder.none,
+            disabledBorder: InputBorder.none,
+            errorBorder: InputBorder.none,
+            focusedErrorBorder: InputBorder.none,
+            filled: false,
+            hintText: 'you@example.com',
+            hintStyle: TextStyle(color: widget.textMuted, fontSize: 14),
+            contentPadding: const EdgeInsets.symmetric(vertical: 14),
+          ),
+        ),
+      );
 }
 
 class _SuccessView extends StatelessWidget {

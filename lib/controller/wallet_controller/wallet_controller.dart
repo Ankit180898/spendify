@@ -22,21 +22,21 @@ class TransactionController extends GetxController {
     titleController.dispose();
   }
 
-  Future<void> addResource() async {
+  Future<void> addResource({bool silent = false}) async {
     try {
       // Validate inputs first
       if (amountController.text.isEmpty) {
-        CustomToast.errorToast('Error', 'Amount cannot be empty');
+        if (!silent) { CustomToast.errorToast('Error', 'Amount cannot be empty'); }
         return;
       }
 
       if (titleController.text.isEmpty) {
-        CustomToast.errorToast('Error', 'Title cannot be empty');
+        if (!silent) { CustomToast.errorToast('Error', 'Title cannot be empty'); }
         return;
       }
 
       if (selectedCategory.value.isEmpty) {
-        CustomToast.errorToast('Error', 'Please select a category');
+        if (!silent) { CustomToast.errorToast('Error', 'Please select a category'); }
         return;
       }
 
@@ -49,7 +49,7 @@ class TransactionController extends GetxController {
       try {
         amount = double.parse(amountController.text);
       } catch (e) {
-        CustomToast.errorToast('Error', 'Please enter a valid amount');
+        if (!silent) { CustomToast.errorToast('Error', 'Please enter a valid amount'); }
         isLoading.value = false;
         isSubmitted.value = false;
         return;
@@ -68,33 +68,38 @@ class TransactionController extends GetxController {
       // Update balance based on transaction type
       await updateBalance(amount, selectedType.value);
 
-      // Fetch complete balance data first (to fix the main issue)
-      await homeC.fetchTotalBalanceData();
+      if (!silent) {
+        // Fetch complete balance data first (to fix the main issue)
+        await homeC.fetchTotalBalanceData();
 
-      // Then get paginated transactions for display
-      await homeC.getTransactions();
+        // Then get paginated transactions for display
+        await homeC.getTransactions();
 
-      // Check spending goals if this was an expense
-      if (selectedType.value == 'expense') {
-        final goalsC = Get.find<GoalsController>();
-        goalsC.checkAndAlert();
+        // Check spending goals if this was an expense
+        if (selectedType.value == 'expense') {
+          final goalsC = Get.find<GoalsController>();
+          goalsC.checkAndAlert();
+        }
+
+        // Clear form
+        resetForm();
+        selectedType.value = 'income'; // Reset to default
+
+        // Close the current screen
+        Get.back();
+
+        // Show success message
+        CustomToast.successToast('Success', 'Transaction submitted successfully');
       }
-
-      // Clear form
-      resetForm();
-      selectedType.value = 'income'; // Reset to default
-
-      // Close the current screen
-      Get.back();
-
-      // Show success message
-      CustomToast.successToast('Success', 'Transaction submitted successfully');
     } catch (e) {
       // Log the error for debugging
       debugPrint("Error in addResource: $e");
 
-      // Show error message if transaction submission fails
-      CustomToast.errorToast('Failure', "Failed to submit transaction");
+      if (!silent) {
+        // Show error message if transaction submission fails
+        CustomToast.errorToast('Failure', "Failed to submit transaction");
+      }
+      rethrow; // Let batch importers handle individual errors
     } finally {
       isLoading.value = false;
       isSubmitted.value = false;

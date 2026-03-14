@@ -8,6 +8,7 @@ import 'package:spendify/controller/home_controller/home_controller.dart';
 import 'package:spendify/controller/wallet_controller/wallet_controller.dart';
 import 'package:spendify/view/home/components/transaction_list.dart';
 import 'package:spendify/view/wallet/add_transaction_screen.dart';
+import 'package:spendify/view/wallet/sms_import_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -94,6 +95,27 @@ class _Header extends StatelessWidget {
                     ],
                   ),
                   const Spacer(),
+                  // SMS scan button (Android only)
+                  GestureDetector(
+                    onTap: () => Get.to(() => const SmsImportScreen(),
+                        transition: Transition.fadeIn),
+                    child: Container(
+                      width: 36,
+                      height: 36,
+                      margin: const EdgeInsets.only(right: 8),
+                      decoration: BoxDecoration(
+                        color: isDark ? AppColor.darkCard : const Color(0xFFF4F4F5),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Center(
+                        child: PhosphorIcon(
+                          PhosphorIconsLight.chatCircleText,
+                          color: textMuted,
+                          size: 16,
+                        ),
+                      ),
+                    ),
+                  ),
                   GestureDetector(
                     onTap: ctrl.toggleVisibility,
                     child: Container(

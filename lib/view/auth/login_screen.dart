@@ -91,6 +91,9 @@ class LoginScreen extends StatelessWidget {
                   border: border,
                   textPrimary: textPrimary,
                   textMuted: textMuted,
+                  autofillHints: const [AutofillHints.email],
+                  autocorrect: false,
+                  enableSuggestions: false,
                 ),
                 const SizedBox(height: 16),
 
@@ -120,6 +123,9 @@ class LoginScreen extends StatelessWidget {
                       border: border,
                       textPrimary: textPrimary,
                       textMuted: textMuted,
+                      autofillHints: const [AutofillHints.password],
+                      autocorrect: false,
+                      enableSuggestions: false,
                       suffix: GestureDetector(
                         onTap: () => controller.isHidden.value = !controller.isHidden.value,
                         child: PhosphorIcon(
@@ -169,7 +175,7 @@ class LoginScreen extends StatelessWidget {
   }
 }
 
-class _Field extends StatelessWidget {
+class _Field extends StatefulWidget {
   final TextEditingController controller;
   final String hint;
   final Color inputBg;
@@ -179,6 +185,9 @@ class _Field extends StatelessWidget {
   final bool obscure;
   final TextInputType? keyboardType;
   final Widget? suffix;
+  final List<String>? autofillHints;
+  final bool autocorrect;
+  final bool enableSuggestions;
 
   const _Field({
     required this.controller,
@@ -190,36 +199,73 @@ class _Field extends StatelessWidget {
     this.obscure = false,
     this.keyboardType,
     this.suffix,
+    this.autofillHints,
+    this.autocorrect = true,
+    this.enableSuggestions = true,
   });
 
   @override
-  Widget build(BuildContext context) => Container(
+  State<_Field> createState() => _FieldState();
+}
+
+class _FieldState extends State<_Field> {
+  final _focusNode = FocusNode();
+  bool _focused = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _focusNode.addListener(() {
+      setState(() => _focused = _focusNode.hasFocus);
+    });
+  }
+
+  @override
+  void dispose() {
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
         decoration: BoxDecoration(
-          color: inputBg,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: border),
+          color: widget.inputBg,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: _focused ? AppColor.primary : widget.border,
+            width: _focused ? 1.5 : 1.0,
+          ),
         ),
         padding: const EdgeInsets.symmetric(horizontal: 14),
         child: Row(
           children: [
             Expanded(
               child: TextField(
-                controller: controller,
-                obscureText: obscure,
-                keyboardType: keyboardType,
-                style: TextStyle(color: textPrimary, fontSize: 14),
+                controller: widget.controller,
+                focusNode: _focusNode,
+                obscureText: widget.obscure,
+                keyboardType: widget.keyboardType,
+                autocorrect: widget.autocorrect,
+                enableSuggestions: widget.enableSuggestions,
+                autofillHints: widget.autofillHints,
+                style: TextStyle(color: widget.textPrimary, fontSize: 14),
                 cursorColor: AppColor.primary,
                 decoration: InputDecoration(
                   border: InputBorder.none,
                   enabledBorder: InputBorder.none,
                   focusedBorder: InputBorder.none,
-                  hintText: hint,
-                  hintStyle: TextStyle(color: textMuted, fontSize: 14),
+                  disabledBorder: InputBorder.none,
+                  errorBorder: InputBorder.none,
+                  focusedErrorBorder: InputBorder.none,
+                  filled: false,
+                  hintText: widget.hint,
+                  hintStyle: TextStyle(color: widget.textMuted, fontSize: 14),
                   contentPadding: const EdgeInsets.symmetric(vertical: 14),
                 ),
               ),
             ),
-            if (suffix != null) ...[const SizedBox(width: 8), suffix!],
+            if (widget.suffix != null) ...[const SizedBox(width: 8), widget.suffix!],
           ],
         ),
       );
