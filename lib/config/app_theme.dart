@@ -235,10 +235,10 @@ class AppShadows {
       ];
 
   static List<BoxShadow> get primary => [
-        BoxShadow(
+        const BoxShadow(
           color: AppColor.primaryGlow,
           blurRadius: 24,
-          offset: const Offset(0, 8),
+          offset: Offset(0, 8),
           spreadRadius: 0,
         ),
       ];
@@ -282,7 +282,7 @@ class AppTheme {
       fontFamily: GoogleFonts.plusJakartaSans().fontFamily,
       scaffoldBackgroundColor: AppColor.darkBg,
       primaryColor: AppColor.primary,
-      colorScheme: ColorScheme.dark(
+      colorScheme: const ColorScheme.dark(
         primary: AppColor.primary,
         secondary: AppColor.primarySoft,
         surface: AppColor.darkSurface,
@@ -296,8 +296,8 @@ class AppTheme {
         elevation: 0,
         scrolledUnderElevation: 0,
         surfaceTintColor: Colors.transparent,
-        iconTheme: IconThemeData(color: AppColor.textPrimary),
-        actionsIconTheme: IconThemeData(color: AppColor.textSecondary),
+        iconTheme: const IconThemeData(color: AppColor.textPrimary),
+        actionsIconTheme: const IconThemeData(color: AppColor.textSecondary),
         titleTextStyle: AppTypography.heading2(AppColor.textPrimary),
         systemOverlayStyle: SystemUiOverlayStyle.light,
       ),
@@ -314,19 +314,19 @@ class AppTheme {
         fillColor: AppColor.darkSurface,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppDimens.radiusMD),
-          borderSide: BorderSide(color: AppColor.darkBorder),
+          borderSide: const BorderSide(color: AppColor.darkBorder),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppDimens.radiusMD),
-          borderSide: BorderSide(color: AppColor.darkBorder),
+          borderSide: const BorderSide(color: AppColor.darkBorder),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppDimens.radiusMD),
-          borderSide: BorderSide(color: AppColor.primary, width: 2),
+          borderSide: const BorderSide(color: AppColor.primary, width: 2),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppDimens.radiusMD),
-          borderSide: BorderSide(color: AppColor.expense),
+          borderSide: const BorderSide(color: AppColor.expense),
         ),
         hintStyle: AppTypography.body(AppColor.textTertiary),
         labelStyle: AppTypography.caption(AppColor.textSecondary),
@@ -373,7 +373,7 @@ class AppTheme {
         selectedColor: AppColor.primary,
         disabledColor: AppColor.darkCard,
         labelStyle: AppTypography.body(AppColor.textPrimary),
-        side: BorderSide(color: AppColor.darkBorder),
+        side: const BorderSide(color: AppColor.darkBorder),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppDimens.radiusMD),
         ),
@@ -397,7 +397,7 @@ class AppTheme {
           fontWeight: FontWeight.w400,
         ),
       ),
-      dividerTheme: DividerThemeData(
+      dividerTheme: const DividerThemeData(
         color: AppColor.darkBorder,
         thickness: 1,
         space: 1,
@@ -462,7 +462,7 @@ class AppTheme {
       fontFamily: GoogleFonts.plusJakartaSans().fontFamily,
       scaffoldBackgroundColor: AppColor.lightBg,
       primaryColor: AppColor.primary,
-      colorScheme: ColorScheme.light(
+      colorScheme: const ColorScheme.light(
         primary: AppColor.primary,
         secondary: AppColor.primarySoft,
         surface: AppColor.lightSurface,
@@ -476,8 +476,8 @@ class AppTheme {
         elevation: 0,
         scrolledUnderElevation: 0,
         surfaceTintColor: Colors.transparent,
-        iconTheme: IconThemeData(color: AppColor.lightTextPrimary),
-        actionsIconTheme: IconThemeData(color: AppColor.lightTextSecondary),
+        iconTheme: const IconThemeData(color: AppColor.lightTextPrimary),
+        actionsIconTheme: const IconThemeData(color: AppColor.lightTextSecondary),
         titleTextStyle: AppTypography.heading2(AppColor.lightTextPrimary),
         systemOverlayStyle: SystemUiOverlayStyle.dark,
       ),
@@ -494,19 +494,19 @@ class AppTheme {
         fillColor: AppColor.lightSurface,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppDimens.radiusMD),
-          borderSide: BorderSide(color: AppColor.lightBorder),
+          borderSide: const BorderSide(color: AppColor.lightBorder),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppDimens.radiusMD),
-          borderSide: BorderSide(color: AppColor.lightBorder),
+          borderSide: const BorderSide(color: AppColor.lightBorder),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppDimens.radiusMD),
-          borderSide: BorderSide(color: AppColor.primary, width: 2),
+          borderSide: const BorderSide(color: AppColor.primary, width: 2),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppDimens.radiusMD),
-          borderSide: BorderSide(color: AppColor.expense),
+          borderSide: const BorderSide(color: AppColor.expense),
         ),
         hintStyle: AppTypography.body(AppColor.lightTextTertiary),
         labelStyle: AppTypography.caption(AppColor.lightTextSecondary),
@@ -552,7 +552,7 @@ class AppTheme {
         backgroundColor: AppColor.lightBg,
         selectedColor: AppColor.primary,
         labelStyle: AppTypography.body(AppColor.lightTextPrimary),
-        side: BorderSide(color: AppColor.lightBorder),
+        side: const BorderSide(color: AppColor.lightBorder),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppDimens.radiusMD),
         ),
@@ -576,7 +576,7 @@ class AppTheme {
           fontWeight: FontWeight.w400,
         ),
       ),
-      dividerTheme: DividerThemeData(
+      dividerTheme: const DividerThemeData(
         color: AppColor.lightBorder,
         thickness: 1,
         space: 1,
@@ -617,7 +617,7 @@ class AppTheme {
           borderRadius: BorderRadius.circular(AppDimens.radiusMD),
         ),
       ),
-      iconTheme: IconThemeData(color: AppColor.lightTextSecondary),
+      iconTheme: const IconThemeData(color: AppColor.lightTextSecondary),
       textSelectionTheme: TextSelectionThemeData(
         cursorColor: AppColor.primary,
         selectionColor: AppColor.primary.withOpacity(0.2),

@@ -7,6 +7,7 @@ import 'package:spendify/controller/wallet_controller/wallet_controller.dart';
 import 'package:spendify/main.dart';
 import 'package:spendify/model/categories_model.dart';
 import 'package:spendify/model/transaction_model.dart';
+import 'package:spendify/services/widget_service.dart';
 import 'package:spendify/utils/utils.dart';
 import 'package:spendify/widgets/toast/custom_toast.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -127,7 +128,9 @@ class HomeController extends GetxController {
     } catch (error) {
       CustomToast.errorToast("Error", 'Unexpected error occurred');
     } finally {
-      prefs.clear();
+      await prefs.remove('name');
+      await prefs.remove('email');
+      await prefs.remove('walkthrough_shown_v1');
       Get.offAllNamed(Routes.LOGIN);
     }
   }
@@ -386,6 +389,24 @@ class HomeController extends GetxController {
       // Set total balance as income - expense
       totalBalance.value = totalIncome.value - totalExpense.value;
       debugPrint("Total Balance: $totalBalance");
+
+      // Compute this month's spending for the widget
+      final now = DateTime.now();
+      final monthStart = DateTime(now.year, now.month, 1);
+      final monthSpent = allTransactions
+          .where((t) {
+            final d = DateTime.tryParse(t['date'] ?? '');
+            return d != null && !d.isBefore(monthStart) && t['type'] == 'expense';
+          })
+          .fold(0.0, (s, t) => s + ((t['amount'] as num?)?.toDouble() ?? 0.0));
+
+      WidgetService.update(
+        balance: totalBalance.value,
+        monthSpent: monthSpent,
+        monthlyBudget: monthlyBudget.value,
+        currencySymbol: currencySymbol.value,
+        userName: userName.value,
+      );
     } catch (e) {
       debugPrint('Error fetching total balance data: $e');
     }

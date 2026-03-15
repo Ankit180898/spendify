@@ -87,7 +87,7 @@ class GoalsController extends GetxController {
       end = DateTime(now.year, now.month + 1, 0);
     }
 
-    return _homeC.transactions
+    return _homeC.allTransactions
         .where((t) {
           if (t['type'] != 'expense') return false;
           if (goal.category != 'All' && t['category'] != goal.category) {
@@ -109,13 +109,13 @@ class GoalsController extends GetxController {
 
       final sym = Get.find<HomeController>().currencySymbol.value;
       if (pct >= 1.0) {
-        final title = 'Limit exceeded!';
+        const title = 'Limit exceeded!';
         final body =
             '$label has crossed your $sym${goal.limitAmount.toStringAsFixed(0)} ${goal.period} limit';
         CustomToast.errorToast(title, body);
         NotificationService.showBudgetAlert(title: title, body: body);
       } else if (pct >= 0.9) {
-        final title = 'Approaching limit';
+        const title = 'Approaching limit';
         final body =
             '$label is at ${(pct * 100).toStringAsFixed(0)}% of your $sym${goal.limitAmount.toStringAsFixed(0)} ${goal.period} limit';
         CustomToast.errorToast(title, body);

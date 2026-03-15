@@ -127,4 +127,41 @@ class NotificationService {
     await _plugin.cancel(goalId.hashCode.abs() % 2000000000);
     await _plugin.cancel((goalId.hashCode.abs() % 2000000000) + 1);
   }
+
+  // ── Log reminder (reschedule on every transaction save) ────────────────────
+
+  static const _logReminderId = 999999;
+  static const _logChannelId = 'log_reminders';
+
+  /// Cancel any pending log reminder and schedule a fresh one N days from now.
+  /// Call this every time a transaction is successfully saved.
+  static Future<void> rescheduleLogReminder({int afterDays = 3}) async {
+    await _plugin.cancel(_logReminderId);
+
+    final fireAt = DateTime.now().add(Duration(days: afterDays));
+    final scheduled = DateTime(fireAt.year, fireAt.month, fireAt.day, 10, 0);
+
+    const details = NotificationDetails(
+      android: AndroidNotificationDetails(
+        _logChannelId,
+        'Log Reminders',
+        channelDescription: 'Reminds you to log transactions regularly',
+        importance: Importance.defaultImportance,
+        priority: Priority.defaultPriority,
+        icon: '@mipmap/ic_launcher',
+      ),
+      iOS: DarwinNotificationDetails(),
+    );
+
+    await _plugin.zonedSchedule(
+      _logReminderId,
+      'Quick check-in 📝',
+      'You haven\'t logged in $afterDays days — tap to add a transaction.',
+      tz.TZDateTime.from(scheduled, tz.local),
+      details,
+      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+      uiLocalNotificationDateInterpretation:
+          UILocalNotificationDateInterpretation.absoluteTime,
+    );
+  }
 }

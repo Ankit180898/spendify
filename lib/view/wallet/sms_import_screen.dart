@@ -10,6 +10,7 @@ import 'package:spendify/controller/sms_controller/sms_controller.dart';
 import 'package:spendify/controller/wallet_controller/wallet_controller.dart';
 import 'package:spendify/services/sms_parser_service.dart';
 import 'package:spendify/utils/utils.dart';
+import 'package:spendify/main.dart';
 
 class SmsImportScreen extends StatefulWidget {
   const SmsImportScreen({super.key});
@@ -36,45 +37,104 @@ Future<void> _importSelected() async {
   if (selected.isEmpty) return;
 
   setState(() => _importing = true);
-  int successCount = 0;
-  final List<SmsTransaction> successfullyImported = [];
 
-  for (final tx in selected) {
-    try {
-      _txCtrl.amountController.text = tx.amount.toString();
-      _txCtrl.titleController.text = tx.merchant;
-      _txCtrl.selectedCategory.value = tx.category;
-      _txCtrl.selectedType.value = tx.type;
-      _txCtrl.selectedDate.value = tx.date.toIso8601String();
-      await _txCtrl.addResource(silent: true);
-      successCount++;
-      successfullyImported.add(tx);
-    } catch (_) {}
+  final currentUser = supabaseC.auth.currentUser;
+  if (currentUser == null) {
+    setState(() => _importing = false);
+    return;
   }
 
-  await _smsCtrl.markAsImported(successfullyImported);
-  _smsCtrl.removeImported(successfullyImported);
+  try {
+    final homeC = Get.find<HomeController>();
 
-  setState(() => _importing = false);
-  _txCtrl.resetForm();
+    // Build a set of existing transaction keys from Supabase to prevent duplicates
+    // even after app reinstall / clearing SharedPreferences.
+    final existingKeys = <String>{};
+    for (final t in homeC.allTransactions) {
+      final d = DateTime.tryParse(t['date'] ?? '');
+      if (d == null) continue;
+      final dateStr = '${d.year}${d.month.toString().padLeft(2, '0')}${d.day.toString().padLeft(2, '0')}';
+      existingKeys.add('${t['amount']}|${(t['description'] as String? ?? '').toLowerCase().trim()}|$dateStr');
+    }
 
-  // ✅ This refreshes transactions list AND balance — home screen updates correctly
-  await Get.find<HomeController>().getTransactions();
+    // Filter out any that already exist in Supabase
+    final toInsert = selected.where((tx) {
+      final d = tx.date;
+      final dateStr = '${d.year}${d.month.toString().padLeft(2, '0')}${d.day.toString().padLeft(2, '0')}';
+      final key = '${tx.amount}|${tx.merchant.toLowerCase().trim()}|$dateStr';
+      return !existingKeys.contains(key);
+    }).toList();
 
-  if (_smsCtrl.detectedTransactions.isEmpty) {
-    Get.back();
+    if (toInsert.isEmpty) {
+      await _smsCtrl.markAsImported(selected);
+      _smsCtrl.removeImported(selected);
+      setState(() => _importing = false);
+      Get.snackbar('Up to date', 'All selected transactions already exist.',
+          snackPosition: SnackPosition.BOTTOM,
+          margin: const EdgeInsets.all(16),
+          borderRadius: 12);
+      return;
+    }
+
+    // Batch insert — one network call instead of N
+    final rows = toInsert.map((tx) => {
+      'user_id': currentUser.id,
+      'amount': tx.amount,
+      'description': tx.merchant,
+      'type': tx.type,
+      'category': tx.category,
+      'date': tx.date.toIso8601String().split('T')[0],
+    }).toList();
+
+    await supabaseC.from('transactions').insert(rows);
+
+    // Update balance once with the net delta
+    double incomeTotal = 0, expenseTotal = 0;
+    for (final tx in toInsert) {
+      if (tx.type == 'income') {
+        incomeTotal += tx.amount;
+      } else {
+        expenseTotal += tx.amount;
+      }
+    }
+    final netDelta = incomeTotal - expenseTotal;
+    final balanceResp = await supabaseC
+        .from('users')
+        .select('balance')
+        .eq('id', currentUser.id)
+        .single();
+    final currentBalance = ((balanceResp['balance'] as num?)?.toDouble()) ?? 0.0;
+    await supabaseC.from('users').update({'balance': currentBalance + netDelta}).eq('id', currentUser.id);
+    homeC.totalBalance.value = currentBalance + netDelta;
+
+    await _smsCtrl.markAsImported(selected);
+    _smsCtrl.removeImported(selected);
+
+    await homeC.fetchTotalBalanceData();
+    await homeC.getTransactions();
+
+    if (_smsCtrl.detectedTransactions.isEmpty) Get.back();
+
+    final count = toInsert.length;
+    Get.snackbar(
+      'Imported',
+      '$count transaction${count == 1 ? '' : 's'} added successfully.',
+      snackPosition: SnackPosition.BOTTOM,
+      backgroundColor: AppColor.income,
+      colorText: Colors.white,
+      margin: const EdgeInsets.all(16),
+      borderRadius: 12,
+      duration: const Duration(seconds: 3),
+    );
+  } catch (e) {
+    Get.snackbar('Error', 'Import failed: $e',
+        snackPosition: SnackPosition.BOTTOM,
+        margin: const EdgeInsets.all(16),
+        borderRadius: 12);
+  } finally {
+    setState(() => _importing = false);
+    _txCtrl.resetForm();
   }
-
-  Get.snackbar(
-    'Imported',
-    '$successCount transaction${successCount == 1 ? '' : 's'} added successfully.',
-    snackPosition: SnackPosition.BOTTOM,
-    backgroundColor: AppColor.income,
-    colorText: Colors.white,
-    margin: const EdgeInsets.all(16),
-    borderRadius: 12,
-    duration: const Duration(seconds: 3),
-  );
 }
   @override
   Widget build(BuildContext context) {

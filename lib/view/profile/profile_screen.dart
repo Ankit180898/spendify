@@ -123,10 +123,14 @@ class ProfileScreen extends StatelessWidget {
             Obx(() => _SettingRow(
               icon: themeCtrl.isDarkMode ? PhosphorIconsLight.moon : PhosphorIconsLight.sun,
               label: 'Appearance',
-              subtitle: themeCtrl.isDarkMode ? 'Dark mode' : 'Light mode',
-              trailing: Switch.adaptive(
+              trailing: Switch(
                 value: themeCtrl.isDarkMode,
                 onChanged: (_) => themeCtrl.toggleTheme(),
+                activeThumbColor: Colors.white,
+                activeTrackColor: AppColor.primary,
+                inactiveThumbColor: Colors.white,
+                inactiveTrackColor: isDark ? AppColor.darkElevated : const Color(0xFFE4E4E7),
+                trackOutlineColor: WidgetStateProperty.all(Colors.transparent),
               ),
               textPrimary: textPrimary,
               textMuted: textMuted,
@@ -208,7 +212,7 @@ class _StatBox extends StatelessWidget {
 class _SettingRow extends StatelessWidget {
   final PhosphorIconData icon;
   final String label;
-  final String subtitle;
+  final String? subtitle;
   final Widget trailing;
   final Color textPrimary;
   final Color textMuted;
@@ -220,7 +224,7 @@ class _SettingRow extends StatelessWidget {
   const _SettingRow({
     required this.icon,
     required this.label,
-    required this.subtitle,
+    this.subtitle,
     required this.trailing,
     required this.textPrimary,
     required this.textMuted,
@@ -244,7 +248,8 @@ class _SettingRow extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(label, style: TextStyle(color: labelColor ?? textPrimary, fontSize: 14, fontWeight: FontWeight.w500)),
-                Text(subtitle, style: TextStyle(color: textMuted, fontSize: 12)),
+                if (subtitle != null && subtitle!.isNotEmpty)
+                  Text(subtitle!, style: TextStyle(color: textMuted, fontSize: 12)),
               ],
             ),
           ),

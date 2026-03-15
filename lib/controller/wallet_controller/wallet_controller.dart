@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:spendify/controller/goals_controller/goals_controller.dart';
 import 'package:spendify/controller/home_controller/home_controller.dart';
 import 'package:spendify/main.dart';
+import 'package:spendify/services/notification_service.dart';
 import 'package:spendify/widgets/toast/custom_toast.dart';
 
 class TransactionController extends GetxController {
@@ -83,7 +84,39 @@ class TransactionController extends GetxController {
         if (selectedType.value == 'expense') {
           final goalsC = Get.find<GoalsController>();
           goalsC.checkAndAlert();
+
+          // Check monthly budget threshold crossings
+          final budget = homeC.monthlyBudget.value;
+          if (budget > 0) {
+            final now = DateTime.now();
+            final monthStart = DateTime(now.year, now.month, 1);
+            final monthSpent = homeC.allTransactions
+                .where((t) {
+                  final d = DateTime.tryParse(t['date'] ?? '');
+                  return d != null &&
+                      !d.isBefore(monthStart) &&
+                      t['type'] == 'expense';
+                })
+                .fold(0.0, (s, t) => s + ((t['amount'] as num?)?.toDouble() ?? 0.0));
+            final prevSpent = monthSpent - amount;
+            final sym = homeC.currencySymbol.value;
+
+            if (prevSpent / budget < 1.0 && monthSpent / budget >= 1.0) {
+              NotificationService.showBudgetAlert(
+                title: 'Monthly budget exceeded!',
+                body: 'You\'ve gone over your $sym${budget.toStringAsFixed(0)} monthly budget.',
+              );
+            } else if (prevSpent / budget < 0.8 && monthSpent / budget >= 0.8) {
+              NotificationService.showBudgetAlert(
+                title: '80% of monthly budget used',
+                body: '$sym${(budget - monthSpent).toStringAsFixed(0)} left for the rest of the month.',
+              );
+            }
+          }
         }
+
+        // Reset log reminder — fires in 3 days if no new transaction is logged
+        NotificationService.rescheduleLogReminder();
 
         // Clear form
         resetForm();

@@ -177,6 +177,7 @@ class _BudgetTab extends StatelessWidget {
           title: 'No budget set yet',
           subtitle:
               'Set a monthly budget in your preferences, or add category spending limits here.',
+          cta: 'Tap + to add a limit · Swipe left to delete',
           textPrimary: textPrimary,
           textSecondary: textSecondary,
         );
@@ -704,31 +705,51 @@ class _SavingsTab extends StatelessWidget {
           title: 'No savings goals yet',
           subtitle:
               'Create a goal, set a target amount, and track your\nprogress as you save.',
+          cta: 'Tap + to add a goal · Swipe left to delete',
           textPrimary: textPrimary,
           textSecondary: textSecondary,
         );
       }
 
-      return RefreshIndicator(
-        onRefresh: controller.fetchGoals,
-        child: ListView.separated(
-          padding:
-              const EdgeInsets.all(AppDimens.spaceLG).copyWith(bottom: 100),
-          itemCount: controller.goals.length,
-          separatorBuilder: (_, __) =>
-              const SizedBox(height: AppDimens.spaceMD),
-          itemBuilder: (_, index) {
-            final goal = controller.goals[index];
-            return _SavingsGoalCard(
-              goal: goal,
-              controller: controller,
-              isDark: isDark,
-              textPrimary: textPrimary,
-              textSecondary: textSecondary,
-              onAddMoney: () => _showAddMoneySheet(context, controller, goal),
-            );
-          },
-        ),
+      return Column(
+        children: [
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: controller.fetchGoals,
+              child: ListView.separated(
+                padding: const EdgeInsets.all(AppDimens.spaceLG)
+                    .copyWith(bottom: AppDimens.spaceMD),
+                itemCount: controller.goals.length,
+                separatorBuilder: (_, __) =>
+                    const SizedBox(height: AppDimens.spaceMD),
+                itemBuilder: (_, index) {
+                  final goal = controller.goals[index];
+                  return _SavingsGoalCard(
+                    goal: goal,
+                    controller: controller,
+                    isDark: isDark,
+                    textPrimary: textPrimary,
+                    textSecondary: textSecondary,
+                    onAddMoney: () =>
+                        _showAddMoneySheet(context, controller, goal),
+                  );
+                },
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+                AppDimens.spaceLG, 0, AppDimens.spaceLG, AppDimens.spaceLG),
+            child: Text(
+              'Swipe left on a card to delete a savings goal.',
+              style: AppTypography.caption(isDark
+                  ? AppColor.textTertiary
+                  : AppColor.lightTextTertiary),
+              textAlign: TextAlign.center,
+            ),
+          ),
+          const SizedBox(height: 80),
+        ],
       );
     });
   }
@@ -940,6 +961,7 @@ class _EmptyView extends StatelessWidget {
   final PhosphorIconData icon;
   final String title;
   final String subtitle;
+  final String cta;
   final Color textPrimary;
   final Color textSecondary;
 
@@ -947,6 +969,7 @@ class _EmptyView extends StatelessWidget {
     required this.icon,
     required this.title,
     required this.subtitle,
+    required this.cta,
     required this.textPrimary,
     required this.textSecondary,
   });
@@ -976,8 +999,9 @@ class _EmptyView extends StatelessWidget {
                 style: AppTypography.body(textSecondary),
                 textAlign: TextAlign.center),
             const SizedBox(height: AppDimens.spaceSM),
-            Text('Tap + to get started',
-                style: AppTypography.captionSemiBold(AppColor.primary)),
+            Text(cta,
+                style: AppTypography.captionSemiBold(AppColor.primary),
+                textAlign: TextAlign.center),
           ],
         ),
       ),

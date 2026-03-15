@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:spendify/config/app_color.dart';
 import 'package:spendify/controller/auth_controller/login_controller.dart';
 
@@ -36,18 +35,32 @@ class LoginScreen extends StatelessWidget {
                 const Spacer(flex: 2),
 
                 // Logo
-                Container(
-                  width: 64,
-                  height: 64,
-                  decoration: BoxDecoration(
-                    color: AppColor.primary,
-                    borderRadius: BorderRadius.circular(18),
-                  ),
-                  child: const PhosphorIcon(
-                    PhosphorIconsLight.wallet,
-                    color: Colors.white,
-                    size: 28,
-                  ),
+                Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Container(
+                      width: 130,
+                      height: 130,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: AppColor.primary.withValues(alpha: 0.10),
+                      ),
+                    ),
+                    Container(
+                      width: 96,
+                      height: 96,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: AppColor.primary.withValues(alpha: 0.16),
+                      ),
+                    ),
+                    Image.asset(
+                      'assets/app_logo.png',
+                      width: 100,
+                      height: 100,
+                      fit: BoxFit.contain,
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 24),
 

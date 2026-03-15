@@ -53,18 +53,11 @@ class GetStartedScreen extends StatelessWidget {
                                 color: AppColor.primary.withValues(alpha: 0.16),
                               ),
                             ),
-                            Container(
-                              width: 68,
-                              height: 68,
-                              decoration: BoxDecoration(
-                                color: AppColor.primary,
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: const PhosphorIcon(
-                                PhosphorIconsLight.wallet,
-                                color: Colors.white,
-                                size: 30,
-                              ),
+                            Image.asset(
+                              'assets/app_logo.png',
+                              width: 100,
+                              height: 100,
+                              fit: BoxFit.contain,
                             ),
                           ],
                         ),
@@ -95,13 +88,13 @@ class GetStartedScreen extends StatelessWidget {
                 ),
 
                 // ── Feature pills ──────────────────────────────────────────
-                Row(
+                const Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     _FeaturePill(icon: PhosphorIconsLight.chartLine, label: 'Analytics'),
-                    const SizedBox(width: 8),
+                    SizedBox(width: 8),
                     _FeaturePill(icon: PhosphorIconsLight.target, label: 'Budgets'),
-                    const SizedBox(width: 8),
+                    SizedBox(width: 8),
                     _FeaturePill(icon: PhosphorIconsLight.piggyBank, label: 'Savings'),
                   ],
                 ),

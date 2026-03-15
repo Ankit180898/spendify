@@ -4,7 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_sms_inbox/flutter_sms_inbox.dart';
 import 'package:get/get.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:spendify/main.dart';
 import 'package:spendify/services/sms_parser_service.dart';
 
 // Wrapper so we can carry the raw SMS timestamp into the isolate alongside the body
@@ -42,21 +42,10 @@ class SmsController extends GetxController {
   final errorMessage = ''.obs;
 
   static const _scanDays = 30;
-  static const _prefKeyHashes = 'sms_imported_hashes';
-  static const _prefKeyTxKeys = 'sms_imported_tx_keys';
 
-  // Raw-message hashes (exact match)
+  // In-memory sets populated from Supabase at scan time
   final Set<String> _importedHashes = {};
-  // Semantic keys: amount|merchant|date — catches different SMS text for the same transaction
   final Set<String> _importedTxKeys = {};
-
-  late final Future<void> _dataReady;
-
-  @override
-  void onInit() {
-    super.onInit();
-    _dataReady = _loadImportedData();
-  }
 
   @override
   void onClose() {
@@ -67,19 +56,47 @@ class SmsController extends GetxController {
   }
 
   Future<void> _loadImportedData() async {
-    final prefs = await SharedPreferences.getInstance();
-    _importedHashes.addAll(prefs.getStringList(_prefKeyHashes) ?? []);
-    _importedTxKeys.addAll(prefs.getStringList(_prefKeyTxKeys) ?? []);
+    final uid = supabaseC.auth.currentUser?.id;
+    if (uid == null) return;
+
+    _importedHashes.clear();
+    _importedTxKeys.clear();
+
+    final rows = await supabaseC
+        .from('sms_imported_hashes')
+        .select('sms_hash, tx_key')
+        .eq('user_id', uid);
+
+    for (final row in rows) {
+      if (row['sms_hash'] != null) _importedHashes.add(row['sms_hash'] as String);
+      if (row['tx_key'] != null) _importedTxKeys.add(row['tx_key'] as String);
+    }
   }
 
   Future<void> markAsImported(List<SmsTransaction> imported) async {
+    final uid = supabaseC.auth.currentUser?.id;
+    if (uid == null) return;
+
+    final newRows = <Map<String, dynamic>>[];
     for (final tx in imported) {
-      _importedHashes.add(_hashOf(tx.rawMessage));
-      _importedTxKeys.add(_txKeyOf(tx));
+      final hash = _hashOf(tx.rawMessage);
+      final key = _txKeyOf(tx);
+
+      // Skip rows we already know about to avoid duplicates
+      if (_importedHashes.contains(hash)) continue;
+
+      _importedHashes.add(hash);
+      _importedTxKeys.add(key);
+      newRows.add({
+        'user_id': uid,
+        'sms_hash': hash,
+        'tx_key': key,
+      });
     }
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setStringList(_prefKeyHashes, _importedHashes.toList());
-    await prefs.setStringList(_prefKeyTxKeys, _importedTxKeys.toList());
+
+    if (newRows.isNotEmpty) {
+      await supabaseC.from('sms_imported_hashes').insert(newRows);
+    }
   }
 
   /// Remove successfully imported transactions from the visible list immediately,
@@ -115,7 +132,6 @@ class SmsController extends GetxController {
     detectedTransactions.clear();
 
     try {
-      await _dataReady; // ensure imported data is loaded before filtering
       final status = await Permission.sms.request();
       if (!status.isGranted) {
         hasPermission.value = false;
@@ -125,19 +141,24 @@ class SmsController extends GetxController {
       }
       hasPermission.value = true;
 
+      // Load imported hashes fresh from Supabase each scan
+      await _loadImportedData();
+
       final cutoff =
           DateTime.now().subtract(const Duration(days: _scanDays));
 
       final query = SmsQuery();
+      // Use a high count — some devices return oldest-first so a low limit
+      // would miss recent messages.
       final messages = await query.querySms(
         kinds: [SmsQueryKind.inbox],
-        count: 500,
+        count: 2000,
       );
 
       final financialSenders = RegExp(
         r'(hdfc|sbi|icici|axis|kotak|pnb|bob|canara|union|indus|yes bank|'
         r'rbl|idfc|au bank|federal|bandhan|paytm|phonepe|gpay|bhim|upi|'
-        r'amex|citibank|hsbc|dbs|swiggy|zomato|amazon|flipkart)',
+        r'amex|citibank|hsbc|dbs|swiggy|zomato|amazon|flipkart|neft|imps|rtgs)',
         caseSensitive: false,
       );
 
@@ -152,12 +173,21 @@ class SmsController extends GetxController {
         if (_importedHashes.contains(_hashOf(body))) continue;
 
         final address = m.address ?? '';
+        final lower = body.toLowerCase();
         final isFinancial = financialSenders.hasMatch(address) ||
             financialSenders.hasMatch(body) ||
-            body.toLowerCase().contains('debited') ||
-            body.toLowerCase().contains('credited') ||
-            body.toLowerCase().contains('rs.') ||
-            body.toLowerCase().contains('inr');
+            lower.contains('debited') ||
+            lower.contains('credited') ||
+            lower.contains('debit') ||
+            lower.contains('credit') ||
+            lower.contains('rs.') ||
+            lower.contains('inr') ||
+            lower.contains('₹') ||
+            lower.contains('txn') ||
+            lower.contains('transaction') ||
+            lower.contains('transferred') ||
+            lower.contains('payment of') ||
+            lower.contains('paid');
 
         if (isFinancial) {
           payloads.add(_SmsPayload(

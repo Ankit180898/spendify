@@ -23,7 +23,6 @@ class SplashController extends GetxController {
     final session = supabaseC.auth.currentSession;
 
     if (session != null) {
-      // Check if onboarding is complete
       try {
         final profile = await supabaseC
             .from('user_profiles')
@@ -37,8 +36,8 @@ class SplashController extends GetxController {
           Get.offAllNamed(Routes.ONBOARDING);
         }
       } catch (_) {
-        // If table doesn't exist yet, go to onboarding
-        Get.offAllNamed(Routes.ONBOARDING);
+        // Offline or table error — user is logged in so go home, not onboarding
+        Get.offAll(const BottomNav());
       }
     } else {
       Get.offAllNamed(Routes.GETSTARTED);

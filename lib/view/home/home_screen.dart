@@ -11,6 +11,7 @@ import 'package:spendify/controller/savings_controller/savings_controller.dart';
 import 'package:spendify/controller/wallet_controller/wallet_controller.dart';
 import 'package:spendify/controller/walkthrough_controller.dart';
 import 'package:spendify/model/savings_goal_model.dart';
+import 'package:spendify/services/insights_service.dart';
 import 'package:spendify/view/home/components/transaction_list.dart';
 import 'package:spendify/view/wallet/add_transaction_screen.dart';
 import 'package:spendify/view/wallet/sms_import_screen.dart';
@@ -36,6 +37,7 @@ class HomeScreen extends StatelessWidget {
         slivers: [
           SliverToBoxAdapter(child: _Header(isDark: isDark, ctrl: ctrl)),
           SliverToBoxAdapter(child: _MonthSummary(isDark: isDark, ctrl: ctrl)),
+          SliverToBoxAdapter(child: _InsightsStrip(isDark: isDark, ctrl: ctrl)),
           SliverToBoxAdapter(child: _BudgetAlertsBanner(isDark: isDark)),
           SliverToBoxAdapter(child: _UrgentGoalsBanner(isDark: isDark)),
           const SliverToBoxAdapter(child: TransactionsContent(0)),
@@ -599,6 +601,153 @@ class _QuickAction extends StatelessWidget {
           ),
         ),
       );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Insights strip — horizontally scrollable insight cards
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _InsightsStrip extends StatelessWidget {
+  final bool isDark;
+  final HomeController ctrl;
+  const _InsightsStrip({required this.isDark, required this.ctrl});
+
+  @override
+  Widget build(BuildContext context) {
+    SavingsController? savingsCtrl;
+    try {
+      savingsCtrl = Get.find<SavingsController>();
+    } catch (_) {}
+
+    final textPrimary = isDark ? AppColor.textPrimary : AppColor.lightTextPrimary;
+    final divColor = isDark ? AppColor.darkBorder : const Color(0xFFF4F4F5);
+
+    return Obx(() {
+      final insights = InsightsService.compute(
+        allTransactions: ctrl.allTransactions.toList(),
+        monthlyBudget: ctrl.monthlyBudget.value,
+        sym: ctrl.currencySymbol.value,
+        savingsGoals: savingsCtrl?.goals.toList() ?? [],
+      );
+
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
+            child: Text('Insights',
+                style: TextStyle(
+                    color: textPrimary,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600)),
+          ),
+          SizedBox(
+            height: 116,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              itemCount: insights.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 10),
+              itemBuilder: (_, i) =>
+                  _InsightCard(insight: insights[i], isDark: isDark),
+            ),
+          ),
+          const SizedBox(height: 20),
+          Divider(height: 1, color: divColor),
+        ],
+      );
+    });
+  }
+}
+
+class _InsightCard extends StatelessWidget {
+  final Insight insight;
+  final bool isDark;
+  const _InsightCard({required this.insight, required this.isDark});
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = insight.accentColor;
+    final cardBg = isDark ? AppColor.darkCard : const Color(0xFFF4F4F5);
+    final textPrimary = isDark ? AppColor.textPrimary : AppColor.lightTextPrimary;
+    final textMuted = isDark ? AppColor.textSecondary : AppColor.lightTextSecondary;
+
+    final typeLabel = switch (insight.type) {
+      InsightType.warning => 'Watch out',
+      InsightType.positive => 'Nice',
+      InsightType.info => 'Info',
+    };
+
+    return Container(
+      width: 220,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: accent.withValues(alpha: 0.3), width: 1.5),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 30,
+                height: 30,
+                decoration: BoxDecoration(
+                  color: accent.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Center(
+                  child: Text(insight.emoji,
+                      style: const TextStyle(fontSize: 14)),
+                ),
+              ),
+              const Spacer(),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                decoration: BoxDecoration(
+                  color: accent.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(100),
+                ),
+                child: Text(
+                  typeLabel,
+                  style: TextStyle(
+                      color: accent,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            insight.title,
+            style: TextStyle(
+              color: textPrimary,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              letterSpacing: -0.2,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 3),
+          Text(
+            insight.body,
+            style: TextStyle(
+              color: textMuted,
+              fontSize: 11,
+              height: 1.4,
+            ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

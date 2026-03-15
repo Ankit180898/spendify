@@ -28,6 +28,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   late final _isExpense = (widget.initialType == 'expense').obs;
   final _amount = ''.obs;
   final _noteFocus = FocusNode();
+  final _scrollCtrl = ScrollController();
   bool _noteVisible = false;
   bool _noteAutofocus = false; // true only when user explicitly taps "Add a note"
 
@@ -89,6 +90,24 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     }
     if (result.category != null) {
       controller.selectedCategory.value = result.category!;
+      // Warn if confidence is below 60% so the user knows to double-check
+      if ((result.categoryConfidence ?? 1.0) < 0.6) {
+        Future.microtask(() => Get.snackbar(
+              'Check category',
+              'Voice picked "${result.category}" — tap another if wrong',
+              snackPosition: SnackPosition.TOP,
+              duration: const Duration(seconds: 3),
+              backgroundColor: AppColor.darkCard,
+              colorText: AppColor.textPrimary,
+              margin: const EdgeInsets.all(12),
+              borderRadius: 12,
+              icon: const PhosphorIcon(
+                PhosphorIconsLight.warningCircle,
+                color: AppColor.warning,
+                size: 20,
+              ),
+            ));
+      }
     }
     if (result.description != null && result.description!.isNotEmpty) {
       controller.titleController.text = result.description!;
@@ -133,8 +152,21 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   @override
   void dispose() {
     _noteFocus.dispose();
+    _scrollCtrl.dispose();
     if (_speech.isListening) _speech.cancel();
     super.dispose();
+  }
+
+  void _scrollToBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollCtrl.hasClients) {
+        _scrollCtrl.animateTo(
+          _scrollCtrl.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeOut,
+        );
+      }
+    });
   }
 
   void _tapKey(String key) {
@@ -201,6 +233,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
               // ── Scrollable content ───────────────────────────────────────
               Expanded(
                 child: SingleChildScrollView(
+                  controller: _scrollCtrl,
                   child: Column(
                     children: [
                       // Header
@@ -352,10 +385,13 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                                     PhosphorIconsLight.plus,
                                     color: textMuted,
                                     size: 15),
-                                onTap: () => setState(() {
-                                  _noteVisible = true;
-                                  _noteAutofocus = true;
-                                }),
+                                onTap: () {
+                                  setState(() {
+                                    _noteVisible = true;
+                                    _noteAutofocus = true;
+                                  });
+                                  _scrollToBottom();
+                                },
                               )
                             else
                               _buildInfoRow(

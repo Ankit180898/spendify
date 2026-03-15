@@ -8,6 +8,7 @@ import 'package:spendify/config/app_theme.dart';
 import 'package:spendify/controller/home_controller/home_controller.dart';
 import 'package:spendify/model/categories_model.dart';
 import 'package:spendify/utils/utils.dart';
+import 'package:spendify/view/wallet/all_transaction_screen.dart';
 import 'package:spendify/view/wallet/transaction_details_screen.dart';
 
 class StatisticsScreen extends StatefulWidget {
@@ -46,6 +47,111 @@ class _StatisticsScreenState extends State<StatisticsScreen>
     if (_month.year == now.year && _month.month == now.month) return;
     HapticFeedback.lightImpact();
     setState(() => _month = DateTime(_month.year, _month.month + 1));
+  }
+
+  Future<void> _pickMonth() async {
+    final now = DateTime.now();
+    int pickerYear = _month.year;
+
+    // Build a set of "yyyy-M" keys for months that have at least one transaction
+    final allTx = Get.find<HomeController>().allTransactions;
+    final activeMonths = <String>{};
+    for (final t in allTx) {
+      final d = DateTime.tryParse(t['date'] ?? '');
+      if (d != null) activeMonths.add('${d.year}-${d.month}');
+    }
+
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) {
+        final isDark = Theme.of(ctx).brightness == Brightness.dark;
+        final bg = isDark ? AppColor.darkCard : Colors.white;
+        final textPrimary = isDark ? AppColor.textPrimary : const Color(0xFF09090B);
+        final textMuted = isDark ? AppColor.textSecondary : const Color(0xFF71717A);
+        final months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+        return StatefulBuilder(builder: (ctx, setLocal) {
+          return Dialog(
+            backgroundColor: bg,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      IconButton(
+                        onPressed: () => setLocal(() => pickerYear--),
+                        icon: const PhosphorIcon(PhosphorIconsLight.caretLeft, color: AppColor.primary, size: 16),
+                      ),
+                      Text('$pickerYear', style: TextStyle(color: textPrimary, fontSize: 16, fontWeight: FontWeight.w600)),
+                      IconButton(
+                        onPressed: pickerYear >= now.year ? null : () => setLocal(() => pickerYear++),
+                        icon: PhosphorIcon(PhosphorIconsLight.caretRight,
+                            color: pickerYear >= now.year ? textMuted.withValues(alpha: 0.3) : AppColor.primary, size: 16),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  GridView.count(
+                    crossAxisCount: 3,
+                    shrinkWrap: true,
+                    childAspectRatio: 2.0,
+                    mainAxisSpacing: 8,
+                    crossAxisSpacing: 8,
+                    physics: const NeverScrollableScrollPhysics(),
+                    children: List.generate(12, (i) {
+                      final isFuture = pickerYear == now.year && (i + 1) > now.month;
+                      final isSelected = pickerYear == _month.year && (i + 1) == _month.month;
+                      final hasData = activeMonths.contains('$pickerYear-${i + 1}');
+                      return GestureDetector(
+                        onTap: isFuture ? null : () {
+                          setState(() => _month = DateTime(pickerYear, i + 1));
+                          Navigator.of(ctx).pop();
+                        },
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 150),
+                          decoration: BoxDecoration(
+                            color: isSelected ? AppColor.primary : (isDark ? AppColor.darkBg : const Color(0xFFF4F4F5)),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                months[i],
+                                style: TextStyle(
+                                  color: isFuture ? textMuted.withValues(alpha: 0.3) : (isSelected ? Colors.white : textPrimary),
+                                  fontSize: 13,
+                                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                                ),
+                              ),
+                              const SizedBox(height: 3),
+                              Container(
+                                width: 4,
+                                height: 4,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: hasData && !isFuture
+                                      ? (isSelected ? Colors.white.withValues(alpha: 0.7) : AppColor.primary)
+                                      : Colors.transparent,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }),
+                  ),
+                ],
+              ),
+            ),
+          );
+        });
+      },
+    );
   }
 
   List<Map<String, dynamic>> _txForMonth(
@@ -136,6 +242,7 @@ class _StatisticsScreenState extends State<StatisticsScreen>
                     tab: _tab,
                     onPrev: _prevMonth,
                     onNext: _nextMonth,
+                    onMonthPick: _pickMonth,
                     canGoNext: !(_month.year == DateTime.now().year &&
                         _month.month == DateTime.now().month),
                     spent: spent,
@@ -156,6 +263,7 @@ class _StatisticsScreenState extends State<StatisticsScreen>
                     total: activeTotal,
                     viewType: viewType,
                     isDark: isDark,
+                    month: _month,
                   ),
                 ),
                 SliverToBoxAdapter(
@@ -163,6 +271,7 @@ class _StatisticsScreenState extends State<StatisticsScreen>
                     filteredTx: filteredTx,
                     viewType: viewType,
                     isDark: isDark,
+                    month: _month,
                   ),
                 ),
                 SliverToBoxAdapter(
@@ -204,6 +313,7 @@ class _TopSection extends StatefulWidget {
   final TabController tab;
   final VoidCallback onPrev;
   final VoidCallback onNext;
+  final VoidCallback onMonthPick;
   final bool canGoNext;
   final double spent;
   final double income;
@@ -222,6 +332,7 @@ class _TopSection extends StatefulWidget {
     required this.tab,
     required this.onPrev,
     required this.onNext,
+    required this.onMonthPick,
     required this.canGoNext,
     required this.spent,
     required this.income,
@@ -294,18 +405,29 @@ class _TopSectionState extends State<_TopSection> {
                 GestureDetector(
                   onTap: widget.onPrev,
                   behavior: HitTestBehavior.opaque,
-                  child: Padding(
-                    padding: const EdgeInsets.only(right: 12, top: 4, bottom: 4),
+                  child: const Padding(
+                    padding: EdgeInsets.only(right: 12, top: 4, bottom: 4),
                     child: PhosphorIcon(PhosphorIconsLight.caretLeft,
                         size: 15, color: AppColor.primary),
                   ),
                 ),
-                Text(
-                  DateFormat('MMMM yyyy').format(widget.month),
-                  style: TextStyle(
-                      color: textMuted,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500),
+                GestureDetector(
+                  onTap: widget.onMonthPick,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        DateFormat('MMMM yyyy').format(widget.month),
+                        style: TextStyle(
+                            color: textMuted,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500),
+                      ),
+                      const SizedBox(width: 4),
+                      const PhosphorIcon(PhosphorIconsLight.caretUpDown,
+                          size: 12, color: AppColor.primary),
+                    ],
+                  ),
                 ),
                 GestureDetector(
                   onTap: widget.canGoNext ? widget.onNext : null,
@@ -665,21 +787,45 @@ List<Color> _tabPalette(String viewType, int count) {
   return List.generate(count, (i) => palette[i.clamp(0, palette.length - 1)]);
 }
 
-class _CategoryBreakdown extends StatelessWidget {
+class _CategoryBreakdown extends StatefulWidget {
   final List<MapEntry<String, double>> sorted;
   final double total;
   final String viewType;
   final bool isDark;
+  final DateTime month;
 
   const _CategoryBreakdown({
     required this.sorted,
     required this.total,
     required this.viewType,
     required this.isDark,
+    required this.month,
   });
 
   @override
+  State<_CategoryBreakdown> createState() => _CategoryBreakdownState();
+}
+
+class _CategoryBreakdownState extends State<_CategoryBreakdown> {
+  bool _showAll = false;
+
+  @override
+  void didUpdateWidget(_CategoryBreakdown old) {
+    super.didUpdateWidget(old);
+    // Reset when month/type changes
+    if (old.month != widget.month || old.viewType != widget.viewType) {
+      _showAll = false;
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final sorted = widget.sorted;
+    final total = widget.total;
+    final viewType = widget.viewType;
+    final isDark = widget.isDark;
+    final month = widget.month;
+
     final textMuted =
         isDark ? AppColor.textSecondary : AppColor.lightTextSecondary;
     final textPrimary =
@@ -689,9 +835,10 @@ class _CategoryBreakdown extends StatelessWidget {
     final fmt = NumberFormat('#,##0', 'en_IN');
     final isExpense = viewType == 'expense';
     final top5 = sorted.take(5).toList();
+    final visible = _showAll ? sorted : top5;
 
     // One palette call — same colors used in bar AND rows
-    final colors = _tabPalette(viewType, top5.length);
+    final colors = _tabPalette(viewType, visible.length);
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
@@ -711,10 +858,32 @@ class _CategoryBreakdown extends StatelessWidget {
 
           if (sorted.isEmpty)
             Padding(
-              padding: const EdgeInsets.symmetric(vertical: 24),
-              child: Text(
-                'No ${isExpense ? 'expense' : 'income'} categories this month',
-                style: TextStyle(color: textMuted, fontSize: 13),
+              padding: const EdgeInsets.symmetric(vertical: 28),
+              child: Center(
+                child: Column(
+                  children: [
+                    Container(
+                      width: 52,
+                      height: 52,
+                      decoration: BoxDecoration(
+                        color: textMuted.withValues(alpha: 0.07),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Center(
+                        child: PhosphorIcon(
+                          isExpense ? PhosphorIconsLight.chartPie : PhosphorIconsLight.trendUp,
+                          color: textMuted.withValues(alpha: 0.35),
+                          size: 22,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      'No ${isExpense ? 'expense' : 'income'} categories this month',
+                      style: TextStyle(color: textMuted, fontSize: 13),
+                    ),
+                  ],
+                ),
               ),
             )
           else ...[
@@ -726,7 +895,7 @@ class _CategoryBreakdown extends StatelessWidget {
                 height: 6,
                 child: Row(
                   children: [
-                    ...top5.asMap().entries.map((e) {
+                    ...visible.asMap().entries.map((e) {
                       final flex = total > 0
                           ? (e.value.value / total * 1000).round()
                           : 0;
@@ -735,7 +904,7 @@ class _CategoryBreakdown extends StatelessWidget {
                         child: Container(color: colors[e.key]),
                       );
                     }),
-                    if (sorted.length > 5)
+                    if (!_showAll && sorted.length > 5)
                       Flexible(
                         flex: sorted.skip(5).fold<int>(
                               0,
@@ -757,7 +926,7 @@ class _CategoryBreakdown extends StatelessWidget {
             const SizedBox(height: 6),
 
             // ── Category rows ─────────────────────────────────
-            ...top5.asMap().entries.map((entry) {
+            ...visible.asMap().entries.map((entry) {
               final i = entry.key;
               final cat = entry.value;
               final pct = total > 0 ? cat.value / total : 0.0;
@@ -773,19 +942,51 @@ class _CategoryBreakdown extends StatelessWidget {
                 textMuted: textMuted,
                 isExpense: isExpense,
                 dividerColor: divider,
-                showDivider: i < top5.length - 1 || sorted.length > 5,
+                showDivider: i < visible.length - 1 || (!_showAll && sorted.length > 5),
+                onTap: () => Get.to(
+                  () => AllTransactionsScreen(
+                    initialType: viewType,
+                    initialMonth: month,
+                    initialCategory: cat.key,
+                  ),
+                  transition: Transition.cupertino,
+                ),
               );
             }),
 
-            if (sorted.length > 5)
-              Padding(
-                padding: const EdgeInsets.only(top: 8, bottom: 4),
-                child: Text(
-                  '+ ${sorted.length - 5} more categories',
-                  style: const TextStyle(
-                    color: AppColor.primary,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
+            if (!_showAll && sorted.length > 5)
+              GestureDetector(
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  setState(() => _showAll = true);
+                },
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 8, bottom: 4),
+                  child: Text(
+                    '+ ${sorted.length - 5} more categories',
+                    style: const TextStyle(
+                      color: AppColor.primary,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ),
+            if (_showAll && sorted.length > 5)
+              GestureDetector(
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  setState(() => _showAll = false);
+                },
+                child: const Padding(
+                  padding: EdgeInsets.only(top: 8, bottom: 4),
+                  child: Text(
+                    'Show less',
+                    style: TextStyle(
+                      color: AppColor.primary,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                 ),
               ),
@@ -809,6 +1010,7 @@ class _CategoryRow extends StatelessWidget {
   final bool isExpense;
   final Color dividerColor;
   final bool showDivider;
+  final VoidCallback? onTap;
 
   const _CategoryRow({
     required this.name,
@@ -821,6 +1023,7 @@ class _CategoryRow extends StatelessWidget {
     required this.isExpense,
     required this.dividerColor,
     required this.showDivider,
+    this.onTap,
   });
 
   @override
@@ -829,7 +1032,10 @@ class _CategoryRow extends StatelessWidget {
         ? Colors.white.withValues(alpha: 0.07)
         : Colors.black.withValues(alpha: 0.05);
 
-    return Column(
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Column(
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 13),
@@ -926,6 +1132,7 @@ class _CategoryRow extends StatelessWidget {
             indent: 46,
           ),
       ],
+    ),
     );
   }
 }
@@ -938,31 +1145,15 @@ class _TransactionsSection extends StatelessWidget {
   final List<Map<String, dynamic>> filteredTx;
   final String viewType;
   final bool isDark;
+  final DateTime month;
 
   const _TransactionsSection({
     required this.filteredTx,
     required this.viewType,
     required this.isDark,
+    required this.month,
   });
 
-  Map<String, List<Map<String, dynamic>>> _groupByDate(
-      List<Map<String, dynamic>> txs) {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final yesterday = today.subtract(const Duration(days: 1));
-    final Map<String, List<Map<String, dynamic>>> groups = {};
-    for (final tx in txs) {
-      final d = DateTime.parse(tx['date']);
-      final day = DateTime(d.year, d.month, d.day);
-      String label;
-      if (day == today) {
-        label = 'Today';
-      } else if (day == yesterday) label = 'Yesterday';
-      else label = DateFormat('EEE, d MMM').format(d);
-      groups.putIfAbsent(label, () => []).add(tx);
-    }
-    return groups;
-  }
 
   String _title(Map<String, dynamic> tx) {
     final t = tx['description'];
@@ -1005,119 +1196,154 @@ class _TransactionsSection extends StatelessWidget {
           if (filteredTx.isEmpty)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 32),
-              child: Text(
-                'No ${isExpense ? 'expenses' : 'income'} this month',
-                style: TextStyle(color: textMuted, fontSize: 13),
+              child: Center(
+                child: Column(
+                  children: [
+                    Container(
+                      width: 52,
+                      height: 52,
+                      decoration: BoxDecoration(
+                        color: textMuted.withValues(alpha: 0.07),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Center(
+                        child: PhosphorIcon(
+                          PhosphorIconsLight.receipt,
+                          color: textMuted.withValues(alpha: 0.35),
+                          size: 22,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      'No ${isExpense ? 'expenses' : 'income'} this month',
+                      style: TextStyle(color: textMuted, fontSize: 13),
+                    ),
+                  ],
+                ),
               ),
             )
-          else
-            ..._groupByDate(filteredTx).entries.map((group) {
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: Text(group.key,
-                        style: TextStyle(
-                          color: textDim,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w500,
-                          letterSpacing: 0.2,
-                        )),
-                  ),
-                  ...group.value.asMap().entries.map((e) {
-                    final idx = e.key;
-                    final tx = e.value;
-                    final cat = (tx['category'] as String?) ?? '';
-                    final catColor = cat.isNotEmpty
-                        ? AppColor.categoryColor(cat)
-                        : AppColor.primary;
-                    final displayTitle = _title(tx);
+          else ...[
+            ...filteredTx.take(5).toList().asMap().entries.map((e) {
+              final idx = e.key;
+              final tx = e.value;
+              final cat = (tx['category'] as String?) ?? '';
+              final catColor = cat.isNotEmpty
+                  ? AppColor.categoryColor(cat)
+                  : AppColor.primary;
+              final displayTitle = _title(tx);
 
-                    return Column(
-                      children: [
-                        if (idx > 0)
-                          Divider(
-                            height: 1,
-                            thickness: 0.5,
-                            color: divColor,
-                            indent: 46,
+              return Column(
+                children: [
+                  if (idx > 0)
+                    Divider(
+                      height: 1,
+                      thickness: 0.5,
+                      color: divColor,
+                      indent: 46,
+                    ),
+                  InkWell(
+                    onTap: () {
+                      HapticFeedback.lightImpact();
+                      Get.to(
+                        () => TransactionDetailsScreen(
+                            transaction: tx, categoryList: categoryList),
+                        transition: Transition.cupertino,
+                      );
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 11),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 34,
+                            height: 34,
+                            decoration: BoxDecoration(
+                              color: catColor.withValues(alpha: 0.12),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Center(
+                              child: PhosphorIcon(
+                                _categoryIcon(cat, !isExpense),
+                                size: 15,
+                                color: catColor,
+                              ),
+                            ),
                           ),
-                        InkWell(
-                          onTap: () {
-                            HapticFeedback.lightImpact();
-                            Get.to(
-                              () => TransactionDetailsScreen(
-                                  transaction: tx,
-                                  categoryList: categoryList),
-                              transition: Transition.cupertino,
-                            );
-                          },
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 11),
-                            child: Row(
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                // Phosphor icon circle
-                                Container(
-                                  width: 34,
-                                  height: 34,
-                                  decoration: BoxDecoration(
-                                    color: catColor.withValues(alpha: 0.12),
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: Center(
-                                    child: PhosphorIcon(
-                                      _categoryIcon(cat, !isExpense),
-                                      size: 15,
-                                      color: catColor,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        displayTitle,
-                                        style: TextStyle(
-                                          color: textPrimary,
-                                          fontSize: 13,
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                      if (cat.isNotEmpty &&
-                                          cat != displayTitle)
-                                        Text(cat,
-                                            style: TextStyle(
-                                              color: textDim,
-                                              fontSize: 11,
-                                            )),
-                                    ],
-                                  ),
-                                ),
                                 Text(
-                                  '${isExpense ? '−' : '+'}$sym${fmt.format((tx['amount'] as num).toDouble())}',
+                                  displayTitle,
                                   style: TextStyle(
-                                    color: amountColor,
+                                    color: textPrimary,
                                     fontSize: 13,
-                                    fontWeight: FontWeight.w600,
+                                    fontWeight: FontWeight.w500,
                                   ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
+                                if (cat.isNotEmpty && cat != displayTitle)
+                                  Text(cat,
+                                      style: TextStyle(
+                                        color: textDim,
+                                        fontSize: 11,
+                                      )),
                               ],
                             ),
                           ),
-                        ),
-                      ],
-                    );
-                  }),
-                  const SizedBox(height: 16),
+                          Text(
+                            '${isExpense ? '−' : '+'}$sym${fmt.format((tx['amount'] as num).toDouble())}',
+                            style: TextStyle(
+                              color: amountColor,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                 ],
               );
             }),
+            if (filteredTx.length > 5) ...[
+              Divider(height: 1, thickness: 0.5, color: divColor, indent: 46),
+              InkWell(
+                onTap: () {
+                  HapticFeedback.lightImpact();
+                  Get.to(
+                    () => AllTransactionsScreen(
+                      initialType: viewType,
+                      initialMonth: month,
+                    ),
+                    transition: Transition.cupertino,
+                  );
+                },
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  child: Row(
+                    children: [
+                      const SizedBox(width: 46),
+                      Text(
+                        'See all ${filteredTx.length} transactions',
+                        style: const TextStyle(
+                          color: AppColor.primary,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      const PhosphorIcon(PhosphorIconsLight.arrowRight,
+                          color: AppColor.primary, size: 13),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ],
         ],
       ),
     );

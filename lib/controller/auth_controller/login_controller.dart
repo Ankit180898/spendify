@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:math';
 
 import 'package:crypto/crypto.dart';
+import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
@@ -84,8 +85,30 @@ class LoginController extends GetxController {
   }
 
   Future<void> _navigateAfterAuth() async {
-    final userId = supabaseC.auth.currentUser?.id;
-    if (userId == null) return;
+    final user = supabaseC.auth.currentUser;
+    if (user == null) return;
+    final userId = user.id;
+
+    // Ensure user row exists in public.users (stores name, email, balance).
+    // ignoreDuplicates keeps existing balance untouched for returning users.
+    try {
+      await supabaseC.from('users').upsert(
+        {
+          'id': userId,
+          'email': user.email ?? '',
+          'name': user.userMetadata?['full_name'] ??
+              user.userMetadata?['name'] ??
+              '',
+          'balance': 0,
+          'url': user.userMetadata?['avatar_url'] ?? '',
+        },
+        onConflict: 'id',
+        ignoreDuplicates: true,
+      );
+    } catch (e) {
+      debugPrint('LoginController: users upsert failed — $e');
+    }
+
     try {
       final profile = await supabaseC
           .from('user_profiles')
