@@ -83,7 +83,7 @@ class TransactionController extends GetxController {
         // Check spending goals if this was an expense
         if (selectedType.value == 'expense') {
           final goalsC = Get.find<GoalsController>();
-          goalsC.checkAndAlert();
+          goalsC.checkAndAlert(amount);
 
           // Check monthly budget threshold crossings
           final budget = homeC.monthlyBudget.value;
@@ -117,6 +117,12 @@ class TransactionController extends GetxController {
 
         // Reset log reminder — fires in 3 days if no new transaction is logged
         NotificationService.rescheduleLogReminder();
+
+        // Spend spike detection
+        _checkSpendSpike(selectedType.value, amount);
+
+        // Under-budget milestone (last 2 days of month)
+        _checkUnderBudgetMilestone();
 
         // Clear form
         resetForm();
@@ -254,6 +260,83 @@ class TransactionController extends GetxController {
       CustomToast.errorToast("Error", "Failed to update transaction");
     } finally {
       isLoading.value = false;
+    }
+  }
+
+  void _checkSpendSpike(String txType, double amount) {
+    if (txType != 'expense') return;
+    try {
+      final txs = homeC.allTransactions;
+      final sym = homeC.currencySymbol.value;
+      final category = selectedCategory.value;
+      if (category.isEmpty) return;
+
+      final now = DateTime.now();
+      final startOfWeek = DateTime(now.year, now.month, now.day - now.weekday + 1);
+
+      double thisWeek = txs.where((t) {
+        final d = t['parsedDate'] as DateTime?;
+        return d != null &&
+            !d.isBefore(startOfWeek) &&
+            t['type'] == 'expense' &&
+            t['category'] == category;
+      }).fold(0.0, (s, t) => s + ((t['amount'] as num?)?.toDouble() ?? 0));
+
+      // Average weekly spend in this category over the previous 4 weeks
+      double totalPast4 = 0;
+      for (int w = 1; w <= 4; w++) {
+        final wStart = startOfWeek.subtract(Duration(days: 7 * w));
+        final wEnd = startOfWeek.subtract(Duration(days: 7 * (w - 1)));
+        totalPast4 += txs.where((t) {
+          final d = t['parsedDate'] as DateTime?;
+          return d != null &&
+              !d.isBefore(wStart) &&
+              d.isBefore(wEnd) &&
+              t['type'] == 'expense' &&
+              t['category'] == category;
+        }).fold(0.0, (s, t) => s + ((t['amount'] as num?)?.toDouble() ?? 0));
+      }
+      final avg = totalPast4 / 4;
+
+      // Alert only when average is meaningful and this week is 50%+ above it
+      if (avg > 100 && thisWeek > avg * 1.5) {
+        NotificationService.showSpendSpike(
+          category: category,
+          thisWeek: thisWeek,
+          avgWeek: avg,
+          sym: sym,
+        );
+      }
+    } catch (e) {
+      debugPrint('_checkSpendSpike error: $e');
+    }
+  }
+
+  void _checkUnderBudgetMilestone() {
+    try {
+      final budget = homeC.monthlyBudget.value;
+      if (budget <= 0) return;
+
+      final now = DateTime.now();
+      final daysInMonth = DateTime(now.year, now.month + 1, 0).day;
+      if (now.day < daysInMonth - 1) return; // Only last 2 days of month
+
+      final monthStart = DateTime(now.year, now.month, 1);
+      final monthSpent = homeC.allTransactions.where((t) {
+        final d = t['parsedDate'] as DateTime?;
+        return d != null && !d.isBefore(monthStart) && t['type'] == 'expense';
+      }).fold(0.0, (s, t) => s + ((t['amount'] as num?)?.toDouble() ?? 0));
+
+      if (monthSpent >= budget) return;
+
+      final sym = homeC.currencySymbol.value;
+      final saved = budget - monthSpent;
+      NotificationService.showMilestone(
+        'Under budget this month! 🎉',
+        'You stayed $sym${saved.toStringAsFixed(0)} under your budget. Great discipline!',
+      );
+    } catch (e) {
+      debugPrint('_checkUnderBudgetMilestone error: $e');
     }
   }
 }

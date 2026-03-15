@@ -13,6 +13,7 @@ import 'package:spendify/widgets/toast/custom_toast.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../routes/app_pages.dart';
+import 'package:spendify/services/notification_service.dart';
 
 class HomeController extends GetxController {
   var userEmail = ''.obs;
@@ -31,7 +32,8 @@ class HomeController extends GetxController {
   var selectedCategories = <String>[].obs;
   var occupation = ''.obs;
 
-  var isLoading = false.obs;
+  var isLoading = true.obs;
+  var isOverviewLoading = true.obs;
   var totalExpense = 0.0.obs;
   var totalIncome = 0.0.obs;
   var selectedFilter = 'weekly'.obs;
@@ -351,6 +353,7 @@ class HomeController extends GetxController {
 
   // Add this method to HomeController
   Future<void> fetchTotalBalanceData() async {
+    isOverviewLoading.value = true;
     try {
       // Get all transactions for balance calculation without pagination
       final userId = supabaseC.auth.currentUser?.id;
@@ -407,8 +410,12 @@ class HomeController extends GetxController {
         currencySymbol: currencySymbol.value,
         userName: userName.value,
       );
+
+      _scheduleSmartNotifications(allTransactions, monthSpent);
     } catch (e) {
       debugPrint('Error fetching total balance data: $e');
+    } finally {
+      isOverviewLoading.value = false;
     }
   }
 
@@ -827,5 +834,91 @@ class HomeController extends GetxController {
     }
 
     return result;
+  }
+
+  void _scheduleSmartNotifications(
+    List<Map<String, dynamic>> txs,
+    double thisMonthSpent,
+  ) {
+    try {
+      final now = DateTime.now();
+      final sym = currencySymbol.value;
+
+      // ── Week data ──────────────────────────────────────────────────────────
+      final startOfWeek = DateTime(now.year, now.month, now.day - now.weekday + 1);
+      final startOfLastWeek = startOfWeek.subtract(const Duration(days: 7));
+
+      double thisWeekSpent = txs.where((t) {
+        final d = t['parsedDate'] as DateTime?;
+        return d != null && !d.isBefore(startOfWeek) && t['type'] == 'expense';
+      }).fold(0.0, (s, t) => s + ((t['amount'] as num?)?.toDouble() ?? 0));
+
+      double lastWeekSpent = txs.where((t) {
+        final d = t['parsedDate'] as DateTime?;
+        return d != null &&
+            !d.isBefore(startOfLastWeek) &&
+            d.isBefore(startOfWeek) &&
+            t['type'] == 'expense';
+      }).fold(0.0, (s, t) => s + ((t['amount'] as num?)?.toDouble() ?? 0));
+
+      // Top category this week
+      final catWeekSpend = <String, double>{};
+      for (final t in txs) {
+        final d = t['parsedDate'] as DateTime?;
+        if (d == null || d.isBefore(startOfWeek) || t['type'] != 'expense') continue;
+        final cat = t['category'] as String? ?? '';
+        if (cat.isNotEmpty) catWeekSpend[cat] = (catWeekSpend[cat] ?? 0) + ((t['amount'] as num?)?.toDouble() ?? 0);
+      }
+      final topWeekCat = catWeekSpend.isNotEmpty
+          ? catWeekSpend.entries.reduce((a, b) => a.value > b.value ? a : b).key
+          : '';
+
+      // ── Month data ─────────────────────────────────────────────────────────
+      final monthStart = DateTime(now.year, now.month, 1);
+
+      double thisMonthIncome = txs.where((t) {
+        final d = t['parsedDate'] as DateTime?;
+        return d != null && !d.isBefore(monthStart) && t['type'] == 'income';
+      }).fold(0.0, (s, t) => s + ((t['amount'] as num?)?.toDouble() ?? 0));
+
+      final catMonthSpend = <String, double>{};
+      for (final t in txs) {
+        final d = t['parsedDate'] as DateTime?;
+        if (d == null || d.isBefore(monthStart) || t['type'] != 'expense') continue;
+        final cat = t['category'] as String? ?? '';
+        if (cat.isNotEmpty) catMonthSpend[cat] = (catMonthSpend[cat] ?? 0) + ((t['amount'] as num?)?.toDouble() ?? 0);
+      }
+      final topMonthCat = catMonthSpend.isNotEmpty
+          ? catMonthSpend.entries.reduce((a, b) => a.value > b.value ? a : b).key
+          : '';
+
+      // ── Schedule digest & recap ────────────────────────────────────────────
+      NotificationService.scheduleWeeklyDigest(
+        thisWeekSpent: thisWeekSpent,
+        lastWeekSpent: lastWeekSpent,
+        topCategory: topWeekCat,
+        sym: sym,
+      );
+
+      NotificationService.scheduleMonthlyRecap(
+        totalSpent: thisMonthSpent,
+        totalIncome: thisMonthIncome,
+        topCategory: topMonthCat,
+        sym: sym,
+        currentMonth: now.month,
+        currentYear: now.year,
+      );
+
+      // ── Daily safe-to-spend (only if budget is set) ────────────────────────
+      if (monthlyBudget.value > 0) {
+        final daysInMonth = DateTime(now.year, now.month + 1, 0).day;
+        final remainingDays = (daysInMonth - now.day + 1).clamp(1, daysInMonth);
+        final remaining = monthlyBudget.value - thisMonthSpent;
+        final safePerDay = remaining > 0 ? remaining / remainingDays : 0.0;
+        NotificationService.scheduleDailySafeToSpend(safeAmount: safePerDay, sym: sym);
+      }
+    } catch (e) {
+      debugPrint('_scheduleSmartNotifications error: $e');
+    }
   }
 }

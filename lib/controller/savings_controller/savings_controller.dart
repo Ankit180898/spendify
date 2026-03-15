@@ -89,6 +89,10 @@ class SavingsController extends GetxController {
       if (idx != -1) goals[idx] = goal.copyWith(savedAmount: newSaved);
       if (newSaved >= goal.targetAmount) {
         CustomToast.successToast('Goal reached! 🎉', '${goal.name} is fully funded!');
+        NotificationService.showMilestone(
+          '${goal.emoji} Goal reached!',
+          '${goal.name} is fully funded! Time to celebrate 🎉',
+        );
       } else {
         final sym = Get.find<HomeController>().currencySymbol.value;
         CustomToast.successToast('Added!', '$sym${amount.toStringAsFixed(0)} saved toward ${goal.name}');

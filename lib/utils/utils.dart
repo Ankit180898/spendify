@@ -60,7 +60,7 @@ TextStyle normalText(double size, Color color) => GoogleFonts.dmSans(
     CategoriesModel(name: 'Travel',         icon: PhosphorIconsLight.airplane),
     CategoriesModel(name: 'Investments',    icon: PhosphorIconsLight.trendUp),
     CategoriesModel(name: 'Education',      icon: PhosphorIconsLight.graduationCap),
-    CategoriesModel(name: 'Subscriptions',  icon: PhosphorIconsLight.repeat),
+    CategoriesModel(name: 'Subscriptions',  icon: PhosphorIconsLight.receipt),
     CategoriesModel(name: 'Gifts',          icon: PhosphorIconsLight.gift),
     CategoriesModel(name: 'Others',         icon: PhosphorIconsLight.tag),
   ];

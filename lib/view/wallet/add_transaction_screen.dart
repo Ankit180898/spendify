@@ -28,6 +28,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   late final _isExpense = (widget.initialType == 'expense').obs;
   final _amount = ''.obs;
   final _noteFocus = FocusNode();
+  final _amountFocus = FocusNode();
   final _scrollCtrl = ScrollController();
   bool _noteVisible = false;
   bool _noteAutofocus = false; // true only when user explicitly taps "Add a note"
@@ -151,6 +152,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
 
   @override
   void dispose() {
+    _amountFocus.dispose();
     _noteFocus.dispose();
     _scrollCtrl.dispose();
     if (_speech.isListening) _speech.cancel();
@@ -171,21 +173,66 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
 
   void _tapKey(String key) {
     HapticFeedback.lightImpact();
-    final cur = _amount.value;
+    final tc = controller.amountController;
+    final text = tc.text;
+    final sel = tc.selection;
+
+    final hasValidSel = sel.isValid && sel.baseOffset >= 0;
+    final start = hasValidSel ? sel.start : text.length;
+    final end = hasValidSel ? sel.end : text.length;
+
     if (key == '⌫') {
-      if (cur.isNotEmpty) _amount.value = cur.substring(0, cur.length - 1);
-    } else if (key == '.') {
-      if (!cur.contains('.')) { _amount.value = cur.isEmpty ? '0.' : '$cur.'; }
-    } else {
-      if (cur == '0') {
-        _amount.value = key;
+      if (start == end) {
+        if (start > 0) {
+          final newText = text.substring(0, start - 1) + text.substring(start);
+          tc.value = TextEditingValue(
+            text: newText,
+            selection: TextSelection.collapsed(offset: start - 1),
+          );
+        }
       } else {
-        // Max 10 digits before decimal
-        final parts = cur.split('.');
-        if (parts[0].length < 10) _amount.value = cur + key;
+        final newText = text.substring(0, start) + text.substring(end);
+        tc.value = TextEditingValue(
+          text: newText,
+          selection: TextSelection.collapsed(offset: start),
+        );
+      }
+    } else if (key == '.') {
+      if (!text.contains('.')) {
+        final String newText;
+        final int newOffset;
+        if (text.isEmpty) {
+          newText = '0.';
+          newOffset = 2;
+        } else {
+          newText = text.substring(0, start) + '.' + text.substring(end);
+          newOffset = start + 1;
+        }
+        tc.value = TextEditingValue(
+          text: newText,
+          selection: TextSelection.collapsed(offset: newOffset),
+        );
+      }
+    } else {
+      final prefix = text.substring(0, start);
+      final suffix = text.substring(end);
+      final combined = prefix + suffix;
+      if (text == '0' && start == 1 && end == 1) {
+        tc.value = TextEditingValue(
+          text: key,
+          selection: TextSelection.collapsed(offset: 1),
+        );
+      } else {
+        final parts = combined.split('.');
+        if (parts[0].length < 10) {
+          tc.value = TextEditingValue(
+            text: prefix + key + suffix,
+            selection: TextSelection.collapsed(offset: start + 1),
+          );
+        }
       }
     }
-    controller.amountController.text = _amount.value;
+    _amount.value = tc.text;
   }
 
   void _setType(bool isExpense) {
@@ -292,9 +339,6 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                         final isExpense = _isExpense.value;
                         final accentColor =
                             isExpense ? AppColor.expense : AppColor.income;
-                        final display = _amount.value.isEmpty
-                            ? '0'
-                            : _amount.value;
                         return Column(
                           children: [
                             Row(
@@ -313,13 +357,41 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                                   ),
                                 ),
                                 const SizedBox(width: 3),
-                                Text(
-                                  display,
-                                  style: TextStyle(
-                                    color: textPrimary,
-                                    fontSize: 56,
-                                    fontWeight: FontWeight.w700,
-                                    letterSpacing: -2,
+                                IntrinsicWidth(
+                                  child: TextField(
+                                    controller: controller.amountController,
+                                    focusNode: _amountFocus,
+                                    readOnly: true,
+                                    showCursor: true,
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      color: textPrimary,
+                                      fontSize: 56,
+                                      fontWeight: FontWeight.w700,
+                                      letterSpacing: -2,
+                                    ),
+                                    cursorColor: accentColor,
+                                    cursorWidth: 2.5,
+                                    cursorHeight: 52,
+                                    decoration: InputDecoration(
+                                      border: InputBorder.none,
+                                      enabledBorder: InputBorder.none,
+                                      focusedBorder: InputBorder.none,
+                                      disabledBorder: InputBorder.none,
+                                      errorBorder: InputBorder.none,
+                                      focusedErrorBorder: InputBorder.none,
+                                      filled: true,
+                                      fillColor: Colors.transparent,
+                                      contentPadding: EdgeInsets.zero,
+                                      isCollapsed: true,
+                                      hintText: '0',
+                                      hintStyle: TextStyle(
+                                        color: textPrimary,
+                                        fontSize: 56,
+                                        fontWeight: FontWeight.w700,
+                                        letterSpacing: -2,
+                                      ),
+                                    ),
                                   ),
                                 ),
                               ],
@@ -327,10 +399,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                             const SizedBox(height: 6),
                             Text(
                               'Enter Amount',
-                              style: TextStyle(
-                                color: textMuted,
-                                fontSize: 13,
-                              ),
+                              style: TextStyle(color: textMuted, fontSize: 13),
                             ),
                           ],
                         );

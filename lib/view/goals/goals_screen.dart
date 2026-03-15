@@ -1617,8 +1617,7 @@ class _AddMoneySheetState extends State<_AddMoneySheet> {
               decoration: InputDecoration(
                 labelText:
                     'Amount to add (${Get.find<HomeController>().currencySymbol.value})',
-                prefixIcon:
-                    Text(Get.find<HomeController>().currencySymbol.value),
+                prefixText: Get.find<HomeController>().currencySymbol.value,
                 hintText: 'e.g. 1000',
               ),
             ),

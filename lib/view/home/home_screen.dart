@@ -14,6 +14,7 @@ import 'package:spendify/model/savings_goal_model.dart';
 import 'package:spendify/services/insights_service.dart';
 import 'package:spendify/view/home/components/transaction_list.dart';
 import 'package:spendify/view/wallet/add_transaction_screen.dart';
+import 'package:shimmer/shimmer.dart';
 import 'package:spendify/view/wallet/sms_import_screen.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -292,6 +293,9 @@ class _MonthSummary extends StatelessWidget {
     final monthName = DateFormat('MMMM').format(DateTime.now());
 
     return Obx(() {
+      if (ctrl.isOverviewLoading.value && ctrl.allTransactions.isEmpty) {
+        return _MonthSummaryShimmer(isDark: isDark);
+      }
       final now = DateTime.now();
       final monthStart = DateTime(now.year, now.month, 1);
       final thisMonthTx = ctrl.allTransactions.where((t) {
@@ -431,6 +435,74 @@ class _MonthSummary extends StatelessWidget {
     });
   }
 
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Month summary shimmer skeleton
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _MonthSummaryShimmer extends StatelessWidget {
+  final bool isDark;
+  const _MonthSummaryShimmer({required this.isDark});
+
+  @override
+  Widget build(BuildContext context) {
+    final base = isDark ? const Color(0xFF1E1E2E) : const Color(0xFFF4F4F5);
+    final highlight = isDark ? const Color(0xFF2A2A3E) : const Color(0xFFE4E4E7);
+    return Shimmer.fromColors(
+      baseColor: base,
+      highlightColor: highlight,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Title row
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+            child: Row(
+              children: [
+                Container(height: 14, width: 120, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(6))),
+                const Spacer(),
+                Container(height: 20, width: 52, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(100))),
+              ],
+            ),
+          ),
+          const SizedBox(height: 14),
+          // 3 mini-stat boxes
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Row(
+              children: List.generate(3, (i) => Expanded(
+                child: Padding(
+                  padding: EdgeInsets.only(right: i < 2 ? 12 : 0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(height: 11, width: 50, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(5))),
+                      const SizedBox(height: 5),
+                      Container(height: 13, width: 64, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(5))),
+                    ],
+                  ),
+                ),
+              )),
+            ),
+          ),
+          const SizedBox(height: 20),
+          // Quick action buttons
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Row(
+              children: [
+                Expanded(child: Container(height: 40, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(10)))),
+                const SizedBox(width: 10),
+                Expanded(child: Container(height: 40, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(10)))),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+        ],
+      ),
+    );
+  }
 }
 
 class _BudgetBar extends StatelessWidget {
@@ -604,6 +676,50 @@ class _QuickAction extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Insights shimmer skeleton
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _InsightsShimmer extends StatelessWidget {
+  final bool isDark;
+  const _InsightsShimmer({required this.isDark});
+
+  @override
+  Widget build(BuildContext context) {
+    final base = isDark ? const Color(0xFF1E1E2E) : const Color(0xFFF4F4F5);
+    final highlight = isDark ? const Color(0xFF2A2A3E) : const Color(0xFFE4E4E7);
+    final divColor = isDark ? AppColor.darkBorder : const Color(0xFFF4F4F5);
+    return Shimmer.fromColors(
+      baseColor: base,
+      highlightColor: highlight,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
+            child: Container(height: 14, width: 70, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(6))),
+          ),
+          SizedBox(
+            height: 116,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              itemCount: 3,
+              separatorBuilder: (_, __) => const SizedBox(width: 10),
+              itemBuilder: (_, __) => Container(
+                width: 220,
+                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14)),
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+          Divider(height: 1, color: divColor),
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Insights strip — horizontally scrollable insight cards
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -623,6 +739,10 @@ class _InsightsStrip extends StatelessWidget {
     final divColor = isDark ? AppColor.darkBorder : const Color(0xFFF4F4F5);
 
     return Obx(() {
+      if (ctrl.isOverviewLoading.value && ctrl.allTransactions.isEmpty) {
+        return _InsightsShimmer(isDark: isDark);
+      }
+
       final insights = InsightsService.compute(
         allTransactions: ctrl.allTransactions.toList(),
         monthlyBudget: ctrl.monthlyBudget.value,
@@ -776,6 +896,26 @@ class _BudgetAlertsBanner extends StatelessWidget {
     'All': AppColor.primary,
   };
 
+  static PhosphorIconData _catIcon(String category) {
+    switch (category) {
+      case 'Food & Drinks':  return PhosphorIconsLight.forkKnife;
+      case 'Groceries':      return PhosphorIconsLight.shoppingCart;
+      case 'Transport':      return PhosphorIconsLight.bus;
+      case 'Car':            return PhosphorIconsLight.car;
+      case 'Shopping':       return PhosphorIconsLight.bag;
+      case 'Bills & Fees':   return PhosphorIconsLight.lightning;
+      case 'Health':         return PhosphorIconsLight.pill;
+      case 'Entertainment':  return PhosphorIconsLight.filmSlate;
+      case 'Travel':         return PhosphorIconsLight.airplane;
+      case 'Investments':    return PhosphorIconsLight.trendUp;
+      case 'Education':      return PhosphorIconsLight.graduationCap;
+      case 'Subscriptions':  return PhosphorIconsLight.receipt;
+      case 'Gifts':          return PhosphorIconsLight.gift;
+      case 'Others':         return PhosphorIconsLight.tag;
+      default:               return PhosphorIconsLight.chartBar;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     GoalsController goalsCtrl;
@@ -852,9 +992,10 @@ class _BudgetAlertsBanner extends StatelessWidget {
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Center(
-                            child: Text(
-                              g.category == 'All' ? '📊' : '',
-                              style: const TextStyle(fontSize: 12),
+                            child: PhosphorIcon(
+                              _catIcon(g.category),
+                              size: 15,
+                              color: catColor,
                             ),
                           ),
                         ),

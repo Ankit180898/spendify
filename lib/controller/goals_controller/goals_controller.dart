@@ -100,24 +100,25 @@ class GoalsController extends GetxController {
         .fold(0.0, (sum, t) => sum + ((t['amount'] as num?)?.toDouble() ?? 0.0));
   }
 
-  /// Called after every expense transaction. Alerts the user if any goal is breached.
-  void checkAndAlert() {
+  /// Called after every expense transaction. Alerts the user only when a threshold is crossed.
+  void checkAndAlert(double addedAmount) {
     for (final goal in goals) {
+      if (goal.limitAmount <= 0) continue;
       final spent = currentSpending(goal);
-      final pct = goal.limitAmount > 0 ? spent / goal.limitAmount : 0.0;
+      final prevSpent = spent - addedAmount;
+      final pct = spent / goal.limitAmount;
+      final prevPct = prevSpent / goal.limitAmount;
       final label = goal.category == 'All' ? 'Total spending' : goal.category;
-
       final sym = Get.find<HomeController>().currencySymbol.value;
-      if (pct >= 1.0) {
+
+      if (prevPct < 1.0 && pct >= 1.0) {
         const title = 'Limit exceeded!';
-        final body =
-            '$label has crossed your $sym${goal.limitAmount.toStringAsFixed(0)} ${goal.period} limit';
+        final body = '$label has crossed your $sym${goal.limitAmount.toStringAsFixed(0)} ${goal.period} limit';
         CustomToast.errorToast(title, body);
         NotificationService.showBudgetAlert(title: title, body: body);
-      } else if (pct >= 0.9) {
+      } else if (prevPct < 0.9 && pct >= 0.9) {
         const title = 'Approaching limit';
-        final body =
-            '$label is at ${(pct * 100).toStringAsFixed(0)}% of your $sym${goal.limitAmount.toStringAsFixed(0)} ${goal.period} limit';
+        final body = '$label is at ${(pct * 100).toStringAsFixed(0)}% of your $sym${goal.limitAmount.toStringAsFixed(0)} ${goal.period} limit';
         CustomToast.errorToast(title, body);
         NotificationService.showBudgetAlert(title: title, body: body);
       }

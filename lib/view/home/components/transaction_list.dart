@@ -1,12 +1,50 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:shimmer/shimmer.dart';
 import 'package:spendify/config/app_color.dart';
 import 'package:spendify/controller/home_controller/home_controller.dart';
 import 'package:spendify/utils/utils.dart';
 import 'package:spendify/view/wallet/add_transaction_screen.dart';
 import 'package:spendify/view/wallet/all_transaction_screen.dart';
 import 'package:spendify/view/wallet/transaction_list_item.dart';
+
+class _TransactionShimmer extends StatelessWidget {
+  final bool isDark;
+  const _TransactionShimmer({required this.isDark});
+
+  @override
+  Widget build(BuildContext context) {
+    final base = isDark ? const Color(0xFF1E1E2E) : const Color(0xFFF4F4F5);
+    final highlight = isDark ? const Color(0xFF2A2A3E) : const Color(0xFFE4E4E7);
+    return Shimmer.fromColors(
+      baseColor: base,
+      highlightColor: highlight,
+      child: Column(
+        children: List.generate(5, (i) => Padding(
+          padding: const EdgeInsets.fromLTRB(20, 10, 20, 10),
+          child: Row(
+            children: [
+              Container(width: 42, height: 42, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12))),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(height: 13, width: 120, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(6))),
+                    const SizedBox(height: 6),
+                    Container(height: 11, width: 80, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(6))),
+                  ],
+                ),
+              ),
+              Container(height: 13, width: 60, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(6))),
+            ],
+          ),
+        )),
+      ),
+    );
+  }
+}
 
 class TransactionsContent extends StatelessWidget {
   final int limit;
@@ -45,10 +83,7 @@ class TransactionsContent extends StatelessWidget {
 
         Obx(() {
           if (ctrl.isLoading.value) {
-            return const Padding(
-              padding: EdgeInsets.all(40),
-              child: Center(child: CircularProgressIndicator(color: AppColor.primary, strokeWidth: 2)),
-            );
+            return _TransactionShimmer(isDark: isDark);
           }
 
           if (ctrl.transactions.isEmpty) {

@@ -53,6 +53,7 @@ dependencies:
   connectivity_plus: ^6.0.3
   home_widget: ^0.6.0
   timezone: ^0.9.4
+  shimmer: ^3.0.0
 
 dev_dependencies:
   flutter_lints: ^3.0.0
