@@ -58,6 +58,7 @@ class _AllTransactionsScreenState extends State<AllTransactionsScreen> {
     controller.isSelected.value = false;
     _scrollController.dispose();
     _searchController.dispose();
+    Get.delete<AllTransactionsController>();
     super.dispose();
   }
 

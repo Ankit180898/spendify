@@ -6,11 +6,13 @@ import 'package:showcaseview/showcaseview.dart';
 import 'package:spendify/config/app_color.dart';
 import 'package:spendify/config/app_theme.dart';
 import 'package:spendify/controller/goals_controller/goals_controller.dart';
+import 'package:spendify/controller/groups_controller/groups_controller.dart';
 import 'package:spendify/controller/savings_controller/savings_controller.dart';
 import 'package:spendify/controller/walkthrough_controller.dart';
 import 'package:spendify/view/goals/goals_screen.dart';
 import 'package:spendify/view/home/home_screen.dart';
 import 'package:spendify/view/profile/profile_screen.dart';
+import 'package:spendify/view/splits/splits_screen.dart';
 import 'package:spendify/view/wallet/statistics_screen.dart';
 import 'package:spendify/view/wallet/add_transaction_screen.dart';
 
@@ -29,6 +31,7 @@ class _BottomNavState extends State<BottomNav> {
     HomeScreen(),
     StatisticsScreen(),
     GoalsScreen(),
+    SplitsScreen(),
     ProfileScreen(),
   ];
 
@@ -37,6 +40,7 @@ class _BottomNavState extends State<BottomNav> {
     super.initState();
     if (!Get.isRegistered<GoalsController>()) Get.put(GoalsController());
     if (!Get.isRegistered<SavingsController>()) Get.put(SavingsController());
+    if (!Get.isRegistered<GroupsController>()) Get.put(GroupsController(), permanent: true);
     if (!Get.isRegistered<WalkthroughController>()) {
       Get.put(WalkthroughController());
     }
@@ -77,7 +81,12 @@ class _BottomNavState extends State<BottomNav> {
           bottomNavigationBar: _NavBar(
             current: _current,
             isDark: isDark,
-            onTap: (i) => setState(() => _current = i),
+            onTap: (i) {
+              if (i == 3) {
+                try { Get.find<GroupsController>().fetchGroups(); } catch (_) {}
+              }
+              setState(() => _current = i);
+            },
             onAdd: _openAddSheet,
           ),
         );
@@ -224,13 +233,22 @@ class _NavBar extends StatelessWidget {
                   ),
                 ),
               ),
+              // Splits
+              Expanded(
+                child: _NavItem(
+                  icon: PhosphorIconsLight.usersThree,
+                  label: 'Splits',
+                  isActive: current == 3,
+                  onTap: () => onTap(3),
+                ),
+              ),
               // Profile
               Expanded(
                 child: _NavItem(
                   icon: PhosphorIconsLight.user,
                   label: 'Profile',
-                  isActive: current == 3,
-                  onTap: () => onTap(3),
+                  isActive: current == 4,
+                  onTap: () => onTap(4),
                 ),
               ),
             ],

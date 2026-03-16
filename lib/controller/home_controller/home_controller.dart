@@ -186,11 +186,11 @@ class HomeController extends GetxController {
   void calculateBalance() {
     // Calculate total income
     totalIncome.value =
-        incomeTransactions.fold(0.0, (double sum, transaction) => sum + double.parse(transaction['amount'].toString()));
+        incomeTransactions.fold(0.0, (double sum, transaction) => sum + ((transaction['amount'] as num?)?.toDouble() ?? 0.0));
 
     // Calculate total expense
     totalExpense.value = expenseTransactions.fold(
-        0.0, (double sum, transaction) => sum + double.parse(transaction['amount'].toString()));
+        0.0, (double sum, transaction) => sum + ((transaction['amount'] as num?)?.toDouble() ?? 0.0));
 
     // Set total balance as income - expense
     totalBalance.value = totalIncome.value - totalExpense.value;
@@ -296,7 +296,7 @@ class HomeController extends GetxController {
       if (date.year != selectedYear.value) continue;
 
       String category = transaction['category'];
-      double amount = double.parse(transaction['amount'].toString());
+      double amount = ((transaction['amount'] as num?)?.toDouble() ?? 0.0);
 
       if (category.isEmpty) continue;
       categoryTotals[category] = (categoryTotals[category] ?? 0) + amount;
@@ -442,10 +442,10 @@ class HomeController extends GetxController {
 
       if (transaction['type'] == 'income') {
         monthlyTotals[monthKey]!['income'] =
-            (monthlyTotals[monthKey]!['income'] ?? 0.0) + double.parse(transaction['amount'].toString());
+            (monthlyTotals[monthKey]!['income'] ?? 0.0) + ((transaction['amount'] as num?)?.toDouble() ?? 0.0);
       } else if (transaction['type'] == 'expense') {
         monthlyTotals[monthKey]!['expense'] =
-            (monthlyTotals[monthKey]!['expense'] ?? 0.0) + double.parse(transaction['amount'].toString());
+            (monthlyTotals[monthKey]!['expense'] ?? 0.0) + ((transaction['amount'] as num?)?.toDouble() ?? 0.0);
       }
 
       // Calculate savings
@@ -520,7 +520,7 @@ class HomeController extends GetxController {
           return t['type'] == 'income' &&
               date.isAfter(startOfWeek.subtract(const Duration(days: 1))) &&
               date.isBefore(endOfWeek.add(const Duration(days: 1)));
-        }).fold(0.0, (sum, t) => sum + double.parse(t['amount'].toString()));
+        }).fold(0.0, (sum, t) => sum + ((t['amount'] as num?)?.toDouble() ?? 0.0));
         break;
 
       case 'monthly':
@@ -534,7 +534,7 @@ class HomeController extends GetxController {
           return t['type'] == 'income' &&
               date.isAfter(startOfMonth.subtract(const Duration(days: 1))) &&
               date.isBefore(endOfMonth.add(const Duration(days: 1)));
-        }).fold(0.0, (sum, t) => sum + double.parse(t['amount'].toString()));
+        }).fold(0.0, (sum, t) => sum + ((t['amount'] as num?)?.toDouble() ?? 0.0));
         break;
 
       default:
@@ -548,7 +548,7 @@ class HomeController extends GetxController {
           return t['type'] == 'income' &&
               date.isAfter(startOfYear.subtract(const Duration(days: 1))) &&
               date.isBefore(endOfYear.add(const Duration(days: 1)));
-        }).fold(0.0, (sum, t) => sum + double.parse(t['amount'].toString()));
+        }).fold(0.0, (sum, t) => sum + ((t['amount'] as num?)?.toDouble() ?? 0.0));
         break;
     }
 
@@ -573,7 +573,7 @@ class HomeController extends GetxController {
           return t['type'] == 'income' &&
               date.isAfter(startOfLastWeek.subtract(const Duration(days: 1))) &&
               date.isBefore(endOfLastWeek.add(const Duration(days: 1)));
-        }).fold(0.0, (sum, t) => sum + double.parse(t['amount'].toString()));
+        }).fold(0.0, (sum, t) => sum + ((t['amount'] as num?)?.toDouble() ?? 0.0));
         break;
 
       case 'monthly':
@@ -587,7 +587,7 @@ class HomeController extends GetxController {
           return t['type'] == 'income' &&
               date.isAfter(startOfLastMonth.subtract(const Duration(days: 1))) &&
               date.isBefore(endOfLastMonth.add(const Duration(days: 1)));
-        }).fold(0.0, (sum, t) => sum + double.parse(t['amount'].toString()));
+        }).fold(0.0, (sum, t) => sum + ((t['amount'] as num?)?.toDouble() ?? 0.0));
         break;
 
       default:
@@ -601,7 +601,7 @@ class HomeController extends GetxController {
           return t['type'] == 'income' &&
               date.isAfter(startOfLastYear.subtract(const Duration(days: 1))) &&
               date.isBefore(endOfLastYear.add(const Duration(days: 1)));
-        }).fold(0.0, (sum, t) => sum + double.parse(t['amount'].toString()));
+        }).fold(0.0, (sum, t) => sum + ((t['amount'] as num?)?.toDouble() ?? 0.0));
         break;
     }
 
@@ -626,7 +626,7 @@ class HomeController extends GetxController {
           return t['type'] == 'expense' &&
               date.isAfter(startOfWeek.subtract(const Duration(days: 1))) &&
               date.isBefore(endOfWeek.add(const Duration(days: 1)));
-        }).fold(0.0, (sum, t) => sum + double.parse(t['amount'].toString()));
+        }).fold(0.0, (sum, t) => sum + ((t['amount'] as num?)?.toDouble() ?? 0.0));
         break;
 
       case 'monthly':
@@ -640,7 +640,7 @@ class HomeController extends GetxController {
           return t['type'] == 'expense' &&
               date.isAfter(startOfMonth.subtract(const Duration(days: 1))) &&
               date.isBefore(endOfMonth.add(const Duration(days: 1)));
-        }).fold(0.0, (sum, t) => sum + double.parse(t['amount'].toString()));
+        }).fold(0.0, (sum, t) => sum + ((t['amount'] as num?)?.toDouble() ?? 0.0));
         break;
 
       default:
@@ -654,7 +654,7 @@ class HomeController extends GetxController {
           return t['type'] == 'expense' &&
               date.isAfter(startOfYear.subtract(const Duration(days: 1))) &&
               date.isBefore(endOfYear.add(const Duration(days: 1)));
-        }).fold(0.0, (sum, t) => sum + double.parse(t['amount'].toString()));
+        }).fold(0.0, (sum, t) => sum + ((t['amount'] as num?)?.toDouble() ?? 0.0));
         break;
     }
 
@@ -679,7 +679,7 @@ class HomeController extends GetxController {
           return t['type'] == 'expense' &&
               date.isAfter(startOfLastWeek.subtract(const Duration(days: 1))) &&
               date.isBefore(endOfLastWeek.add(const Duration(days: 1)));
-        }).fold(0.0, (sum, t) => sum + double.parse(t['amount'].toString()));
+        }).fold(0.0, (sum, t) => sum + ((t['amount'] as num?)?.toDouble() ?? 0.0));
         break;
 
       case 'monthly':
@@ -693,7 +693,7 @@ class HomeController extends GetxController {
           return t['type'] == 'expense' &&
               date.isAfter(startOfLastMonth.subtract(const Duration(days: 1))) &&
               date.isBefore(endOfLastMonth.add(const Duration(days: 1)));
-        }).fold(0.0, (sum, t) => sum + double.parse(t['amount'].toString()));
+        }).fold(0.0, (sum, t) => sum + ((t['amount'] as num?)?.toDouble() ?? 0.0));
         break;
 
       default:
@@ -707,7 +707,7 @@ class HomeController extends GetxController {
           return t['type'] == 'expense' &&
               date.isAfter(startOfLastYear.subtract(const Duration(days: 1))) &&
               date.isBefore(endOfLastYear.add(const Duration(days: 1)));
-        }).fold(0.0, (sum, t) => sum + double.parse(t['amount'].toString()));
+        }).fold(0.0, (sum, t) => sum + ((t['amount'] as num?)?.toDouble() ?? 0.0));
         break;
     }
 
@@ -746,11 +746,11 @@ class HomeController extends GetxController {
       // Calculate income and expense for this day
       double dayIncome = dayTransactions
           .where((t) => t['type'] == 'income')
-          .fold(0.0, (sum, t) => sum + double.parse(t['amount'].toString()));
+          .fold(0.0, (sum, t) => sum + ((t['amount'] as num?)?.toDouble() ?? 0.0));
 
       double dayExpense = dayTransactions
           .where((t) => t['type'] == 'expense')
-          .fold(0.0, (sum, t) => sum + double.parse(t['amount'].toString()));
+          .fold(0.0, (sum, t) => sum + ((t['amount'] as num?)?.toDouble() ?? 0.0));
 
       result.add({
         'period': dayName,
@@ -783,11 +783,11 @@ class HomeController extends GetxController {
       // Calculate income and expense for this month
       double monthIncome = monthTransactions
           .where((t) => t['type'] == 'income')
-          .fold(0.0, (sum, t) => sum + double.parse(t['amount'].toString()));
+          .fold(0.0, (sum, t) => sum + ((t['amount'] as num?)?.toDouble() ?? 0.0));
 
       double monthExpense = monthTransactions
           .where((t) => t['type'] == 'expense')
-          .fold(0.0, (sum, t) => sum + double.parse(t['amount'].toString()));
+          .fold(0.0, (sum, t) => sum + ((t['amount'] as num?)?.toDouble() ?? 0.0));
 
       result.add({
         'period': monthName,
@@ -820,11 +820,11 @@ class HomeController extends GetxController {
       // Calculate income and expense for this year
       double yearIncome = yearTransactions
           .where((t) => t['type'] == 'income')
-          .fold(0.0, (sum, t) => sum + double.parse(t['amount'].toString()));
+          .fold(0.0, (sum, t) => sum + ((t['amount'] as num?)?.toDouble() ?? 0.0));
 
       double yearExpense = yearTransactions
           .where((t) => t['type'] == 'expense')
-          .fold(0.0, (sum, t) => sum + double.parse(t['amount'].toString()));
+          .fold(0.0, (sum, t) => sum + ((t['amount'] as num?)?.toDouble() ?? 0.0));
 
       result.add({
         'period': year.toString(),

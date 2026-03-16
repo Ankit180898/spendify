@@ -159,7 +159,8 @@ class _StatisticsScreenState extends State<StatisticsScreen>
     final start = DateTime(month.year, month.month, 1);
     final end = DateTime(month.year, month.month + 1, 0, 23, 59, 59);
     return all.where((t) {
-      final d = DateTime.parse(t['date']);
+      final d = t['parsedDate'] as DateTime? ?? DateTime.tryParse(t['date'] ?? '');
+      if (d == null) return false;
       return !d.isBefore(start) && !d.isAfter(end);
     }).toList();
   }
@@ -214,15 +215,19 @@ class _StatisticsScreenState extends State<StatisticsScreen>
             final filteredTx = monthTx
                 .where((t) => t['type'] == viewType)
                 .toList()
-              ..sort((a, b) => DateTime.parse(b['date'])
-                  .compareTo(DateTime.parse(a['date'])));
+              ..sort((a, b) {
+                  final da = a['parsedDate'] as DateTime? ?? DateTime.tryParse(a['date'] ?? '') ?? DateTime(0);
+                  final db = b['parsedDate'] as DateTime? ?? DateTime.tryParse(b['date'] ?? '') ?? DateTime(0);
+                  return db.compareTo(da);
+                });
 
             final daysInMonth =
                 DateTime(_month.year, _month.month + 1, 0).day;
             final dayMap = <int, double>{};
             for (final tx in monthTx) {
               if (tx['type'] != viewType) continue;
-              final d = DateTime.parse(tx['date']).day;
+              final d = (tx['parsedDate'] as DateTime? ?? DateTime.tryParse(tx['date'] ?? ''))?.day;
+              if (d == null) continue;
               dayMap[d] =
                   (dayMap[d] ?? 0) + (tx['amount'] as num).toDouble();
             }

@@ -49,7 +49,7 @@ class AllTransactionsController extends GetxController {
     _loadingMore = true;
     _displayCount += _pageSize;
     _commitPage();
-    _loadingMore = false;
+    _loadingMore = false; // synchronous — safe because _commitPage is sync
   }
 
   void filterTransactions(String filter) {
