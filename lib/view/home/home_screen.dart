@@ -25,7 +25,8 @@ class HomeScreen extends StatelessWidget {
     final ctrl = Get.isRegistered<HomeController>()
         ? Get.find<HomeController>()
         : Get.put(HomeController());
-    if (!Get.isRegistered<TransactionController>()) Get.put(TransactionController());
+    if (!Get.isRegistered<TransactionController>())
+      Get.put(TransactionController());
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
@@ -116,7 +117,9 @@ class _Header extends StatelessWidget {
                       height: 36,
                       margin: const EdgeInsets.only(right: 8),
                       decoration: BoxDecoration(
-                        color: isDark ? AppColor.darkCard : const Color(0xFFF4F4F5),
+                        color: isDark
+                            ? AppColor.darkCard
+                            : const Color(0xFFF4F4F5),
                         shape: BoxShape.circle,
                       ),
                       child: Center(
@@ -134,12 +137,16 @@ class _Header extends StatelessWidget {
                       width: 36,
                       height: 36,
                       decoration: BoxDecoration(
-                        color: isDark ? AppColor.darkCard : const Color(0xFFF4F4F5),
+                        color: isDark
+                            ? AppColor.darkCard
+                            : const Color(0xFFF4F4F5),
                         shape: BoxShape.circle,
                       ),
                       child: Center(
                         child: PhosphorIcon(
-                          visible ? PhosphorIconsLight.eye : PhosphorIconsLight.eyeSlash,
+                          visible
+                              ? PhosphorIconsLight.eye
+                              : PhosphorIconsLight.eyeSlash,
                           color: textMuted,
                           size: 16,
                         ),
@@ -149,7 +156,6 @@ class _Header extends StatelessWidget {
                 ],
               ),
             ),
-
             Showcase(
               key: Get.find<WalkthroughController>().balanceKey,
               title: 'Your financial overview',
@@ -182,7 +188,9 @@ class _Header extends StatelessWidget {
                       duration: const Duration(milliseconds: 200),
                       child: Text(
                         key: ValueKey(visible),
-                        visible ? '${ctrl.currencySymbol.value}${fmt.format(ctrl.totalBalance.value)}' : '${ctrl.currencySymbol.value}  ••••••',
+                        visible
+                            ? '${ctrl.currencySymbol.value}${fmt.format(ctrl.totalBalance.value)}'
+                            : '${ctrl.currencySymbol.value}  ••••••',
                         style: TextStyle(
                           color: textPrimary,
                           fontSize: 42,
@@ -196,28 +204,30 @@ class _Header extends StatelessWidget {
                 ),
               ),
             ),
-
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
               child: Row(
                 children: [
                   _StatPill(
                     label: 'Income',
-                    value: visible ? '${ctrl.currencySymbol.value}${_compact(ctrl.totalIncome.value)}' : '•••',
+                    value: visible
+                        ? '${ctrl.currencySymbol.value}${_compact(ctrl.totalIncome.value)}'
+                        : '•••',
                     color: AppColor.income,
                     isDark: isDark,
                   ),
                   const SizedBox(width: 10),
                   _StatPill(
                     label: 'Expenses',
-                    value: visible ? '${ctrl.currencySymbol.value}${_compact(ctrl.totalExpense.value)}' : '•••',
+                    value: visible
+                        ? '${ctrl.currencySymbol.value}${_compact(ctrl.totalExpense.value)}'
+                        : '•••',
                     color: AppColor.expense,
                     isDark: isDark,
                   ),
                 ],
               ),
             ),
-
             const SizedBox(height: 24),
             Divider(height: 1, color: divColor),
           ],
@@ -331,7 +341,8 @@ class _MonthSummary extends StatelessWidget {
                         fontWeight: FontWeight.w600)),
                 const Spacer(),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
                     color: isDark ? AppColor.darkCard : const Color(0xFFF4F4F5),
                     borderRadius: BorderRadius.circular(100),
@@ -352,21 +363,24 @@ class _MonthSummary extends StatelessWidget {
                 _MiniStat(
                   icon: PhosphorIconsLight.arrowUp,
                   label: 'Earned',
-                  value: '${ctrl.currencySymbol.value}${fmt.format(monthIncome)}',
+                  value:
+                      '${ctrl.currencySymbol.value}${fmt.format(monthIncome)}',
                   color: AppColor.income,
                   isDark: isDark,
                 ),
                 _MiniStat(
                   icon: PhosphorIconsLight.arrowDown,
                   label: 'Spent',
-                  value: '${ctrl.currencySymbol.value}${fmt.format(monthSpent)}',
+                  value:
+                      '${ctrl.currencySymbol.value}${fmt.format(monthSpent)}',
                   color: AppColor.expense,
                   isDark: isDark,
                 ),
                 _MiniStat(
                   icon: PhosphorIconsLight.piggyBank,
                   label: saved >= 0 ? 'Saved' : 'Over',
-                  value: '${ctrl.currencySymbol.value}${fmt.format(saved.abs())}',
+                  value:
+                      '${ctrl.currencySymbol.value}${fmt.format(saved.abs())}',
                   color: saved >= 0 ? AppColor.income : AppColor.expense,
                   isDark: isDark,
                 ),
@@ -415,7 +429,8 @@ class _MonthSummary extends StatelessWidget {
                     child: _QuickAction(
                       label: 'Add expense',
                       color: AppColor.expense,
-                      onTap: () => Get.to(() => const AddTransactionScreen(initialType: 'expense')),
+                      onTap: () => Get.to(() =>
+                          const AddTransactionScreen(initialType: 'expense')),
                     ),
                   ),
                   const SizedBox(width: 10),
@@ -423,7 +438,8 @@ class _MonthSummary extends StatelessWidget {
                     child: _QuickAction(
                       label: 'Add income',
                       color: AppColor.income,
-                      onTap: () => Get.to(() => const AddTransactionScreen(initialType: 'income')),
+                      onTap: () => Get.to(() =>
+                          const AddTransactionScreen(initialType: 'income')),
                     ),
                   ),
                 ],
@@ -436,7 +452,6 @@ class _MonthSummary extends StatelessWidget {
       );
     });
   }
-
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -450,7 +465,8 @@ class _MonthSummaryShimmer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final base = isDark ? const Color(0xFF1E1E2E) : const Color(0xFFF4F4F5);
-    final highlight = isDark ? const Color(0xFF2A2A3E) : const Color(0xFFE4E4E7);
+    final highlight =
+        isDark ? const Color(0xFF2A2A3E) : const Color(0xFFE4E4E7);
     return Shimmer.fromColors(
       baseColor: base,
       highlightColor: highlight,
@@ -462,9 +478,19 @@ class _MonthSummaryShimmer extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
             child: Row(
               children: [
-                Container(height: 14, width: 120, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(6))),
+                Container(
+                    height: 14,
+                    width: 120,
+                    decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(6))),
                 const Spacer(),
-                Container(height: 20, width: 52, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(100))),
+                Container(
+                    height: 20,
+                    width: 52,
+                    decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(100))),
               ],
             ),
           ),
@@ -473,19 +499,31 @@ class _MonthSummaryShimmer extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Row(
-              children: List.generate(3, (i) => Expanded(
-                child: Padding(
-                  padding: EdgeInsets.only(right: i < 2 ? 12 : 0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(height: 11, width: 50, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(5))),
-                      const SizedBox(height: 5),
-                      Container(height: 13, width: 64, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(5))),
-                    ],
-                  ),
-                ),
-              )),
+              children: List.generate(
+                  3,
+                  (i) => Expanded(
+                        child: Padding(
+                          padding: EdgeInsets.only(right: i < 2 ? 12 : 0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Container(
+                                  height: 11,
+                                  width: 50,
+                                  decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(5))),
+                              const SizedBox(height: 5),
+                              Container(
+                                  height: 13,
+                                  width: 64,
+                                  decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(5))),
+                            ],
+                          ),
+                        ),
+                      )),
             ),
           ),
           const SizedBox(height: 20),
@@ -494,9 +532,19 @@ class _MonthSummaryShimmer extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Row(
               children: [
-                Expanded(child: Container(height: 40, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(10)))),
+                Expanded(
+                    child: Container(
+                        height: 40,
+                        decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(10)))),
                 const SizedBox(width: 10),
-                Expanded(child: Container(height: 40, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(10)))),
+                Expanded(
+                    child: Container(
+                        height: 40,
+                        decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(10)))),
               ],
             ),
           ),
@@ -529,8 +577,10 @@ class _BudgetBar extends StatelessWidget {
         : pct >= 0.8
             ? AppColor.warning
             : AppColor.income;
-    final textPrimary = isDark ? AppColor.textPrimary : AppColor.lightTextPrimary;
-    final textMuted = isDark ? AppColor.textSecondary : AppColor.lightTextSecondary;
+    final textPrimary =
+        isDark ? AppColor.textPrimary : AppColor.lightTextPrimary;
+    final textMuted =
+        isDark ? AppColor.textSecondary : AppColor.lightTextSecondary;
     final trackColor = isDark ? AppColor.darkCard : const Color(0xFFF4F4F5);
     final fmt = NumberFormat('#,##0', 'en_IN');
 
@@ -556,9 +606,7 @@ class _BudgetBar extends StatelessWidget {
                     ? '$sym${fmt.format(spent - budget)} over'
                     : '$sym${fmt.format(budget - spent)} left',
                 style: TextStyle(
-                    color: barColor,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600),
+                    color: barColor, fontSize: 12, fontWeight: FontWeight.w600),
               ),
             ],
           ),
@@ -568,9 +616,8 @@ class _BudgetBar extends StatelessWidget {
             child: LinearProgressIndicator(
               value: pct,
               minHeight: 6,
-              backgroundColor: isDark
-                  ? AppColor.darkBorder
-                  : const Color(0xFFE4E4E7),
+              backgroundColor:
+                  isDark ? AppColor.darkBorder : const Color(0xFFE4E4E7),
               valueColor: AlwaysStoppedAnimation<Color>(barColor),
             ),
           ),
@@ -688,7 +735,8 @@ class _InsightsShimmer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final base = isDark ? const Color(0xFF1E1E2E) : const Color(0xFFF4F4F5);
-    final highlight = isDark ? const Color(0xFF2A2A3E) : const Color(0xFFE4E4E7);
+    final highlight =
+        isDark ? const Color(0xFF2A2A3E) : const Color(0xFFE4E4E7);
     final divColor = isDark ? AppColor.darkBorder : const Color(0xFFF4F4F5);
     return Shimmer.fromColors(
       baseColor: base,
@@ -698,7 +746,12 @@ class _InsightsShimmer extends StatelessWidget {
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
-            child: Container(height: 14, width: 70, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(6))),
+            child: Container(
+                height: 14,
+                width: 70,
+                decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(6))),
           ),
           SizedBox(
             height: 116,
@@ -709,7 +762,9 @@ class _InsightsShimmer extends StatelessWidget {
               separatorBuilder: (_, __) => const SizedBox(width: 10),
               itemBuilder: (_, __) => Container(
                 width: 220,
-                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14)),
+                decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(14)),
               ),
             ),
           ),
@@ -730,6 +785,94 @@ class _InsightsStrip extends StatelessWidget {
   final HomeController ctrl;
   const _InsightsStrip({required this.isDark, required this.ctrl});
 
+  void _showInsightSheet(BuildContext context, Insight insight, bool isDark) {
+    final bg = isDark ? AppColor.darkSurface : Colors.white;
+    final textPrimary = isDark ? AppColor.textPrimary : const Color(0xFF09090B);
+    final textMuted = isDark ? AppColor.textSecondary : const Color(0xFF71717A);
+    final accent = insight.accentColor;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (_) => Container(
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 40),
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // drag handle
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: isDark ? AppColor.darkBorder : const Color(0xFFE0E0E0),
+                  borderRadius: BorderRadius.circular(100),
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            // emoji + badge row
+            Row(
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: accent.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Center(
+                    child: Text(insight.emoji,
+                        style: const TextStyle(fontSize: 22)),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    insight.title,
+                    style: TextStyle(
+                      color: textPrimary,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            // full body text — no maxLines limit
+            Text(
+              insight.body,
+              style: TextStyle(
+                color: textMuted,
+                fontSize: 14,
+                height: 1.6,
+              ),
+            ),
+            const SizedBox(height: 24),
+            // close button
+            SizedBox(
+              width: double.infinity,
+              child: TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: Text('Got it',
+                    style: TextStyle(
+                      color: accent,
+                      fontWeight: FontWeight.w600,
+                    )),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     SavingsController? savingsCtrl;
@@ -737,7 +880,8 @@ class _InsightsStrip extends StatelessWidget {
       savingsCtrl = Get.find<SavingsController>();
     } catch (_) {}
 
-    final textPrimary = isDark ? AppColor.textPrimary : AppColor.lightTextPrimary;
+    final textPrimary =
+        isDark ? AppColor.textPrimary : AppColor.lightTextPrimary;
     final divColor = isDark ? AppColor.darkBorder : const Color(0xFFF4F4F5);
 
     return Obx(() {
@@ -770,8 +914,10 @@ class _InsightsStrip extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 20),
               itemCount: insights.length,
               separatorBuilder: (_, __) => const SizedBox(width: 10),
-              itemBuilder: (_, i) =>
-                  _InsightCard(insight: insights[i], isDark: isDark),
+              itemBuilder: (_, i) => GestureDetector(
+                onTap: () => _showInsightSheet(context, insights[i], isDark),
+                child: _InsightCard(insight: insights[i], isDark: isDark),
+              ),
             ),
           ),
           const SizedBox(height: 20),
@@ -791,8 +937,10 @@ class _InsightCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final accent = insight.accentColor;
     final cardBg = isDark ? AppColor.darkCard : const Color(0xFFF4F4F5);
-    final textPrimary = isDark ? AppColor.textPrimary : AppColor.lightTextPrimary;
-    final textMuted = isDark ? AppColor.textSecondary : AppColor.lightTextSecondary;
+    final textPrimary =
+        isDark ? AppColor.textPrimary : AppColor.lightTextPrimary;
+    final textMuted =
+        isDark ? AppColor.textSecondary : AppColor.lightTextSecondary;
 
     final typeLabel = switch (insight.type) {
       InsightType.warning => 'Watch out',
@@ -821,14 +969,13 @@ class _InsightCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Center(
-                  child: Text(insight.emoji,
-                      style: const TextStyle(fontSize: 14)),
+                  child:
+                      Text(insight.emoji, style: const TextStyle(fontSize: 14)),
                 ),
               ),
               const Spacer(),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                 decoration: BoxDecoration(
                   color: accent.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(100),
@@ -836,9 +983,7 @@ class _InsightCard extends StatelessWidget {
                 child: Text(
                   typeLabel,
                   style: TextStyle(
-                      color: accent,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w600),
+                      color: accent, fontSize: 10, fontWeight: FontWeight.w600),
                 ),
               ),
             ],
@@ -900,21 +1045,36 @@ class _BudgetAlertsBanner extends StatelessWidget {
 
   static PhosphorIconData _catIcon(String category) {
     switch (category) {
-      case 'Food & Drinks':  return PhosphorIconsLight.forkKnife;
-      case 'Groceries':      return PhosphorIconsLight.shoppingCart;
-      case 'Transport':      return PhosphorIconsLight.bus;
-      case 'Car':            return PhosphorIconsLight.car;
-      case 'Shopping':       return PhosphorIconsLight.bag;
-      case 'Bills & Fees':   return PhosphorIconsLight.lightning;
-      case 'Health':         return PhosphorIconsLight.pill;
-      case 'Entertainment':  return PhosphorIconsLight.filmSlate;
-      case 'Travel':         return PhosphorIconsLight.airplane;
-      case 'Investments':    return PhosphorIconsLight.trendUp;
-      case 'Education':      return PhosphorIconsLight.graduationCap;
-      case 'Subscriptions':  return PhosphorIconsLight.receipt;
-      case 'Gifts':          return PhosphorIconsLight.gift;
-      case 'Others':         return PhosphorIconsLight.tag;
-      default:               return PhosphorIconsLight.chartBar;
+      case 'Food & Drinks':
+        return PhosphorIconsLight.forkKnife;
+      case 'Groceries':
+        return PhosphorIconsLight.shoppingCart;
+      case 'Transport':
+        return PhosphorIconsLight.bus;
+      case 'Car':
+        return PhosphorIconsLight.car;
+      case 'Shopping':
+        return PhosphorIconsLight.bag;
+      case 'Bills & Fees':
+        return PhosphorIconsLight.lightning;
+      case 'Health':
+        return PhosphorIconsLight.pill;
+      case 'Entertainment':
+        return PhosphorIconsLight.filmSlate;
+      case 'Travel':
+        return PhosphorIconsLight.airplane;
+      case 'Investments':
+        return PhosphorIconsLight.trendUp;
+      case 'Education':
+        return PhosphorIconsLight.graduationCap;
+      case 'Subscriptions':
+        return PhosphorIconsLight.receipt;
+      case 'Gifts':
+        return PhosphorIconsLight.gift;
+      case 'Others':
+        return PhosphorIconsLight.tag;
+      default:
+        return PhosphorIconsLight.chartBar;
     }
   }
 
@@ -968,8 +1128,7 @@ class _BudgetAlertsBanner extends StatelessWidget {
                 : pct >= 0.9
                     ? AppColor.warning
                     : AppColor.income;
-            final catColor =
-                _catColors[g.category] ?? AppColor.primary;
+            final catColor = _catColors[g.category] ?? AppColor.primary;
 
             return Padding(
               padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
@@ -1004,9 +1163,7 @@ class _BudgetAlertsBanner extends StatelessWidget {
                         const SizedBox(width: 10),
                         Expanded(
                           child: Text(
-                            g.category == 'All'
-                                ? 'Total Spending'
-                                : g.category,
+                            g.category == 'All' ? 'Total Spending' : g.category,
                             style: TextStyle(
                                 color: textPrimary,
                                 fontSize: 14,
@@ -1039,8 +1196,7 @@ class _BudgetAlertsBanner extends StatelessWidget {
                         value: pct,
                         minHeight: 5,
                         backgroundColor: trackColor,
-                        valueColor:
-                            AlwaysStoppedAnimation<Color>(barColor),
+                        valueColor: AlwaysStoppedAnimation<Color>(barColor),
                       ),
                     ),
                     const SizedBox(height: 6),
@@ -1152,7 +1308,8 @@ class _UrgentGoalTile extends StatelessWidget {
 
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    final deadline = DateTime(goal.targetDate!.year, goal.targetDate!.month, goal.targetDate!.day);
+    final deadline = DateTime(
+        goal.targetDate!.year, goal.targetDate!.month, goal.targetDate!.day);
     final daysLeft = deadline.difference(today).inDays;
 
     final urgencyColor = daysLeft == 0
@@ -1177,7 +1334,8 @@ class _UrgentGoalTile extends StatelessWidget {
         decoration: BoxDecoration(
           color: cardBg,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: urgencyColor.withValues(alpha: 0.35), width: 1.5),
+          border: Border.all(
+              color: urgencyColor.withValues(alpha: 0.35), width: 1.5),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1194,7 +1352,8 @@ class _UrgentGoalTile extends StatelessWidget {
                           fontWeight: FontWeight.w600)),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
                     color: urgencyColor.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(100),

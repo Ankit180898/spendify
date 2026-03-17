@@ -57,7 +57,8 @@ class InsightsService {
     // e.g. March 31 → clamp to Feb 28, not Feb 31 (which overflows to March 3)
     final lastMonthDays = DateTime(now.year, now.month, 0).day;
     final clampedDay = now.day.clamp(1, lastMonthDays);
-    final lastMonthSameDayEnd = DateTime(now.year, now.month - 1, clampedDay, 23, 59, 59);
+    final lastMonthSameDayEnd =
+        DateTime(now.year, now.month - 1, clampedDay, 23, 59, 59);
     final lastMonthExp = allTransactions.where((t) {
       final d = parseDate(t);
       return d != null &&
@@ -82,7 +83,8 @@ class InsightsService {
         insights.add(Insight(
           emoji: '📈',
           title: 'Spending up $pct%',
-          body: 'You\'ve spent more this month than last. Consider reviewing your categories.',
+          body:
+              'You\'ve spent more this month than last. Consider reviewing your categories.',
           type: InsightType.warning,
         ));
       } else if (pct < -10) {
@@ -126,14 +128,16 @@ class InsightsService {
         insights.add(Insight(
           emoji: '⚠️',
           title: 'Spending more than earned',
-          body: 'You\'ve spent ${rate.abs()}% more than your income this month.',
+          body:
+              'You\'ve spent ${rate.abs()}% more than your income this month.',
           type: InsightType.warning,
         ));
       } else {
         insights.add(Insight(
           emoji: '📊',
           title: 'Saving $rate% of income',
-          body: 'Try to reach 20% savings rate for a healthier financial cushion.',
+          body:
+              'Try to reach 20% savings rate for a healthier financial cushion.',
           type: InsightType.info,
         ));
       }
@@ -149,7 +153,8 @@ class InsightsService {
         insights.add(Insight(
           emoji: '🚨',
           title: 'Projected overspend',
-          body: 'At this pace you\'re on track to exceed your budget by $sym${_fmt(over)}.',
+          body:
+              'At this pace you\'re on track to exceed your budget by $sym${_fmt(over)}.',
           type: InsightType.warning,
         ));
       } else if (projected < monthlyBudget * 0.85) {
@@ -157,7 +162,8 @@ class InsightsService {
         insights.add(Insight(
           emoji: '✅',
           title: 'On track with budget',
-          body: 'You\'re projected to end the month $sym${_fmt(under)} under budget.',
+          body:
+              'You\'re projected to end the month $sym${_fmt(under)} under budget.',
           type: InsightType.positive,
         ));
       }
@@ -176,23 +182,24 @@ class InsightsService {
         insights.add(const Insight(
           emoji: '🔥',
           title: 'Logged today',
-          body: 'You\'re on top of your finances. Keep logging daily for best insights.',
+          body:
+              'You\'re on top of your finances. Keep logging daily for best insights.',
           type: InsightType.positive,
         ));
       } else if (daysSince >= 5) {
         insights.add(Insight(
           emoji: '📝',
           title: '$daysSince days without a log',
-          body: 'Quick reminder to log any recent transactions you may have missed.',
+          body:
+              'Quick reminder to log any recent transactions you may have missed.',
           type: InsightType.warning,
         ));
       }
     }
 
     // ── 6. Savings goal nudge ──────────────────────────────────────────────
-    final activeGoals = savingsGoals
-        .where((g) => g.savedAmount < g.targetAmount)
-        .toList();
+    final activeGoals =
+        savingsGoals.where((g) => g.savedAmount < g.targetAmount).toList();
 
     for (final goal in activeGoals.take(1)) {
       final remaining = goal.targetAmount - goal.savedAmount;
@@ -219,12 +226,44 @@ class InsightsService {
       }
     }
 
+    // ── 7. Unusual spending  ──────────────────────────────────────────────  ← ADD HERE
+    final avgTx =
+        thisSpent / (thisMonthExp.isNotEmpty ? thisMonthExp.length : 1);
+    final bigTx = thisMonthExp.where((t) => amt(t) > avgTx * 3).toList();
+    if (bigTx.isNotEmpty) {
+      final t = bigTx.first;
+      insights.add(Insight(
+        emoji: '👀',
+        title: 'Large transaction spotted',
+        body:
+            '${t['description'] ?? t['category']} was $sym${_fmt(amt(t))} — unusually high for you.',
+        type: InsightType.info,
+      ));
+    }
+
+// ── 8. Weekend spending ────────────────────────────────────────────────  ← ADD HERE
+    final weekendSpend = thisMonthExp
+        .where((t) => [6, 7].contains(parseDate(t)?.weekday))
+        .fold(0.0, (s, t) => s + amt(t));
+    final weekendPct =
+        thisSpent > 0 ? (weekendSpend / thisSpent * 100).round() : 0;
+    if (weekendPct > 50) {
+      insights.add(Insight(
+        emoji: '🎉',
+        title: '$weekendPct% spent on weekends',
+        body:
+            'Most of your spending happens on weekends. Worth keeping an eye on.',
+        type: InsightType.info,
+      ));
+    }
+
     // ── 7. No data fallback ────────────────────────────────────────────────
     if (insights.isEmpty) {
       insights.add(const Insight(
         emoji: '👋',
         title: 'Start logging transactions',
-        body: 'Once you log a few transactions, personalised insights will appear here.',
+        body:
+            'Once you log a few transactions, personalised insights will appear here.',
         type: InsightType.info,
       ));
     }
