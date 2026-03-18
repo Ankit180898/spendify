@@ -15,6 +15,7 @@ class NotificationService {
   static const _dailyChannelId     = 'daily_safe';
   static const _milestoneChannelId = 'milestones';
   static const _spikeChannelId     = 'spend_spike';
+  static const _splitsChannelId    = 'group_splits';
 
   static const _logReminderId   = 999999;
   static const _weeklyDigestId  = 1000001;
@@ -363,6 +364,34 @@ class NotificationService {
       );
     } catch (e) {
       debugPrint('showSpendSpike error: $e');
+    }
+  }
+
+  // ── Group splits / shared expenses (immediate) ───────────────────────────────
+
+  static Future<void> showSplitAlert({
+    required String title,
+    required String body,
+  }) async {
+    if (!_initialized) return;
+    try {
+      await _plugin.show(
+        DateTime.now().millisecondsSinceEpoch.remainder(100000),
+        title,
+        body,
+        const NotificationDetails(
+          android: AndroidNotificationDetails(
+            _splitsChannelId, 'Group Splits',
+            channelDescription: 'Notifications for group joins, leaves and shared expenses',
+            importance: Importance.high,
+            priority: Priority.high,
+            icon: _icon,
+          ),
+          iOS: DarwinNotificationDetails(),
+        ),
+      );
+    } catch (e) {
+      debugPrint('showSplitAlert error: $e');
     }
   }
 

@@ -32,9 +32,7 @@ class GroupsController extends GetxController {
         return;
       }
 
-      final groupIds = response
-          .map((m) => m['group_id'] as String)
-          .toList();
+      final groupIds = response.map((m) => m['group_id'] as String).toList();
 
       final fetched = response
           .map((m) => GroupModel.fromMap(m['groups'] as Map<String, dynamic>))
@@ -71,12 +69,16 @@ class GroupsController extends GetxController {
 
       final code = await _generateUniqueCode();
 
-      final res = await supabaseC.from('groups').insert({
-        'name': name.trim(),
-        'emoji': emoji,
-        'invite_code': code,
-        'created_by': uid,
-      }).select().single();
+      final res = await supabaseC
+          .from('groups')
+          .insert({
+            'name': name.trim(),
+            'emoji': emoji,
+            'invite_code': code,
+            'created_by': uid,
+          })
+          .select()
+          .single();
 
       final group = GroupModel.fromMap(res);
 
@@ -127,7 +129,8 @@ class GroupsController extends GetxController {
         if (msg.contains('duplicate') ||
             msg.contains('23505') ||
             msg.contains('unique')) {
-          CustomToast.errorToast('Already joined', 'You are already in this group');
+          CustomToast.errorToast(
+              'Already joined', 'You are already in this group');
           return false;
         }
         rethrow;
@@ -147,6 +150,37 @@ class GroupsController extends GetxController {
     try {
       final uid = supabaseC.auth.currentUser?.id;
       if (uid == null) return;
+
+      // Prevent leaving if there are unsettled balances in this group
+      final dues = await supabaseC
+          .from('split_shares')
+          .select('amount_owed, is_settled, splits!inner(group_id, paid_by)')
+          .eq('user_id', uid)
+          .eq('splits.group_id', groupId);
+
+      double net = 0.0;
+      for (final row in dues) {
+        if (row['is_settled'] == true) continue;
+        final amt = (row['amount_owed'] as num?)?.toDouble() ?? 0.0;
+        final paidBy = row['splits']['paid_by'] as String?;
+        if (amt <= 0 || paidBy == null) continue;
+
+        if (paidBy == uid) {
+          // Others owe me
+          net += amt;
+        } else {
+          // I owe someone else
+          net -= amt;
+        }
+      }
+
+      if (net.abs() > 0.01) {
+        CustomToast.errorToast(
+          'Cannot leave',
+          'You still have unsettled balances in this group.',
+        );
+        return;
+      }
 
       await supabaseC
           .from('group_members')
@@ -184,8 +218,10 @@ class GroupsController extends GetxController {
     String code;
     bool exists;
     do {
-      final p1 = List.generate(3, (_) => chars[rand.nextInt(chars.length)]).join();
-      final p2 = List.generate(3, (_) => chars[rand.nextInt(chars.length)]).join();
+      final p1 =
+          List.generate(3, (_) => chars[rand.nextInt(chars.length)]).join();
+      final p2 =
+          List.generate(3, (_) => chars[rand.nextInt(chars.length)]).join();
       code = '$p1-$p2';
 
       final res = await supabaseC

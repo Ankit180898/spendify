@@ -7,6 +7,7 @@ import 'package:spendify/main.dart';
 import 'package:spendify/model/group_model.dart';
 import 'package:spendify/model/settlement_model.dart';
 import 'package:spendify/model/split_model.dart';
+import 'package:spendify/services/notification_service.dart';
 import 'package:spendify/widgets/toast/custom_toast.dart';
 
 class SplitsController extends GetxController {
@@ -110,7 +111,55 @@ class SplitsController extends GetxController {
             column: 'group_id',
             value: groupId,
           ),
-          callback: (_) => _debouncedLoad(),
+          callback: (payload) async {
+            await _debouncedLoad();
+
+            // Local notification for new expense that affects the current user
+            try {
+              final uid = supabaseC.auth.currentUser?.id;
+              if (uid == null) return;
+
+              final splitId = payload.newRecord['id'] as String?;
+              if (splitId == null) return;
+
+              final idx = splits.indexWhere((s) => s.id == splitId);
+              if (idx == -1) return;
+              final split = splits[idx];
+
+              final shareIdx =
+                  split.shares.indexWhere((sh) => sh.userId == uid);
+              final hasShare = shareIdx != -1;
+
+              // If user is not part of this split and did not pay, do nothing
+              if (!hasShare && split.paidBy != uid) return;
+
+              // If I owe money in this split
+              if (hasShare) {
+                final myShare = split.shares[shareIdx];
+                if (myShare.userId != split.paidBy &&
+                    myShare.amountOwed > 0) {
+                await NotificationService.showSplitAlert(
+                  title: 'You owe in ${split.title}',
+                  body:
+                      'You owe ₹${myShare.amountOwed.toStringAsFixed(2)} in this group expense.',
+                );
+                }
+              } else if (split.paidBy == uid) {
+                // I paid, others may owe me
+                final pendingFromOthers = split.shares
+                    .where((s) => s.userId != uid && !s.isSettled)
+                    .fold<double>(0.0, (sum, s) => sum + s.amountOwed);
+
+                if (pendingFromOthers > 0.01) {
+                  await NotificationService.showSplitAlert(
+                    title: 'Expense added in ${split.title}',
+                    body:
+                        'Others now owe you ₹${pendingFromOthers.toStringAsFixed(2)} for this expense.',
+                  );
+                }
+              }
+            } catch (_) {}
+          },
         )
         .onPostgresChanges(
           event: PostgresChangeEvent.update,
@@ -159,7 +208,55 @@ class SplitsController extends GetxController {
             column: 'group_id',
             value: groupId,
           ),
-          callback: (_) => fetchMembers(),
+          callback: (payload) async {
+            await fetchMembers();
+
+            // Local notification when someone else joins this group
+            try {
+              final uid = supabaseC.auth.currentUser?.id;
+              final newUserId = payload.newRecord['user_id'] as String?;
+              if (uid == null || newUserId == null || newUserId == uid) return;
+
+              final memberIndex =
+                  members.indexWhere((m) => m.userId == newUserId);
+              final name = memberIndex == -1
+                  ? 'Someone'
+                  : members[memberIndex].displayName;
+
+              await NotificationService.showSplitAlert(
+                title: 'New member joined',
+                body: '$name just joined this group.',
+              );
+            } catch (_) {}
+          },
+        )
+        .onPostgresChanges(
+          event: PostgresChangeEvent.delete,
+          schema: 'public',
+          table: 'group_members',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'group_id',
+            value: groupId,
+          ),
+          callback: (payload) async {
+            // Local notification when someone else leaves this group
+            try {
+              final uid = supabaseC.auth.currentUser?.id;
+              final leftUserId = payload.oldRecord['user_id'] as String?;
+              if (uid == null || leftUserId == null || leftUserId == uid) return;
+
+              final name =
+                  (payload.oldRecord['display_name'] as String?) ?? 'Someone';
+
+              await NotificationService.showSplitAlert(
+                title: 'Member left',
+                body: '$name left this group.',
+              );
+            } catch (_) {}
+
+            await fetchMembers();
+          },
         )
         .subscribe();
   }

@@ -26,12 +26,13 @@ class BottomNav extends StatefulWidget {
 class _BottomNavState extends State<BottomNav> {
   int _current = 0;
   bool _showcaseTriggered = false;
+  bool _dialOpen = false;
+  bool _dialVisible = false;
 
   final List<Widget> _screens = const [
     HomeScreen(),
     StatisticsScreen(),
     GoalsScreen(),
-    SplitsScreen(),
     ProfileScreen(),
   ];
 
@@ -46,9 +47,42 @@ class _BottomNavState extends State<BottomNav> {
     }
   }
 
-  void _openAddSheet() {
+  void _toggleDial() {
     HapticFeedback.mediumImpact();
-    Get.to(() => const AddTransactionScreen());
+    if (_dialOpen) {
+      _closeDial();
+      return;
+    }
+    setState(() {
+      _dialVisible = true;
+      _dialOpen = true;
+    });
+  }
+
+  void _closeDial() {
+    if (!_dialVisible) return;
+    setState(() => _dialOpen = false);
+    Future.delayed(const Duration(milliseconds: 220), () {
+      if (!mounted) return;
+      if (_dialOpen) return; // reopened
+      setState(() => _dialVisible = false);
+    });
+  }
+
+  void _addExpense() {
+    _closeDial();
+    Get.to(() => const AddTransactionScreen(initialType: 'expense'));
+  }
+
+  void _addIncome() {
+    _closeDial();
+    Get.to(() => const AddTransactionScreen(initialType: 'income'));
+  }
+
+  void _addSplitBill() {
+    _closeDial();
+    // Splits is not a bottom-tab destination; open it as a flow.
+    Get.to(() => const SplitsScreen(), transition: Transition.cupertino);
   }
 
   void _maybeStartShowcase(BuildContext ctx) {
@@ -77,17 +111,35 @@ class _BottomNavState extends State<BottomNav> {
         _maybeStartShowcase(showcaseCtx);
         return Scaffold(
           extendBody: true,
-          body: IndexedStack(index: _current, children: _screens),
+          body: Stack(
+            children: [
+              GestureDetector(
+                onTap: _closeDial,
+                behavior: HitTestBehavior.translucent,
+                child: IndexedStack(index: _current, children: _screens),
+              ),
+              if (_dialVisible)
+                Positioned.fill(
+                  child: _AddSpeedDial(
+                    isDark: isDark,
+                    open: _dialOpen,
+                    onClose: _closeDial,
+                    onExpense: _addExpense,
+                    onIncome: _addIncome,
+                    onSplitBill: _addSplitBill,
+                  ),
+                ),
+            ],
+          ),
           bottomNavigationBar: _NavBar(
             current: _current,
             isDark: isDark,
             onTap: (i) {
-              if (i == 3) {
-                try { Get.find<GroupsController>().fetchGroups(); } catch (_) {}
-              }
+              _closeDial();
               setState(() => _current = i);
             },
-            onAdd: _openAddSheet,
+            onAdd: _toggleDial,
+            dialOpen: _dialOpen,
           ),
         );
       },
@@ -102,12 +154,14 @@ class _NavBar extends StatelessWidget {
   final bool isDark;
   final ValueChanged<int> onTap;
   final VoidCallback onAdd;
+  final bool dialOpen;
 
   const _NavBar({
     required this.current,
     required this.isDark,
     required this.onTap,
     required this.onAdd,
+    required this.dialOpen,
   });
 
   @override
@@ -196,10 +250,14 @@ class _NavBar extends StatelessWidget {
                         color: AppColor.primary,
                         shape: BoxShape.circle,
                       ),
-                      child: const PhosphorIcon(
-                        PhosphorIconsLight.plus,
-                        color: Colors.white,
-                        size: 22,
+                      child: AnimatedRotation(
+                        duration: const Duration(milliseconds: 180),
+                        turns: dialOpen ? 0.125 : 0.0, // 45°
+                        child: const PhosphorIcon(
+                          PhosphorIconsLight.plus,
+                          color: Colors.white,
+                          size: 22,
+                        ),
                       ),
                     ),
                   ),
@@ -233,22 +291,13 @@ class _NavBar extends StatelessWidget {
                   ),
                 ),
               ),
-              // Splits
-              Expanded(
-                child: _NavItem(
-                  icon: PhosphorIconsLight.usersThree,
-                  label: 'Splits',
-                  isActive: current == 3,
-                  onTap: () => onTap(3),
-                ),
-              ),
               // Profile
               Expanded(
                 child: _NavItem(
                   icon: PhosphorIconsLight.user,
                   label: 'Profile',
-                  isActive: current == 4,
-                  onTap: () => onTap(4),
+                  isActive: current == 3,
+                  onTap: () => onTap(3),
                 ),
               ),
             ],
@@ -290,6 +339,197 @@ class _NavItem extends StatelessWidget {
           PhosphorIcon(icon, color: color, size: AppDimens.iconLG),
           const SizedBox(height: AppDimens.spaceXXS),
           Text(label, style: AppTypography.label(color)),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Add speed dial overlay ────────────────────────────────────────────────────
+
+class _AddSpeedDial extends StatelessWidget {
+  final bool isDark;
+  final bool open;
+  final VoidCallback onClose;
+  final VoidCallback onExpense;
+  final VoidCallback onSplitBill;
+  final VoidCallback onIncome;
+
+  const _AddSpeedDial({
+    required this.isDark,
+    required this.open,
+    required this.onClose,
+    required this.onExpense,
+    required this.onSplitBill,
+    required this.onIncome,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final bottomPad = MediaQuery.of(context).padding.bottom;
+    final scrim = Colors.black.withValues(alpha: isDark ? 0.60 : 0.40);
+
+    // Anchor close to the centre + button (which sits inside the nav bar)
+    final baseBottom = bottomPad + 18;
+
+    return Stack(
+      children: [
+        // Tap-to-dismiss scrim
+        GestureDetector(
+          onTap: onClose,
+          behavior: HitTestBehavior.opaque,
+          child: AnimatedOpacity(
+            duration: const Duration(milliseconds: 180),
+            opacity: open ? 1.0 : 0.0,
+            child: Container(color: scrim),
+          ),
+        ),
+
+        // Actions (radial arc)
+        Positioned(
+          left: 0,
+          right: 0,
+          bottom: baseBottom,
+          child: SizedBox(
+            height: AppDimens.navBarHeight + 170,
+            child: Stack(
+              alignment: Alignment.bottomCenter,
+              clipBehavior: Clip.none,
+              children: [
+                _RadialSlot(
+                  open: open,
+                  delayMs: 0,
+                  dx: -92,
+                  dy: -64,
+                  child: _DialAction(
+                    icon: PhosphorIconsLight.receipt,
+                    label: 'Expense',
+                    color: AppColor.expense,
+                    onTap: onExpense,
+                  ),
+                ),
+                _RadialSlot(
+                  open: open,
+                  delayMs: 40,
+                  dx: 0,
+                  dy: -118,
+                  child: _DialAction(
+                    icon: PhosphorIconsLight.usersThree,
+                    label: 'Split bill',
+                    color: AppColor.primary,
+                    onTap: onSplitBill,
+                  ),
+                ),
+                _RadialSlot(
+                  open: open,
+                  delayMs: 80,
+                  dx: 92,
+                  dy: -64,
+                  child: _DialAction(
+                    icon: PhosphorIconsLight.money,
+                    label: 'Income',
+                    color: AppColor.income,
+                    onTap: onIncome,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _RadialSlot extends StatelessWidget {
+  final bool open;
+  final int delayMs;
+  final double dx;
+  final double dy;
+  final Widget child;
+
+  const _RadialSlot({
+    required this.open,
+    required this.delayMs,
+    required this.dx,
+    required this.dy,
+    required this.child,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    // Simple stagger: delay movement/scale a bit per action
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0.0, end: open ? 1.0 : 0.0),
+      duration: const Duration(milliseconds: 200),
+      curve: Curves.easeOutCubic,
+      builder: (ctx, t, _) {
+        final eased = t;
+        return Transform.translate(
+          offset: Offset(dx * eased, dy * eased),
+          child: Transform.scale(
+            scale: 0.85 + 0.15 * eased,
+            child: Opacity(
+              opacity: eased,
+              child: child,
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _DialAction extends StatelessWidget {
+  final PhosphorIconData icon;
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _DialAction({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.selectionClick();
+        onTap();
+      },
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 54,
+            height: 54,
+            decoration: BoxDecoration(
+              color: color,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.18),
+                  blurRadius: 18,
+                  offset: const Offset(0, 10),
+                ),
+              ],
+            ),
+            child: Center(
+              child: PhosphorIcon(icon, color: Colors.white, size: 22),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            label,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
         ],
       ),
     );

@@ -18,75 +18,84 @@ class SplitsScreen extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bg = isDark ? AppColor.darkBg : Colors.white;
     final textPrimary = isDark ? AppColor.textPrimary : const Color(0xFF09090B);
-    final textMuted = isDark ? AppColor.textSecondary : const Color(0xFF71717A);
+    final canPop = Navigator.of(context).canPop();
 
     return Scaffold(
       backgroundColor: bg,
+      appBar: AppBar(
+        backgroundColor: bg,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        leading: canPop
+            ? IconButton(
+                icon: PhosphorIcon(
+                  PhosphorIconsLight.arrowLeft,
+                  color: textPrimary,
+                  size: 20,
+                ),
+                onPressed: Get.back,
+              )
+            : null,
+        title: Text(
+          'Splits',
+          style: TextStyle(
+            color: textPrimary,
+            fontSize: 17,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        actions: [
+          _ActionButton(
+            icon: PhosphorIconsLight.userPlus,
+            label: 'Join',
+            isDark: isDark,
+            onTap: () => _showJoinSheet(context, ctrl, isDark),
+          ),
+          const SizedBox(width: 8),
+          _ActionButton(
+            icon: PhosphorIconsLight.plus,
+            label: 'New',
+            isDark: isDark,
+            isPrimary: true,
+            onTap: () => _showCreateSheet(context, ctrl, isDark),
+          ),
+          const SizedBox(width: 12),
+        ],
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Divider(
+            height: 1,
+            color: isDark ? AppColor.darkBorder : const Color(0xFFF4F4F5),
+          ),
+        ),
+      ),
       body: SafeArea(
         bottom: false,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-              child: Row(
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Splits', style: TextStyle(color: textPrimary, fontSize: 22, fontWeight: FontWeight.w800, letterSpacing: -0.5)),
-                      Text('Share expenses with friends', style: TextStyle(color: textMuted, fontSize: 13)),
-                    ],
-                  ),
-                  const Spacer(),
-                  _ActionButton(
-                    icon: PhosphorIconsLight.userPlus,
-                    label: 'Join',
-                    isDark: isDark,
-                    onTap: () => _showJoinSheet(context, ctrl, isDark),
-                  ),
-                  const SizedBox(width: 8),
-                  _ActionButton(
-                    icon: PhosphorIconsLight.plus,
-                    label: 'New',
-                    isDark: isDark,
-                    isPrimary: true,
-                    onTap: () => _showCreateSheet(context, ctrl, isDark),
-                  ),
-                ],
+        child: Obx(() {
+          if (ctrl.isLoading.value) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (ctrl.groups.isEmpty) {
+            return _EmptyState(
+              isDark: isDark,
+              onCreate: () => _showCreateSheet(context, ctrl, isDark),
+              onJoin: () => _showJoinSheet(context, ctrl, isDark),
+            );
+          }
+          return RefreshIndicator(
+            onRefresh: ctrl.fetchGroups,
+            color: AppColor.primary,
+            child: ListView.separated(
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 120),
+              itemCount: ctrl.groups.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 12),
+              itemBuilder: (_, i) => _GroupCard(
+                group: ctrl.groups[i],
+                isDark: isDark,
               ),
             ),
-            const SizedBox(height: 20),
-            Expanded(
-              child: Obx(() {
-                if (ctrl.isLoading.value) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                if (ctrl.groups.isEmpty) {
-                  return _EmptyState(
-                    isDark: isDark,
-                    onCreate: () => _showCreateSheet(context, ctrl, isDark),
-                    onJoin: () => _showJoinSheet(context, ctrl, isDark),
-                  );
-                }
-                return RefreshIndicator(
-                  onRefresh: ctrl.fetchGroups,
-                  color: AppColor.primary,
-                  child: ListView.separated(
-                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 120),
-                    itemCount: ctrl.groups.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 12),
-                    itemBuilder: (_, i) => _GroupCard(
-                      group: ctrl.groups[i],
-                      isDark: isDark,
-                    ),
-                  ),
-                );
-              }),
-            ),
-          ],
-        ),
+          );
+        }),
       ),
     );
   }
