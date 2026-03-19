@@ -161,10 +161,10 @@ class TransactionController extends GetxController {
       final uid = supabaseC.auth.currentUser?.id;
       if (uid == null) return;
 
-      final response =
-          await supabaseC.from("users").select('balance').eq('id', uid).single();
-
-      final currentBalance = ((response['balance'] as num?)?.toDouble()) ?? 0.0;
+      // Use the locally cached balance (always recomputed from all transactions by
+      // fetchTotalBalanceData) instead of reading from users.balance, which can be
+      // stale after delete/edit operations that don't update the users table.
+      final currentBalance = homeC.totalBalance.value;
       final newBalance = type == 'income' ? currentBalance + amount : currentBalance - amount;
 
       await supabaseC.from("users").update({'balance': newBalance}).eq('id', uid);

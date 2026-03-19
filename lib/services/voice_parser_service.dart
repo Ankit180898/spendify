@@ -252,17 +252,71 @@ class VoiceParserService {
     return false;
   }
 
+  // Convert spoken number words to a digit string, e.g. "two thousand" → "2000"
+  static String _wordsToDigits(String input) {
+    const ones = {
+      'zero': 0, 'one': 1, 'two': 2, 'three': 3, 'four': 4, 'five': 5,
+      'six': 6, 'seven': 7, 'eight': 8, 'nine': 9, 'ten': 10,
+      'eleven': 11, 'twelve': 12, 'thirteen': 13, 'fourteen': 14,
+      'fifteen': 15, 'sixteen': 16, 'seventeen': 17, 'eighteen': 18,
+      'nineteen': 19,
+    };
+    const tens = {
+      'twenty': 20, 'thirty': 30, 'forty': 40, 'fifty': 50,
+      'sixty': 60, 'seventy': 70, 'eighty': 80, 'ninety': 90,
+    };
+    const multipliers = {
+      'hundred': 100, 'thousand': 1000,
+      'lakh': 100000, 'lac': 100000, 'lacs': 100000, 'lakhs': 100000,
+      'crore': 10000000, 'crores': 10000000,
+    };
+
+    final tokens = input.toLowerCase().split(RegExp(r'[\s,\-]+'));
+    double current = 0;
+    double result = 0;
+
+    for (final t in tokens) {
+      if (ones.containsKey(t)) {
+        current += ones[t]!;
+      } else if (tens.containsKey(t)) {
+        current += tens[t]!;
+      } else if (multipliers.containsKey(t)) {
+        final m = multipliers[t]!;
+        if (m == 100) {
+          current *= m;
+        } else {
+          result += (current == 0 ? 1 : current) * m;
+          current = 0;
+        }
+      }
+    }
+    result += current;
+
+    if (result > 0) {
+      // Replace the word-number portion with the digit equivalent
+      final wordPattern = RegExp(
+        r'\b(?:zero|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|hundred|thousand|lakh|lakhs|lac|lacs|crore|crores)(?:\s+(?:zero|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|hundred|thousand|lakh|lakhs|lac|lacs|crore|crores))*\b',
+        caseSensitive: false,
+      );
+      return input.replaceFirstMapped(wordPattern, (_) => result.toInt().toString());
+    }
+    return input;
+  }
+
   static VoiceParseResult parse(String text) {
-    final lower = text.toLowerCase().trim();
+    // Pre-process: convert word-numbers to digits ("two thousand" → "2000")
+    final preprocessed = _wordsToDigits(text.toLowerCase().trim());
+    final lower = preprocessed.toLowerCase().trim();
     final inputWords = lower.split(RegExp(r'[\s,]+'));
 
     // Determine type
     final isIncome = _incomeKeywords.any((k) => lower.contains(k));
 
-    // Extract amount — supports: "200", "₹200", "rs 200", "200 rupees", "2k", "2.5k"
+    // Extract amount — supports: "200", "₹200", "rs 200", "200 rupees", "2k", "2.5k",
+    // "2 lakh", "2.5 crore", "2 thousand"
     double? amount;
     final amountRegex = RegExp(
-      r'(?:rs\.?\s*|₹\s*|inr\s*)?(\d+(?:,\d+)*(?:\.\d+)?)\s*(k|thousand)?(?:\s*(?:rupees?|rs\.?|bucks?|inr))?',
+      r'(?:rs\.?\s*|₹\s*|inr\s*)?(\d+(?:,\d+)*(?:\.\d+)?)\s*(k|thousand|lakh|lakhs|lacs?|crores?|cr)?(?:\s*(?:rupees?|rs\.?|bucks?|inr))?',
       caseSensitive: false,
     );
     final match = amountRegex.firstMatch(lower);
@@ -272,6 +326,10 @@ class VoiceParserService {
       final suffix = match.group(2)?.toLowerCase();
       if (suffix == 'k' || suffix == 'thousand') {
         amount = (amount ?? 0) * 1000;
+      } else if (suffix == 'lakh' || suffix == 'lakhs' || suffix == 'lac' || suffix == 'lacs') {
+        amount = (amount ?? 0) * 100000;
+      } else if (suffix == 'crore' || suffix == 'crores' || suffix == 'cr') {
+        amount = (amount ?? 0) * 10000000;
       }
     }
 
@@ -311,7 +369,8 @@ class VoiceParserService {
     final stopWords = {
       'on', 'for', 'at', 'the', 'a', 'an', 'in', 'from', 'to', 'of',
       'spent', 'paid', 'bought', 'got', 'received', 'rupees', 'rs', 'inr',
-      'bucks', 'thousand', 'hundred', 'and', 'i', 'me', 'my',
+      'bucks', 'thousand', 'hundred', 'lakh', 'lakhs', 'lac', 'lacs',
+      'crore', 'crores', 'and', 'i', 'me', 'my',
     };
     final tokens = lower
         .split(RegExp(r'[\s,]+'))

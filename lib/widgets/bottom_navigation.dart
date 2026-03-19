@@ -1,3 +1,4 @@
+import 'dart:ui' show ImageFilter;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
@@ -243,15 +244,32 @@ class _NavBar extends StatelessWidget {
                       vertical: AppDimens.spaceSM),
                   child: GestureDetector(
                     onTap: onAdd,
-                    child: Container(
-                      width: 48,
-                      height: 48,
-                      decoration: const BoxDecoration(
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 220),
+                      curve: Curves.easeOutCubic,
+                      width: 50,
+                      height: 50,
+                      decoration: BoxDecoration(
                         color: AppColor.primary,
                         shape: BoxShape.circle,
+                        boxShadow: dialOpen
+                            ? [
+                                BoxShadow(
+                                  color: AppColor.primary.withValues(alpha: 0.55),
+                                  blurRadius: 20,
+                                  spreadRadius: 3,
+                                ),
+                              ]
+                            : [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.18),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 3),
+                                ),
+                              ],
                       ),
                       child: AnimatedRotation(
-                        duration: const Duration(milliseconds: 180),
+                        duration: const Duration(milliseconds: 220),
                         turns: dialOpen ? 0.125 : 0.0, // 45°
                         child: const PhosphorIcon(
                           PhosphorIconsLight.plus,
@@ -374,14 +392,17 @@ class _AddSpeedDial extends StatelessWidget {
 
     return Stack(
       children: [
-        // Tap-to-dismiss scrim
+        // Tap-to-dismiss scrim with backdrop blur
         GestureDetector(
           onTap: onClose,
           behavior: HitTestBehavior.opaque,
           child: AnimatedOpacity(
-            duration: const Duration(milliseconds: 180),
+            duration: const Duration(milliseconds: 200),
             opacity: open ? 1.0 : 0.0,
-            child: Container(color: scrim),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 4, sigmaY: 4),
+              child: Container(color: scrim),
+            ),
           ),
         ),
 
@@ -441,7 +462,7 @@ class _AddSpeedDial extends StatelessWidget {
   }
 }
 
-class _RadialSlot extends StatelessWidget {
+class _RadialSlot extends StatefulWidget {
   final bool open;
   final int delayMs;
   final double dx;
@@ -457,21 +478,66 @@ class _RadialSlot extends StatelessWidget {
   });
 
   @override
+  State<_RadialSlot> createState() => _RadialSlotState();
+}
+
+class _RadialSlotState extends State<_RadialSlot>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+  late final Animation<double> _anim;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 260),
+      reverseDuration: const Duration(milliseconds: 160),
+    );
+    _anim = CurvedAnimation(
+      parent: _ctrl,
+      curve: Curves.easeOutBack,
+      reverseCurve: Curves.easeInCubic,
+    );
+    if (widget.open) {
+      Future.delayed(Duration(milliseconds: widget.delayMs), () {
+        if (mounted) _ctrl.forward();
+      });
+    }
+  }
+
+  @override
+  void didUpdateWidget(_RadialSlot old) {
+    super.didUpdateWidget(old);
+    if (widget.open == old.open) return;
+    if (widget.open) {
+      Future.delayed(Duration(milliseconds: widget.delayMs), () {
+        if (mounted) _ctrl.forward();
+      });
+    } else {
+      _ctrl.reverse();
+    }
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    // Simple stagger: delay movement/scale a bit per action
-    return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 0.0, end: open ? 1.0 : 0.0),
-      duration: const Duration(milliseconds: 200),
-      curve: Curves.easeOutCubic,
-      builder: (ctx, t, _) {
-        final eased = t;
+    return AnimatedBuilder(
+      animation: _anim,
+      builder: (_, __) {
+        final t = _anim.value;
         return Transform.translate(
-          offset: Offset(dx * eased, dy * eased),
+          offset: Offset(widget.dx * t, widget.dy * t),
           child: Transform.scale(
-            scale: 0.85 + 0.15 * eased,
+            scale: 0.65 + 0.35 * t,
             child: Opacity(
-              opacity: eased,
-              child: child,
+              opacity: t.clamp(0.0, 1.0),
+              child: widget.child,
             ),
           ),
         );
@@ -504,30 +570,39 @@ class _DialAction extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: 54,
-            height: 54,
+            width: 56,
+            height: 56,
             decoration: BoxDecoration(
               color: color,
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.18),
-                  blurRadius: 18,
-                  offset: const Offset(0, 10),
+                  color: color.withValues(alpha: 0.45),
+                  blurRadius: 16,
+                  spreadRadius: 1,
+                  offset: const Offset(0, 6),
                 ),
               ],
             ),
             child: Center(
-              child: PhosphorIcon(icon, color: Colors.white, size: 22),
+              child: PhosphorIcon(icon, color: Colors.white, size: 24),
             ),
           ),
           const SizedBox(height: 8),
-          Text(
-            label,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
+            decoration: BoxDecoration(
+              color: Colors.black.withValues(alpha: 0.55),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Text(
+              label,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.2,
+              ),
             ),
           ),
         ],

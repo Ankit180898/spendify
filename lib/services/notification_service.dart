@@ -24,6 +24,14 @@ class NotificationService {
 
   static const _icon = '@drawable/ic_launcher_foreground';
 
+  // Monotonic counter — avoids ID collisions between rapid immediate notifications
+  static int _nextImmediateId = 1;
+  static int _immediateId() {
+    final id = _nextImmediateId;
+    _nextImmediateId = (_nextImmediateId % 9000) + 1;
+    return id;
+  }
+
   // ── Init ──────────────────────────────────────────────────────────────────
 
   static Future<void> initialize() async {
@@ -62,7 +70,7 @@ class NotificationService {
     if (!_initialized) return;
     try {
       await _plugin.show(
-        DateTime.now().millisecondsSinceEpoch.remainder(100000),
+        _immediateId(),
         title,
         body,
         const NotificationDetails(
@@ -317,7 +325,7 @@ class NotificationService {
     if (!_initialized) return;
     try {
       await _plugin.show(
-        DateTime.now().millisecondsSinceEpoch.remainder(100000),
+        _immediateId(),
         title,
         body,
         const NotificationDetails(
@@ -348,7 +356,7 @@ class NotificationService {
     try {
       final pct = ((thisWeek - avgWeek) / avgWeek * 100).toInt();
       await _plugin.show(
-        DateTime.now().millisecondsSinceEpoch.remainder(100000),
+        _immediateId(),
         'Spending spike: $category',
         '$sym${thisWeek.toStringAsFixed(0)} this week — $pct% above your average.',
         const NotificationDetails(
@@ -376,7 +384,7 @@ class NotificationService {
     if (!_initialized) return;
     try {
       await _plugin.show(
-        DateTime.now().millisecondsSinceEpoch.remainder(100000),
+        _immediateId(),
         title,
         body,
         const NotificationDetails(

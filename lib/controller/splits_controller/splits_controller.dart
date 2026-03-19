@@ -19,6 +19,9 @@ class SplitsController extends GetxController {
   var isLoading = false.obs;
   var isSubmitting = false.obs;
 
+  // Set true while GroupDetailScreen is mounted — suppresses notifications
+  bool isScreenActive = false;
+
   // userId -> net balance (positive = they owe you, negative = you owe them)
   var myBalances = <String, double>{}.obs;
 
@@ -111,54 +114,9 @@ class SplitsController extends GetxController {
             column: 'group_id',
             value: groupId,
           ),
-          callback: (payload) async {
-            await _debouncedLoad();
-
-            // Local notification for new expense that affects the current user
-            try {
-              final uid = supabaseC.auth.currentUser?.id;
-              if (uid == null) return;
-
-              final splitId = payload.newRecord['id'] as String?;
-              if (splitId == null) return;
-
-              final idx = splits.indexWhere((s) => s.id == splitId);
-              if (idx == -1) return;
-              final split = splits[idx];
-
-              final shareIdx =
-                  split.shares.indexWhere((sh) => sh.userId == uid);
-              final hasShare = shareIdx != -1;
-
-              // If user is not part of this split and did not pay, do nothing
-              if (!hasShare && split.paidBy != uid) return;
-
-              // If I owe money in this split
-              if (hasShare) {
-                final myShare = split.shares[shareIdx];
-                if (myShare.userId != split.paidBy &&
-                    myShare.amountOwed > 0) {
-                await NotificationService.showSplitAlert(
-                  title: 'You owe in ${split.title}',
-                  body:
-                      'You owe ₹${myShare.amountOwed.toStringAsFixed(2)} in this group expense.',
-                );
-                }
-              } else if (split.paidBy == uid) {
-                // I paid, others may owe me
-                final pendingFromOthers = split.shares
-                    .where((s) => s.userId != uid && !s.isSettled)
-                    .fold<double>(0.0, (sum, s) => sum + s.amountOwed);
-
-                if (pendingFromOthers > 0.01) {
-                  await NotificationService.showSplitAlert(
-                    title: 'Expense added in ${split.title}',
-                    body:
-                        'Others now owe you ₹${pendingFromOthers.toStringAsFixed(2)} for this expense.',
-                  );
-                }
-              }
-            } catch (_) {}
+          callback: (payload) {
+            _debouncedLoad();
+            _notifyNewSplit(payload);
           },
         )
         .onPostgresChanges(
@@ -180,10 +138,7 @@ class SplitsController extends GetxController {
           event: PostgresChangeEvent.update,
           schema: 'public',
           table: 'split_shares',
-          callback: (_) async {
-            await fetchSplits();
-            _recomputeBalances();
-          },
+          callback: (_) async => _debouncedLoad(),
         )
         .onPostgresChanges(
           event: PostgresChangeEvent.insert,
@@ -194,10 +149,7 @@ class SplitsController extends GetxController {
             column: 'group_id',
             value: groupId,
           ),
-          callback: (_) async {
-            await fetchSplits();
-            _recomputeBalances();
-          },
+          callback: (_) async => _debouncedLoad(),
         )
         .onPostgresChanges(
           event: PostgresChangeEvent.insert,
@@ -216,6 +168,7 @@ class SplitsController extends GetxController {
               final uid = supabaseC.auth.currentUser?.id;
               final newUserId = payload.newRecord['user_id'] as String?;
               if (uid == null || newUserId == null || newUserId == uid) return;
+              if (isScreenActive) return;
 
               final memberIndex =
                   members.indexWhere((m) => m.userId == newUserId);
@@ -245,6 +198,7 @@ class SplitsController extends GetxController {
               final uid = supabaseC.auth.currentUser?.id;
               final leftUserId = payload.oldRecord['user_id'] as String?;
               if (uid == null || leftUserId == null || leftUserId == uid) return;
+              if (isScreenActive) return;
 
               final name =
                   (payload.oldRecord['display_name'] as String?) ?? 'Someone';
@@ -259,6 +213,64 @@ class SplitsController extends GetxController {
           },
         )
         .subscribe();
+  }
+
+  // ── New-split notification (independent of debounce) ─────────────────────────
+
+  Future<void> _notifyNewSplit(PostgresChangePayload payload) async {
+    try {
+      final uid = supabaseC.auth.currentUser?.id;
+      if (uid == null) return;
+
+      final splitId = payload.newRecord['id'] as String?;
+      if (splitId == null) return;
+
+      // Wait for split_shares to be written after the splits row
+      await Future.delayed(const Duration(milliseconds: 600));
+
+      // Suppress if the user is already viewing this group screen
+      if (isScreenActive) return;
+
+      final res = await supabaseC
+          .from('splits')
+          .select('*, split_shares(*)')
+          .eq('id', splitId)
+          .single();
+
+      final split = SplitModel.fromMap(res);
+      final sharesRaw = res['split_shares'] as List? ?? [];
+      split.shares = sharesRaw
+          .map((s) => SplitShare.fromMap(s as Map<String, dynamic>))
+          .toList();
+
+      final shareIdx = split.shares.indexWhere((sh) => sh.userId == uid);
+      final hasShare = shareIdx != -1;
+
+      if (!hasShare && split.paidBy != uid) return;
+
+      if (hasShare) {
+        final myShare = split.shares[shareIdx];
+        if (myShare.userId != split.paidBy && myShare.amountOwed > 0) {
+          await NotificationService.showSplitAlert(
+            title: 'You owe in ${split.title}',
+            body:
+                'You owe ₹${myShare.amountOwed.toStringAsFixed(2)} in this group expense.',
+          );
+        }
+      } else if (split.paidBy == uid) {
+        final pendingFromOthers = split.shares
+            .where((s) => s.userId != uid && !s.isSettled)
+            .fold<double>(0.0, (sum, s) => sum + s.amountOwed);
+
+        if (pendingFromOthers > 0.01) {
+          await NotificationService.showSplitAlert(
+            title: 'Expense added in ${split.title}',
+            body:
+                'Others now owe you ₹${pendingFromOthers.toStringAsFixed(2)} for this expense.',
+          );
+        }
+      }
+    } catch (_) {}
   }
 
   // ── Create split ──────────────────────────────────────────────────────────────

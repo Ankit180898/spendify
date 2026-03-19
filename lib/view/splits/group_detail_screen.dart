@@ -30,10 +30,12 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
       SplitsController(groupId: widget.group.id),
       tag: widget.group.id,
     );
+    _ctrl.isScreenActive = true;
   }
 
   @override
   void dispose() {
+    _ctrl.isScreenActive = false;
     Get.delete<SplitsController>(tag: widget.group.id);
     super.dispose();
   }
@@ -223,7 +225,8 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
             return SliverList(
               delegate: SliverChildBuilderDelegate(
                 (ctx, i) => _SplitTile(
-                  index: i, // ✅ pass index
+                  key: ValueKey(_ctrl.splits[i].id),
+                  index: i,
                   ctrl: _ctrl,
                   myUid: myUid,
                   isDark: isDark,
@@ -636,6 +639,7 @@ class _SplitTile extends StatefulWidget {
   final bool isDark;
 
   const _SplitTile({
+    super.key,
     required this.index,
     required this.ctrl,
     required this.myUid,
@@ -765,12 +769,20 @@ class _SplitTileState extends State<_SplitTile> {
                         else if (myShare != null &&
                             !myShare.isSettled &&
                             !paidByMe)
-                          Text(
-                            'You owe ₹${fmt.format(myShare.amountOwed)}',
-                            style: const TextStyle(
-                              color: AppColor.expense,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 7, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: AppColor.expense.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(100),
+                            ),
+                            child: Text(
+                              '₹${fmt.format(myShare.amountOwed)} due',
+                              style: const TextStyle(
+                                color: AppColor.expense,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           )
                         else
@@ -815,6 +827,7 @@ class _SplitTileState extends State<_SplitTile> {
                         children: List.generate(
                             split.shares.length,
                             (i) => _ShareRow(
+                                  key: ValueKey(split.shares[i].id),
                                   share: split.shares[i],
                                   split: split,
                                   ctrl: widget.ctrl,
@@ -871,6 +884,7 @@ class _ShareRow extends StatefulWidget {
   final Color textMuted;
 
   const _ShareRow({
+    super.key,
     required this.share,
     required this.split,
     required this.ctrl,
@@ -923,7 +937,13 @@ class _ShareRowState extends State<_ShareRow> {
                 ),
                 if (isPayer)
                   const Text('Paid',
-                      style: TextStyle(color: AppColor.income, fontSize: 11)),
+                      style: TextStyle(color: AppColor.income, fontSize: 11))
+                else if (share.isSettled)
+                  const Text('Settled',
+                      style: TextStyle(color: AppColor.income, fontSize: 11))
+                else
+                  const Text('Due',
+                      style: TextStyle(color: AppColor.expense, fontSize: 11)),
               ],
             ),
           ),
@@ -959,9 +979,9 @@ class _ShareRowState extends State<_ShareRow> {
                         child: CircularProgressIndicator(
                             strokeWidth: 2, color: AppColor.primary),
                       )
-                    : const Text(
-                        'Settle',
-                        style: TextStyle(
+                    : Text(
+                        'Pay ${ctrl.nameOf(widget.split.paidBy)}',
+                        style: const TextStyle(
                           color: AppColor.primary,
                           fontSize: 12,
                           fontWeight: FontWeight.w600,

@@ -155,10 +155,14 @@ class SmsController extends GetxController {
         count: 2000,
       );
 
+      // Matches common Indian bank sender IDs (VM-SBIINB, AX-STATEBANK, BZ-HDFCBK, etc.)
       final financialSenders = RegExp(
-        r'(hdfc|sbi|icici|axis|kotak|pnb|bob|canara|union|indus|yes bank|'
-        r'rbl|idfc|au bank|federal|bandhan|paytm|phonepe|gpay|bhim|upi|'
-        r'amex|citibank|hsbc|dbs|swiggy|zomato|amazon|flipkart|neft|imps|rtgs)',
+        r'(hdfc|sbi|icici|axis|kotak|pnb|bob|canara|union|indus|'
+        r'rbl|idfc|federal|bandhan|paytm|phonepe|gpay|bhim|upi|'
+        r'amex|citibank|hsbc|dbs|swiggy|zomato|amazon|flipkart|'
+        r'statebank|sbiyono|vijaya|uco|allahabad|obc|central|dena|'
+        r'syndicate|andhra|corporation|indian bank|iob|boi|maharashtra|'
+        r'neft|imps|rtgs|nach|mandate)',
         caseSensitive: false,
       );
 
@@ -181,13 +185,18 @@ class SmsController extends GetxController {
             lower.contains('debit') ||
             lower.contains('credit') ||
             lower.contains('rs.') ||
+            lower.contains('rs ') ||
             lower.contains('inr') ||
             lower.contains('₹') ||
             lower.contains('txn') ||
             lower.contains('transaction') ||
             lower.contains('transferred') ||
             lower.contains('payment of') ||
-            lower.contains('paid');
+            lower.contains('paid') ||
+            lower.contains('a/c') ||
+            lower.contains('acct') ||
+            lower.contains('withdrawn') ||
+            lower.contains('purchase');
 
         if (isFinancial) {
           payloads.add(_SmsPayload(

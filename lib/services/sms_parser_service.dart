@@ -19,9 +19,16 @@ class SmsTransaction {
 }
 
 class SmsParserService {
-  // Amount extraction: Rs.500, Rs 500, INR 500, ₹500, 500.00
+  // Primary: Rs.500 / Rs 500 / INR 500 / ₹500
   static final _amountRegex = RegExp(
     r'(?:rs\.?\s*|₹\s*|inr\s*)(\d+(?:,\d+)*(?:\.\d+)?)',
+    caseSensitive: false,
+  );
+
+  // Fallback: bare number immediately before/after a debit/credit keyword
+  // e.g. "500.00 debited" or "debited 500.00"
+  static final _bareAmountRegex = RegExp(
+    r'(\d+(?:,\d+)*(?:\.\d+)?)\s*(?:debited|credited|deducted|withdrawn)',
     caseSensitive: false,
   );
 
@@ -168,8 +175,9 @@ class SmsParserService {
   static SmsTransaction? _parse(String message, {String sender = ''}) {
     final lower = message.toLowerCase();
 
-    // Must contain a recognizable amount
-    final amountMatch = _amountRegex.firstMatch(lower);
+    // Must contain a recognizable amount — try prefixed first, then bare number
+    final amountMatch = _amountRegex.firstMatch(lower)
+        ?? _bareAmountRegex.firstMatch(lower);
     if (amountMatch == null) return null;
 
     final rawAmt = amountMatch.group(1)!.replaceAll(',', '');

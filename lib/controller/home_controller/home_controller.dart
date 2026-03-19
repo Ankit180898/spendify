@@ -205,7 +205,7 @@ class HomeController extends GetxController {
 
     try {
       // First filter by year
-      var yearFiltered = transactions.where((transaction) {
+      var yearFiltered = allTransactions.where((transaction) {
         final transDate = DateTime.parse(transaction['date']);
         return transDate.year == selectedYear.value;
       }).toList();
@@ -290,7 +290,7 @@ class HomeController extends GetxController {
   Map<String, double> calculateTotalsByCategory() {
     Map<String, double> categoryTotals = {};
 
-    for (var transaction in transactions) {
+    for (var transaction in allTransactions) {
       // Filter by selected year
       final date = DateTime.parse(transaction['date']);
       if (date.year != selectedYear.value) continue;
@@ -426,7 +426,7 @@ class HomeController extends GetxController {
   Map<String, Map<String, double>> calculateMonthlyTotals() {
     final Map<String, Map<String, double>> monthlyTotals = {};
 
-    for (var transaction in transactions) {
+    for (var transaction in allTransactions) {
       final date = DateTime.parse(transaction['date']);
       // Filter by selected year
       if (date.year != selectedYear.value) continue;
@@ -515,7 +515,7 @@ class HomeController extends GetxController {
         final endOfWeek = startOfWeek.add(const Duration(days: 6));
         periodName = 'This Week';
 
-        amount = transactions.where((t) {
+        amount = allTransactions.where((t) {
           final date = DateTime.parse(t['date']);
           return t['type'] == 'income' &&
               date.isAfter(startOfWeek.subtract(const Duration(days: 1))) &&
@@ -529,7 +529,7 @@ class HomeController extends GetxController {
         final endOfMonth = DateTime(now.year, now.month + 1, 0);
         periodName = 'This Month';
 
-        amount = transactions.where((t) {
+        amount = allTransactions.where((t) {
           final date = DateTime.parse(t['date']);
           return t['type'] == 'income' &&
               date.isAfter(startOfMonth.subtract(const Duration(days: 1))) &&
@@ -543,7 +543,7 @@ class HomeController extends GetxController {
         final endOfYear = DateTime(now.year, 12, 31);
         periodName = 'This Year';
 
-        amount = transactions.where((t) {
+        amount = allTransactions.where((t) {
           final date = DateTime.parse(t['date']);
           return t['type'] == 'income' &&
               date.isAfter(startOfYear.subtract(const Duration(days: 1))) &&
@@ -558,17 +558,16 @@ class HomeController extends GetxController {
 // Get previous period income based on selected filter
   Map<String, dynamic> getPreviousPeriodIncome() {
     DateTime now = DateTime.now();
-    double amount = 0.0; // Ensure amount is a double
+    double amount = 0.0;
     String periodName = '';
 
     switch (selectedFilter.value) {
       case 'weekly':
-        // Previous week
         final startOfLastWeek = DateTime(now.year, now.month, now.day - now.weekday + 1 - 7);
         final endOfLastWeek = startOfLastWeek.add(const Duration(days: 6));
         periodName = 'Last Week';
 
-        amount = transactions.where((t) {
+        amount = allTransactions.where((t) {
           final date = DateTime.parse(t['date']);
           return t['type'] == 'income' &&
               date.isAfter(startOfLastWeek.subtract(const Duration(days: 1))) &&
@@ -577,12 +576,11 @@ class HomeController extends GetxController {
         break;
 
       case 'monthly':
-        // Previous month
         final startOfLastMonth = DateTime(now.year, now.month - 1, 1);
         final endOfLastMonth = DateTime(now.year, now.month, 0);
         periodName = 'Last Month';
 
-        amount = transactions.where((t) {
+        amount = allTransactions.where((t) {
           final date = DateTime.parse(t['date']);
           return t['type'] == 'income' &&
               date.isAfter(startOfLastMonth.subtract(const Duration(days: 1))) &&
@@ -591,12 +589,11 @@ class HomeController extends GetxController {
         break;
 
       default:
-        // Previous year
         final startOfLastYear = DateTime(now.year - 1, 1, 1);
         final endOfLastYear = DateTime(now.year - 1, 12, 31);
         periodName = 'Last Year';
 
-        amount = transactions.where((t) {
+        amount = allTransactions.where((t) {
           final date = DateTime.parse(t['date']);
           return t['type'] == 'income' &&
               date.isAfter(startOfLastYear.subtract(const Duration(days: 1))) &&
@@ -611,17 +608,16 @@ class HomeController extends GetxController {
 // Get current period expense based on selected filter
   Map<String, dynamic> getCurrentPeriodExpense() {
     DateTime now = DateTime.now();
-    double amount = 0.0; // Ensure amount is a double
+    double amount = 0.0;
     String periodName = '';
 
     switch (selectedFilter.value) {
       case 'weekly':
-        // Current week
         final startOfWeek = DateTime(now.year, now.month, now.day - now.weekday + 1);
         final endOfWeek = startOfWeek.add(const Duration(days: 6));
         periodName = 'This Week';
 
-        amount = transactions.where((t) {
+        amount = allTransactions.where((t) {
           final date = DateTime.parse(t['date']);
           return t['type'] == 'expense' &&
               date.isAfter(startOfWeek.subtract(const Duration(days: 1))) &&
@@ -630,12 +626,11 @@ class HomeController extends GetxController {
         break;
 
       case 'monthly':
-        // Current month
         final startOfMonth = DateTime(now.year, now.month, 1);
         final endOfMonth = DateTime(now.year, now.month + 1, 0);
         periodName = 'This Month';
 
-        amount = transactions.where((t) {
+        amount = allTransactions.where((t) {
           final date = DateTime.parse(t['date']);
           return t['type'] == 'expense' &&
               date.isAfter(startOfMonth.subtract(const Duration(days: 1))) &&
@@ -644,12 +639,11 @@ class HomeController extends GetxController {
         break;
 
       default:
-        // Current year
         final startOfYear = DateTime(now.year, 1, 1);
         final endOfYear = DateTime(now.year, 12, 31);
         periodName = 'This Year';
 
-        amount = transactions.where((t) {
+        amount = allTransactions.where((t) {
           final date = DateTime.parse(t['date']);
           return t['type'] == 'expense' &&
               date.isAfter(startOfYear.subtract(const Duration(days: 1))) &&
@@ -664,17 +658,16 @@ class HomeController extends GetxController {
 // Get previous period expense based on selected filter
   Map<String, dynamic> getPreviousPeriodExpense() {
     DateTime now = DateTime.now();
-    double amount = 0.0; // Ensure amount is a double
+    double amount = 0.0;
     String periodName = '';
 
     switch (selectedFilter.value) {
       case 'weekly':
-        // Previous week
         final startOfLastWeek = DateTime(now.year, now.month, now.day - now.weekday + 1 - 7);
         final endOfLastWeek = startOfLastWeek.add(const Duration(days: 6));
         periodName = 'Last Week';
 
-        amount = transactions.where((t) {
+        amount = allTransactions.where((t) {
           final date = DateTime.parse(t['date']);
           return t['type'] == 'expense' &&
               date.isAfter(startOfLastWeek.subtract(const Duration(days: 1))) &&
@@ -683,12 +676,11 @@ class HomeController extends GetxController {
         break;
 
       case 'monthly':
-        // Previous month
         final startOfLastMonth = DateTime(now.year, now.month - 1, 1);
         final endOfLastMonth = DateTime(now.year, now.month, 0);
         periodName = 'Last Month';
 
-        amount = transactions.where((t) {
+        amount = allTransactions.where((t) {
           final date = DateTime.parse(t['date']);
           return t['type'] == 'expense' &&
               date.isAfter(startOfLastMonth.subtract(const Duration(days: 1))) &&
@@ -697,12 +689,11 @@ class HomeController extends GetxController {
         break;
 
       default:
-        // Previous year
         final startOfLastYear = DateTime(now.year - 1, 1, 1);
         final endOfLastYear = DateTime(now.year - 1, 12, 31);
         periodName = 'Last Year';
 
-        amount = transactions.where((t) {
+        amount = allTransactions.where((t) {
           final date = DateTime.parse(t['date']);
           return t['type'] == 'expense' &&
               date.isAfter(startOfLastYear.subtract(const Duration(days: 1))) &&
@@ -738,7 +729,7 @@ class HomeController extends GetxController {
       final dayName = days[i];
 
       // Filter transactions for this day
-      final dayTransactions = transactions.where((t) {
+      final dayTransactions = allTransactions.where((t) {
         final date = DateTime.parse(t['date']);
         return date.year == day.year && date.month == day.month && date.day == day.day;
       }).toList();
@@ -774,7 +765,7 @@ class HomeController extends GetxController {
       final endOfMonth = DateTime(year, month + 1, 0);
 
       // Filter transactions for this month
-      final monthTransactions = transactions.where((t) {
+      final monthTransactions = allTransactions.where((t) {
         final date = DateTime.parse(t['date']);
         return date.isAfter(startOfMonth.subtract(const Duration(days: 1))) &&
             date.isBefore(endOfMonth.add(const Duration(days: 1)));
@@ -811,7 +802,7 @@ class HomeController extends GetxController {
       final endOfYear = DateTime(year, 12, 31);
 
       // Filter transactions for this year
-      final yearTransactions = transactions.where((t) {
+      final yearTransactions = allTransactions.where((t) {
         final date = DateTime.parse(t['date']);
         return date.isAfter(startOfYear.subtract(const Duration(days: 1))) &&
             date.isBefore(endOfYear.add(const Duration(days: 1)));

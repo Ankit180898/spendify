@@ -754,17 +754,17 @@ class _InsightsShimmer extends StatelessWidget {
                     borderRadius: BorderRadius.circular(6))),
           ),
           SizedBox(
-            height: 116,
+            height: 148,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 20),
               itemCount: 3,
               separatorBuilder: (_, __) => const SizedBox(width: 10),
               itemBuilder: (_, __) => Container(
-                width: 220,
+                width: 240,
                 decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(14)),
+                    borderRadius: BorderRadius.circular(16)),
               ),
             ),
           ),
@@ -908,7 +908,7 @@ class _InsightsStrip extends StatelessWidget {
                     fontWeight: FontWeight.w600)),
           ),
           SizedBox(
-            height: 116,
+            height: 148,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -949,11 +949,11 @@ class _InsightCard extends StatelessWidget {
     };
 
     return Container(
-      width: 220,
-      padding: const EdgeInsets.all(12),
+      width: 240,
+      padding: const EdgeInsets.all(13),
       decoration: BoxDecoration(
         color: cardBg,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(color: accent.withValues(alpha: 0.3), width: 1.5),
       ),
       child: Column(
@@ -962,55 +962,79 @@ class _InsightCard extends StatelessWidget {
           Row(
             children: [
               Container(
-                width: 30,
-                height: 30,
+                width: 32,
+                height: 32,
                 decoration: BoxDecoration(
                   color: accent.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(9),
                 ),
                 child: Center(
-                  child:
-                      Text(insight.emoji, style: const TextStyle(fontSize: 14)),
+                  child: Text(insight.emoji, style: const TextStyle(fontSize: 15)),
                 ),
               ),
               const Spacer(),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                decoration: BoxDecoration(
-                  color: accent.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(100),
-                ),
-                child: Text(
-                  typeLabel,
+              if (insight.stat != null)
+                Text(
+                  insight.stat!,
                   style: TextStyle(
-                      color: accent, fontSize: 10, fontWeight: FontWeight.w600),
+                    color: accent,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.3,
+                  ),
+                )
+              else
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: accent.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(100),
+                  ),
+                  child: Text(
+                    typeLabel,
+                    style: TextStyle(
+                        color: accent, fontSize: 10, fontWeight: FontWeight.w600),
+                  ),
                 ),
-              ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 9),
           Text(
             insight.title,
             style: TextStyle(
               color: textPrimary,
               fontSize: 12,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w700,
               letterSpacing: -0.2,
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
-          const SizedBox(height: 3),
-          Text(
-            insight.body,
-            style: TextStyle(
-              color: textMuted,
-              fontSize: 11,
-              height: 1.4,
+          const SizedBox(height: 4),
+          Expanded(
+            child: Text(
+              insight.body,
+              style: TextStyle(
+                color: textMuted,
+                fontSize: 11,
+                height: 1.45,
+              ),
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
             ),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
           ),
+          if (insight.progress != null) ...[
+            const SizedBox(height: 8),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(100),
+              child: LinearProgressIndicator(
+                value: insight.progress,
+                minHeight: 4,
+                backgroundColor: accent.withValues(alpha: 0.1),
+                valueColor: AlwaysStoppedAnimation<Color>(accent),
+              ),
+            ),
+          ],
         ],
       ),
     );
