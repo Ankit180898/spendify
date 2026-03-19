@@ -19,16 +19,22 @@ class SmsTransaction {
 }
 
 class SmsParserService {
-  // Primary: Rs.500 / Rs 500 / INR 500 / ₹500
+  // Primary: Rs.500 / Rs 500 / Rs/-500 / INR 500 / ₹500
   static final _amountRegex = RegExp(
-    r'(?:rs\.?\s*|₹\s*|inr\s*)(\d+(?:,\d+)*(?:\.\d+)?)',
+    r'(?:rs\.?/?-?\s*|₹\s*|inr\s*)(\d+(?:,\d+)*(?:\.\d+)?)',
     caseSensitive: false,
   );
 
-  // Fallback: bare number immediately before/after a debit/credit keyword
-  // e.g. "500.00 debited" or "debited 500.00"
-  static final _bareAmountRegex = RegExp(
-    r'(\d+(?:,\d+)*(?:\.\d+)?)\s*(?:debited|credited|deducted|withdrawn)',
+  // Secondary: "amount of 500" / "amt 500" / "for 500.00"
+  static final _amountKeywordRegex = RegExp(
+    r'(?:amount|amt)(?:\s+of)?\s+(?:rs\.?/?-?\s*|₹\s*|inr\s*)?(\d+(?:,\d+)*(?:\.\d+)?)',
+    caseSensitive: false,
+  );
+
+  // Patterns that indicate a number is an account/ref/date — NOT an amount.
+  // Used to exclude false positives in the bare-number fallback.
+  static final _accountOrRefPattern = RegExp(
+    r'(?:a/?c|acct?|account\s+no|no\.|#|ref|txn|urn|utr|rrn|ending|xxxx|x{2,}|mob(?:ile)?|ph(?:one)?|dated?)\s*[x*\d]*(\d{4,})',
     caseSensitive: false,
   );
 
@@ -175,13 +181,39 @@ class SmsParserService {
   static SmsTransaction? _parse(String message, {String sender = ''}) {
     final lower = message.toLowerCase();
 
-    // Must contain a recognizable amount — try prefixed first, then bare number
-    final amountMatch = _amountRegex.firstMatch(lower)
-        ?? _bareAmountRegex.firstMatch(lower);
-    if (amountMatch == null) return null;
+    // 1. Try currency-prefixed amount (Rs./INR/₹) — safest, no false positives
+    // 2. Try "amount of NUMBER" keyword pattern
+    // 3. Bare-number fallback: collect all numbers, exclude account/ref numbers,
+    //    pick the first remaining one (never trust a bare digit string before A/c)
+    RegExpMatch? amountMatch = _amountRegex.firstMatch(lower)
+        ?? _amountKeywordRegex.firstMatch(lower);
 
-    final rawAmt = amountMatch.group(1)!.replaceAll(',', '');
-    final amount = double.tryParse(rawAmt);
+    double? amount;
+    if (amountMatch != null) {
+      amount = double.tryParse(amountMatch.group(1)!.replaceAll(',', ''));
+    } else {
+      // Bare-number fallback: build a set of "dirty" numbers that belong to
+      // account numbers, references, dates, phone numbers — then skip them.
+      final dirtyNums = <String>{};
+      for (final m in _accountOrRefPattern.allMatches(lower)) {
+        dirtyNums.add(m.group(1)!);
+      }
+      // Also exclude anything that looks like a date (dd/mm/yy digits)
+      for (final m in RegExp(r'\b(\d{2})[/\-](\d{2})[/\-](\d{2,4})\b').allMatches(lower)) {
+        dirtyNums.addAll([m.group(1)!, m.group(2)!, m.group(3)!]);
+      }
+
+      for (final m in RegExp(r'\b(\d+(?:,\d{3})*(?:\.\d{1,2})?)\b').allMatches(lower)) {
+        final raw = m.group(1)!.replaceAll(',', '');
+        if (dirtyNums.contains(raw)) continue;
+        final val = double.tryParse(raw);
+        if (val == null || val <= 0 || val > 10000000) continue;
+        if (raw.length >= 9) continue; // 9+ digit bare numbers are refs/phones
+        amount = val;
+        break;
+      }
+    }
+
     if (amount == null || amount <= 0) return null;
 
     // Determine debit vs credit
