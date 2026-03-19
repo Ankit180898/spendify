@@ -25,14 +25,21 @@ class SmsParserService {
     caseSensitive: false,
   );
 
-  // Secondary: "amount of 500" / "amt 500" / "for 500.00"
+  // Secondary: "amount of 500" / "amt 500"
   static final _amountKeywordRegex = RegExp(
     r'(?:amount|amt)(?:\s+of)?\s+(?:rs\.?/?-?\s*|₹\s*|inr\s*)?(\d+(?:,\d+)*(?:\.\d+)?)',
     caseSensitive: false,
   );
 
-  // Patterns that indicate a number is an account/ref/date — NOT an amount.
-  // Used to exclude false positives in the bare-number fallback.
+  // Tertiary: keyword-proximity — number immediately after debit/credit verb
+  // e.g. "debited by 500" / "credited with 1000.00" / "withdrawn 200"
+  // This is the industry-standard fallback used by transaction-sms-parser etc.
+  static final _proximityRegex = RegExp(
+    r'(?:debited|credited|withdrawn|spent|received|transferred)\s+(?:by|with|of|rs\.?/?-?\s*|₹\s*|inr\s*)?\s*(\d+(?:,\d{3})*(?:\.\d{1,2})?)',
+    caseSensitive: false,
+  );
+
+  // Patterns that flag a number as an account/ref/date — NOT an amount.
   static final _accountOrRefPattern = RegExp(
     r'(?:a/?c|acct?|account\s+no|no\.|#|ref|txn|urn|utr|rrn|ending|xxxx|x{2,}|mob(?:ile)?|ph(?:one)?|dated?)\s*[x*\d]*(\d{4,})',
     caseSensitive: false,
@@ -186,7 +193,8 @@ class SmsParserService {
     // 3. Bare-number fallback: collect all numbers, exclude account/ref numbers,
     //    pick the first remaining one (never trust a bare digit string before A/c)
     RegExpMatch? amountMatch = _amountRegex.firstMatch(lower)
-        ?? _amountKeywordRegex.firstMatch(lower);
+        ?? _amountKeywordRegex.firstMatch(lower)
+        ?? _proximityRegex.firstMatch(lower);
 
     double? amount;
     if (amountMatch != null) {
