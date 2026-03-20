@@ -41,7 +41,7 @@
 
         <!-- Spendify home screen widget -->
         <receiver
-            android:name=".SpendifyWidgetProvider"
+            android:name=".SpendifyWidgetReceiver"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
