@@ -9,7 +9,7 @@ import 'package:spendify/widgets/spendify_widget_preview.dart';
 class WidgetService {
   static const _androidProvider = 'SpendifyWidgetReceiver';
   static const _iOSKind = 'SpendifyWidget';
-  static const _appGroupId = 'group.com.example.spendify';
+  static const _appGroupId = 'group.com.sentientlabs.spendify';
 
   static bool get _supported =>
       !kIsWeb && (Platform.isAndroid || Platform.isIOS);

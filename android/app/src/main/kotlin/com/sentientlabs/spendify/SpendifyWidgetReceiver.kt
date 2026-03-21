@@ -1,4 +1,4 @@
-package com.example.spendify
+package com.sentientlabs.spendify
 
 import android.app.PendingIntent
 import android.appwidget.AppWidgetManager

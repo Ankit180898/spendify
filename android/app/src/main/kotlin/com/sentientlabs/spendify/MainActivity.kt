@@ -1,4 +1,4 @@
-package com.example.spendify
+package com.sentientlabs.spendify
 
 import io.flutter.embedding.android.FlutterActivity
 
