@@ -54,6 +54,11 @@ jobs:
       - name: Build App Bundle
         run: flutter build appbundle --release --build-number=${{ github.run_number }}
 
+      - name: Create whatsnew directory
+        run: |
+          mkdir -p whatsnew
+          git log -1 --pretty=%B > whatsnew/whatsnew-en-US
+
       - name: Upload to Play Store Internal Testing
         uses: r0adkll/upload-google-play@v1
         with:
@@ -62,3 +67,4 @@ jobs:
           releaseFiles: build/app/outputs/bundle/release/app-release.aab
           track: internal
           status: completed
+          whatsNewDirectory: whatsnew

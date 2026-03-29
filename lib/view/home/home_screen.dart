@@ -428,7 +428,7 @@ class _MonthSummary extends StatelessWidget {
               child: Row(
                 children: [
                   _QuickAction(
-                    icon: PhosphorIconsLight.arrowLineDownLeft,
+                    icon: PhosphorIconsLight.arrowCircleDown,
                     label: 'Expense',
                     color: AppColor.expense,
                     isDark: isDark,
@@ -437,7 +437,7 @@ class _MonthSummary extends StatelessWidget {
                   ),
                   const SizedBox(width: 10),
                   _QuickAction(
-                    icon: PhosphorIconsLight.arrowLineUpRight,
+                    icon: PhosphorIconsLight.arrowCircleUp,
                     label: 'Income',
                     color: AppColor.income,
                     isDark: isDark,
