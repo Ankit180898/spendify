@@ -16,6 +16,8 @@ import 'package:spendify/view/home/components/transaction_list.dart';
 import 'package:spendify/view/wallet/add_transaction_screen.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:spendify/view/wallet/sms_import_screen.dart';
+import 'package:spendify/view/splits/splits_screen.dart';
+import 'package:spendify/view/goals/goals_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -425,22 +427,39 @@ class _MonthSummary extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Row(
                 children: [
-                  Expanded(
-                    child: _QuickAction(
-                      label: 'Add expense',
-                      color: AppColor.expense,
-                      onTap: () => Get.to(() =>
-                          const AddTransactionScreen(initialType: 'expense')),
-                    ),
+                  _QuickAction(
+                    icon: PhosphorIconsLight.arrowLineDownLeft,
+                    label: 'Expense',
+                    color: AppColor.expense,
+                    isDark: isDark,
+                    onTap: () => Get.to(() =>
+                        const AddTransactionScreen(initialType: 'expense')),
                   ),
                   const SizedBox(width: 10),
-                  Expanded(
-                    child: _QuickAction(
-                      label: 'Add income',
-                      color: AppColor.income,
-                      onTap: () => Get.to(() =>
-                          const AddTransactionScreen(initialType: 'income')),
-                    ),
+                  _QuickAction(
+                    icon: PhosphorIconsLight.arrowLineUpRight,
+                    label: 'Income',
+                    color: AppColor.income,
+                    isDark: isDark,
+                    onTap: () => Get.to(() =>
+                        const AddTransactionScreen(initialType: 'income')),
+                  ),
+                  const SizedBox(width: 10),
+                  _QuickAction(
+                    icon: PhosphorIconsLight.usersThree,
+                    label: 'Split',
+                    color: AppColor.primary,
+                    isDark: isDark,
+                    onTap: () => Get.to(() => const SplitsScreen(),
+                        transition: Transition.cupertino),
+                  ),
+                  const SizedBox(width: 10),
+                  _QuickAction(
+                    icon: PhosphorIconsLight.target,
+                    label: 'Goals',
+                    color: const Color(0xFFE87B35),
+                    isDark: isDark,
+                    onTap: () => showGoalsAddPicker(context),
                   ),
                 ],
               ),
@@ -690,38 +709,66 @@ class _MiniStat extends StatelessWidget {
 }
 
 class _QuickAction extends StatelessWidget {
+  final PhosphorIconData icon;
   final String label;
   final Color color;
+  final bool isDark;
   final VoidCallback onTap;
 
   const _QuickAction({
+    required this.icon,
     required this.label,
     required this.color,
+    required this.isDark,
     required this.onTap,
   });
 
   @override
-  Widget build(BuildContext context) => GestureDetector(
-        onTap: onTap,
+  Widget build(BuildContext context) {
+    final bg = isDark ? AppColor.darkCard : const Color(0xFFF4F4F5);
+    final textMuted = isDark ? AppColor.textSecondary : const Color(0xFF71717A);
+
+    return Expanded(
+      child: GestureDetector(
+        onTap: () {
+          HapticFeedback.lightImpact();
+          onTap();
+        },
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 11),
+          padding: const EdgeInsets.symmetric(vertical: 14),
           decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.07),
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: color.withValues(alpha: 0.15)),
+            color: bg,
+            borderRadius: BorderRadius.circular(14),
           ),
-          child: Center(
-            child: Text(
-              label,
-              style: TextStyle(
-                color: color,
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: Center(
+                  child: PhosphorIcon(icon, color: color, size: 18),
+                ),
               ),
-            ),
+              const SizedBox(height: 8),
+              Text(
+                label,
+                style: TextStyle(
+                  color: textMuted,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
           ),
         ),
-      );
+      ),
+    );
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -900,144 +947,78 @@ class _InsightsStrip extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
-            child: Text('Insights',
-                style: TextStyle(
-                    color: textPrimary,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600)),
+            padding: const EdgeInsets.fromLTRB(20, 20, 0, 10),
+            child: Row(
+              children: [
+                Text('Insights',
+                    style: TextStyle(
+                        color: textPrimary,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600)),
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: AppColor.primary.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(100),
+                  ),
+                  child: Text(
+                    '${insights.length}',
+                    style: TextStyle(
+                      color: AppColor.primary,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
           SizedBox(
-            height: 148,
+            height: 36,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 20),
               itemCount: insights.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 10),
-              itemBuilder: (_, i) => GestureDetector(
-                onTap: () => _showInsightSheet(context, insights[i], isDark),
-                child: _InsightCard(insight: insights[i], isDark: isDark),
-              ),
+              separatorBuilder: (_, __) => const SizedBox(width: 8),
+              itemBuilder: (_, i) {
+                final ins = insights[i];
+                return GestureDetector(
+                  onTap: () => _showInsightSheet(context, ins, isDark),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: ins.accentColor.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(100),
+                      border: Border.all(
+                          color: ins.accentColor.withValues(alpha: 0.25)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(ins.emoji,
+                            style: const TextStyle(fontSize: 13)),
+                        const SizedBox(width: 6),
+                        Text(
+                          ins.title,
+                          style: TextStyle(
+                            color: ins.accentColor,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
           Divider(height: 1, color: divColor),
         ],
       );
     });
-  }
-}
-
-class _InsightCard extends StatelessWidget {
-  final Insight insight;
-  final bool isDark;
-  const _InsightCard({required this.insight, required this.isDark});
-
-  @override
-  Widget build(BuildContext context) {
-    final accent = insight.accentColor;
-    final cardBg = isDark ? AppColor.darkCard : const Color(0xFFF4F4F5);
-    final textPrimary =
-        isDark ? AppColor.textPrimary : AppColor.lightTextPrimary;
-    final textMuted =
-        isDark ? AppColor.textSecondary : AppColor.lightTextSecondary;
-
-    final typeLabel = switch (insight.type) {
-      InsightType.warning => 'Watch out',
-      InsightType.positive => 'Nice',
-      InsightType.info => 'Info',
-    };
-
-    return Container(
-      width: 240,
-      padding: const EdgeInsets.all(13),
-      decoration: BoxDecoration(
-        color: cardBg,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: accent.withValues(alpha: 0.3), width: 1.5),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 32,
-                height: 32,
-                decoration: BoxDecoration(
-                  color: accent.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(9),
-                ),
-                child: Center(
-                  child: Text(insight.emoji, style: const TextStyle(fontSize: 15)),
-                ),
-              ),
-              const Spacer(),
-              if (insight.stat != null)
-                Text(
-                  insight.stat!,
-                  style: TextStyle(
-                    color: accent,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: -0.3,
-                  ),
-                )
-              else
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: accent.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(100),
-                  ),
-                  child: Text(
-                    typeLabel,
-                    style: TextStyle(
-                        color: accent, fontSize: 10, fontWeight: FontWeight.w600),
-                  ),
-                ),
-            ],
-          ),
-          const SizedBox(height: 9),
-          Text(
-            insight.title,
-            style: TextStyle(
-              color: textPrimary,
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-              letterSpacing: -0.2,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          const SizedBox(height: 4),
-          Expanded(
-            child: Text(
-              insight.body,
-              style: TextStyle(
-                color: textMuted,
-                fontSize: 11,
-                height: 1.45,
-              ),
-              maxLines: 3,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          if (insight.progress != null) ...[
-            const SizedBox(height: 8),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(100),
-              child: LinearProgressIndicator(
-                value: insight.progress,
-                minHeight: 4,
-                backgroundColor: accent.withValues(alpha: 0.1),
-                valueColor: AlwaysStoppedAnimation<Color>(accent),
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
   }
 }
 

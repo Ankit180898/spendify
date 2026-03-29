@@ -31,17 +31,11 @@ class GoalsScreen extends StatefulWidget {
 class _GoalsScreenState extends State<GoalsScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  int _tabIndex = 0;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
-    _tabController.addListener(() {
-      if (!_tabController.indexIsChanging) {
-        setState(() => _tabIndex = _tabController.index);
-      }
-    });
     if (!Get.isRegistered<SavingsController>()) {
       Get.put(SavingsController());
     }
@@ -69,20 +63,6 @@ class _GoalsScreenState extends State<GoalsScreen>
       appBar: AppBar(
         automaticallyImplyLeading: false,
         title: Text('Goals', style: AppTypography.heading2(textPrimary)),
-        actions: [
-          IconButton(
-            tooltip: _tabIndex == 0 ? 'Add budget limit' : 'Add savings goal',
-            onPressed: () {
-              HapticFeedback.lightImpact();
-              if (_tabIndex == 0) {
-                _showAddBudgetSheet(context, spendingC);
-              } else {
-                _showAddSavingsSheet(context, savingsC);
-              }
-            },
-            icon: const PhosphorIcon(PhosphorIconsLight.plusCircle),
-          ),
-        ],
         bottom: TabBar(
           controller: _tabController,
           indicatorColor: AppColor.primary,
@@ -110,21 +90,146 @@ class _GoalsScreenState extends State<GoalsScreen>
     );
   }
 
-  void _showAddBudgetSheet(BuildContext ctx, GoalsController controller) {
-    showModalBottomSheet(
-      context: ctx,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => _AddBudgetSheet(controller: controller),
-    );
-  }
+}
 
-  void _showAddSavingsSheet(BuildContext ctx, SavingsController controller) {
+// Public entry-point called from BottomNav's universal + button.
+void showGoalsAddPicker(BuildContext ctx) {
+  final spendingC = Get.find<GoalsController>();
+  final savingsC = Get.find<SavingsController>();
+  final isDark = Theme.of(ctx).brightness == Brightness.dark;
+    final bg = isDark ? AppColor.darkCard : Colors.white;
+    final textPrimary =
+        isDark ? AppColor.textPrimary : AppColor.lightTextPrimary;
+    final textSecondary =
+        isDark ? AppColor.textSecondary : AppColor.lightTextSecondary;
+
     showModalBottomSheet(
       context: ctx,
-      isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => _AddSavingsSheet(controller: controller),
+      builder: (_) => Container(
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 36,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: textSecondary.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text('What would you like to add?',
+                style: AppTypography.bodySemiBold(textPrimary)),
+            const SizedBox(height: 16),
+            _PickerOption(
+              icon: PhosphorIconsLight.chartPieSlice,
+              label: 'Budget Limit',
+              subtitle: 'Set a spending cap for a category',
+              isDark: isDark,
+              onTap: () {
+                Navigator.pop(ctx);
+                showModalBottomSheet(
+                  context: ctx,
+                  isScrollControlled: true,
+                  backgroundColor: Colors.transparent,
+                  builder: (_) => _AddBudgetSheet(controller: spendingC),
+                );
+              },
+            ),
+            const SizedBox(height: 10),
+            _PickerOption(
+              icon: PhosphorIconsLight.piggyBank,
+              label: 'Savings Goal',
+              subtitle: 'Track progress toward a financial goal',
+              isDark: isDark,
+              onTap: () {
+                Navigator.pop(ctx);
+                showModalBottomSheet(
+                  context: ctx,
+                  isScrollControlled: true,
+                  backgroundColor: Colors.transparent,
+                  builder: (_) => _AddSavingsSheet(controller: savingsC),
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+}
+
+class _PickerOption extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String subtitle;
+  final bool isDark;
+  final VoidCallback onTap;
+
+  const _PickerOption({
+    required this.icon,
+    required this.label,
+    required this.subtitle,
+    required this.isDark,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final bg = isDark ? AppColor.darkBg : const Color(0xFFF5F5F5);
+    final textPrimary =
+        isDark ? AppColor.textPrimary : AppColor.lightTextPrimary;
+    final textSecondary =
+        isDark ? AppColor.textSecondary : AppColor.lightTextSecondary;
+
+    return InkWell(
+      onTap: () {
+        HapticFeedback.lightImpact();
+        onTap();
+      },
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: AppColor.primary.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, color: AppColor.primary, size: 20),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(label,
+                      style: AppTypography.bodySemiBold(textPrimary)),
+                  Text(subtitle,
+                      style: AppTypography.caption(textSecondary)),
+                ],
+              ),
+            ),
+            Icon(PhosphorIconsLight.caretRight,
+                color: textSecondary, size: 16),
+          ],
+        ),
+      ),
     );
   }
 }
