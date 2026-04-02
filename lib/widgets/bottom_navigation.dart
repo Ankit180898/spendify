@@ -48,8 +48,13 @@ class _BottomNavState extends State<BottomNav> {
     }
   }
 
-  void _toggleDial() {
+  void _toggleDial(BuildContext context) {
     HapticFeedback.mediumImpact();
+    if (_current == 2) {
+      if (_dialOpen) _closeDial();
+      showGoalsAddPicker(context);
+      return;
+    }
     if (_dialOpen) {
       _closeDial();
       return;
@@ -139,7 +144,7 @@ class _BottomNavState extends State<BottomNav> {
               _closeDial();
               setState(() => _current = i);
             },
-            onAdd: _toggleDial,
+            onAdd: () => _toggleDial(context),
             dialOpen: _dialOpen,
           ),
         );
