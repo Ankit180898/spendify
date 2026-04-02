@@ -52,7 +52,7 @@ android {
 
     defaultConfig {
         applicationId = "com.sentientlabs.spendify"
-        minSdk = 23
+        minSdk = flutter.minSdkVersion
         targetSdk = 35
         versionCode = flutterVersionCode.toInt()
         versionName = flutterVersionName
