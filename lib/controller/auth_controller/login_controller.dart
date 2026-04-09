@@ -3,8 +3,10 @@ import 'dart:math';
 
 import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:get/get.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:http/http.dart' as http;
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:spendify/main.dart';
 import 'package:spendify/routes/app_pages.dart';
@@ -118,10 +120,70 @@ class LoginController extends GetxController {
       if (profile != null && profile['onboarding_complete'] == true) {
         Get.offAll(const BottomNav());
       } else {
+        // No profile row = new user
+        final email = user.email ?? '';
+        final name = user.userMetadata?['full_name'] ??
+            user.userMetadata?['name'] ??
+            '';
+        if (email.isNotEmpty) {
+          _sendWelcomeEmail(email: email, name: name);
+        }
         Get.offAllNamed(Routes.ONBOARDING);
       }
     } catch (_) {
       Get.offAllNamed(Routes.ONBOARDING);
+    }
+  }
+
+  Future<void> _sendWelcomeEmail({
+    required String email,
+    required String name,
+  }) async {
+    try {
+      final apiKey = dotenv.env['BREVO_API_KEY'] ?? '';
+      if (apiKey.isEmpty || apiKey == 'your_brevo_api_key_here') return;
+
+      final headers = {
+        'accept': 'application/json',
+        'api-key': apiKey,
+        'content-type': 'application/json',
+      };
+
+      // Create contact in Brevo
+      await http.post(
+        Uri.parse('https://api.brevo.com/v3/contacts'),
+        headers: headers,
+        body: jsonEncode({
+          'email': email,
+          'attributes': {'FIRSTNAME': name},
+          'updateEnabled': true, // update if contact already exists
+        }),
+      );
+
+      // Send welcome email
+      await http.post(
+        Uri.parse('https://api.brevo.com/v3/smtp/email'),
+        headers: headers,
+        body: jsonEncode({
+          'sender': {'name': 'Spendify', 'email': 'ankit.me180898@gmail.com'},
+          'to': [
+            {'email': email, 'name': name.isNotEmpty ? name : email}
+          ],
+          'subject': 'Welcome to Spendify!',
+          'htmlContent': '''
+            <h2>Hey ${name.isNotEmpty ? name : 'there'}, welcome to Spendify!</h2>
+            <p>You're all set to start tracking your expenses smarter.</p>
+            <ul>
+              <li>Log your daily expenses</li>
+              <li>Set savings goals</li>
+              <li>Split bills with friends</li>
+            </ul>
+            <p>Happy spending (wisely)!</p>
+          ''',
+        }),
+      );
+    } catch (e) {
+      debugPrint('LoginController: welcome email failed — $e');
     }
   }
 

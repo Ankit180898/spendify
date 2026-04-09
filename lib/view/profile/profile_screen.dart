@@ -126,9 +126,7 @@ class ProfileScreen extends StatelessWidget {
               trailing: Switch(
                 value: themeCtrl.isDarkMode,
                 onChanged: (_) => themeCtrl.toggleTheme(),
-                activeThumbColor: Colors.white,
                 activeTrackColor: AppColor.primary,
-                inactiveThumbColor: Colors.white,
                 inactiveTrackColor: isDark ? AppColor.darkElevated : const Color(0xFFE4E4E7),
                 trackOutlineColor: WidgetStateProperty.all(Colors.transparent),
               ),
