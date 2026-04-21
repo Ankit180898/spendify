@@ -166,6 +166,20 @@ class ProfileScreen extends StatelessWidget {
               },
             ),
 
+            // ── Delete account ────────────────────────────
+            _SettingRow(
+              icon: PhosphorIconsLight.trash,
+              label: 'Delete Account',
+              subtitle: 'Permanently delete your account and data',
+              iconColor: AppColor.expense,
+              labelColor: AppColor.expense,
+              trailing: const PhosphorIcon(PhosphorIconsLight.caretRight, size: 18, color: AppColor.expense),
+              textPrimary: textPrimary,
+              textMuted: textMuted,
+              divColor: divColor,
+              onTap: () => _showDeleteAccountDialog(context, ctrl),
+            ),
+
             SizedBox(height: MediaQuery.of(context).padding.bottom + 100),
           ],
         ),
@@ -177,6 +191,46 @@ class ProfileScreen extends StatelessWidget {
     if (name.isEmpty) return '?';
     final p = name.trim().split(' ');
     return '${p.first.isNotEmpty ? p.first[0] : ''}${p.length > 1 && p.last.isNotEmpty ? p.last[0] : ''}'.toUpperCase();
+  }
+
+  void _showDeleteAccountDialog(BuildContext context, HomeController ctrl) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: isDark ? const Color(0xFF1C1C1E) : Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(
+          'Delete Account',
+          style: TextStyle(
+            color: isDark ? Colors.white : const Color(0xFF09090B),
+            fontWeight: FontWeight.w600,
+            fontSize: 17,
+          ),
+        ),
+        content: Text(
+          'This will permanently delete your account and all associated data including transactions, goals, and settings. This action cannot be undone.',
+          style: TextStyle(
+            color: isDark ? const Color(0xFF8E8E93) : const Color(0xFF71717A),
+            fontSize: 14,
+            height: 1.5,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('Cancel', style: TextStyle(color: isDark ? Colors.white70 : const Color(0xFF09090B))),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              await ctrl.deleteAccount();
+            },
+            child: const Text('Delete', style: TextStyle(color: AppColor.expense, fontWeight: FontWeight.w600)),
+          ),
+        ],
+      ),
+    );
   }
 }
 

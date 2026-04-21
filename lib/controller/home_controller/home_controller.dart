@@ -137,6 +137,25 @@ class HomeController extends GetxController {
     }
   }
 
+  Future<void> deleteAccount() async {
+    final prefs = await SharedPreferences.getInstance();
+    try {
+      await supabaseC.rpc('delete_user');
+      await supabaseC.auth.signOut();
+    } on AuthException catch (error) {
+      CustomToast.errorToast("Error", error.message);
+      return;
+    } catch (error) {
+      CustomToast.errorToast("Error", 'Failed to delete account');
+      return;
+    } finally {
+      await prefs.remove('name');
+      await prefs.remove('email');
+      await prefs.remove('walkthrough_shown_v1');
+    }
+    Get.offAllNamed(Routes.LOGIN);
+  }
+
   Future<void> getTransactions() async {
     isLoading.value = true;
     try {
