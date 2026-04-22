@@ -26,6 +26,7 @@ class LoginController extends GetxController {
         serverClientId:
             '1022798183394-tq8i6uqjn86e4l6df8ebp7pudgrefb18.apps.googleusercontent.com',
       );
+      await googleSignIn.signOut(); // clear cached account so picker always shows
       final googleUser = await googleSignIn.signIn();
       if (googleUser == null) {
         isGoogleLoading.value = false;

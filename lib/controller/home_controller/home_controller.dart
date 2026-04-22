@@ -10,6 +10,7 @@ import 'package:spendify/model/transaction_model.dart';
 import 'package:spendify/services/widget_service.dart';
 import 'package:spendify/utils/utils.dart';
 import 'package:spendify/widgets/toast/custom_toast.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../routes/app_pages.dart';
@@ -141,6 +142,7 @@ class HomeController extends GetxController {
     final prefs = await SharedPreferences.getInstance();
     try {
       await supabaseC.rpc('delete_user');
+      await GoogleSignIn().signOut();
       await supabaseC.auth.signOut();
     } on AuthException catch (error) {
       CustomToast.errorToast("Error", error.message);

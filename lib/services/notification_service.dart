@@ -16,6 +16,7 @@ class NotificationService {
   static const _milestoneChannelId = 'milestones';
   static const _spikeChannelId     = 'spend_spike';
   static const _splitsChannelId    = 'group_splits';
+  static const _billChannelId      = 'bill_reminders';
 
   static const _logReminderId   = 999999;
   static const _weeklyDigestId  = 1000001;
@@ -400,6 +401,79 @@ class NotificationService {
       );
     } catch (e) {
       debugPrint('showSplitAlert error: $e');
+    }
+  }
+
+  // ── Bill reminders (recurring monthly) ───────────────────────────────────
+
+  static Future<void> scheduleBillReminder({
+    required String billId,
+    required String merchantName,
+    required double amount,
+    required int dueDay,
+    required String currencySymbol,
+  }) async {
+    if (!_initialized) return;
+    try {
+      final reminderDay = (dueDay - 2).clamp(1, 28);
+      final now = DateTime.now();
+
+      // Find next occurrence of reminderDay at 9 AM
+      var fireDate = DateTime(now.year, now.month, reminderDay, 9, 0);
+      if (!fireDate.isAfter(now)) {
+        fireDate = DateTime(now.year, now.month + 1, reminderDay, 9, 0);
+      }
+
+      const details = NotificationDetails(
+        android: AndroidNotificationDetails(
+          _billChannelId, 'Bill Reminders',
+          channelDescription: 'Reminders for upcoming recurring bills',
+          importance: Importance.high,
+          priority: Priority.high,
+          icon: _icon,
+        ),
+        iOS: DarwinNotificationDetails(),
+      );
+
+      final notifId = (billId.hashCode.abs() % 100000000) + 200000000;
+
+      if (dueDay >= 3) {
+        // Repeat every month on the same day using matchDateTimeComponents
+        await _plugin.zonedSchedule(
+          notifId,
+          'Bill due soon',
+          '$merchantName payment of $currencySymbol${amount.toStringAsFixed(0)} is due in 2 days.',
+          tz.TZDateTime.from(fireDate, tz.local),
+          details,
+          androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+          uiLocalNotificationDateInterpretation:
+              UILocalNotificationDateInterpretation.absoluteTime,
+          matchDateTimeComponents: DateTimeComponents.dayOfMonthAndTime,
+        );
+      } else {
+        // For bills due on 1st or 2nd, just schedule the next occurrence
+        await _plugin.zonedSchedule(
+          notifId,
+          'Bill due soon',
+          '$merchantName payment of $currencySymbol${amount.toStringAsFixed(0)} is due soon.',
+          tz.TZDateTime.from(fireDate, tz.local),
+          details,
+          androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+          uiLocalNotificationDateInterpretation:
+              UILocalNotificationDateInterpretation.absoluteTime,
+        );
+      }
+    } catch (e) {
+      debugPrint('scheduleBillReminder error: $e');
+    }
+  }
+
+  static Future<void> cancelBillReminder(String billId) async {
+    try {
+      final notifId = (billId.hashCode.abs() % 100000000) + 200000000;
+      await _plugin.cancel(notifId);
+    } catch (e) {
+      debugPrint('cancelBillReminder error: $e');
     }
   }
 

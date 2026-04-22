@@ -10,6 +10,7 @@ import 'package:spendify/config/app_theme.dart';
 import 'package:spendify/controller/goals_controller/goals_controller.dart';
 import 'package:spendify/controller/groups_controller/groups_controller.dart';
 import 'package:spendify/controller/savings_controller/savings_controller.dart';
+import 'package:spendify/controller/recurring_bills_controller/recurring_bills_controller.dart';
 import 'package:spendify/controller/upi_capture_controller/upi_capture_controller.dart';
 import 'package:spendify/controller/walkthrough_controller.dart';
 import 'package:spendify/view/goals/goals_screen.dart';
@@ -47,6 +48,9 @@ class _BottomNavState extends State<BottomNav> {
     if (!Get.isRegistered<SavingsController>()) Get.put(SavingsController());
     if (!Get.isRegistered<GroupsController>()) Get.put(GroupsController(), permanent: true);
     if (!Get.isRegistered<WalkthroughController>()) Get.put(WalkthroughController());
+    if (!Get.isRegistered<RecurringBillsController>()) {
+      Get.put(RecurringBillsController(), permanent: true);
+    }
     if (Platform.isAndroid) {
       if (!Get.isRegistered<UpiCaptureController>()) Get.put(UpiCaptureController(), permanent: true);
       _maybeShowUpiPermission();

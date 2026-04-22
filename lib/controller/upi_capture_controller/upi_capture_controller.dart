@@ -5,6 +5,7 @@ import 'package:notification_listener_service/notification_event.dart';
 import 'package:notification_listener_service/notification_listener_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:spendify/controller/home_controller/home_controller.dart';
+import 'package:spendify/controller/recurring_bills_controller/recurring_bills_controller.dart';
 import 'package:spendify/main.dart';
 import 'package:spendify/service/upi_notification_service.dart';
 import 'package:spendify/widgets/upi_confirm_sheet.dart';
@@ -102,6 +103,10 @@ class UpiCaptureController extends GetxController with WidgetsBindingObserver {
       await homeC.getTransactions();
 
       pendingCaptures.remove(capture);
+
+      if (Get.isRegistered<RecurringBillsController>()) {
+        Get.find<RecurringBillsController>().autoMarkPaid(capture.merchant);
+      }
     } catch (e) {
       debugPrint('UpiCaptureController.saveCapture error: $e');
     }
