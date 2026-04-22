@@ -41,6 +41,16 @@
             android:name="flutterEmbedding"
             android:value="2" />
 
+        <!-- UPI notification listener — auto-captures UPI payment notifications -->
+        <service
+            android:name="notification.listener.service.NotificationListener"
+            android:exported="false"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+        </service>
+
         <!-- Spendify home screen widget -->
         <receiver
             android:name=".SpendifyWidgetReceiver"

@@ -55,6 +55,7 @@ dependencies:
   speech_to_text: ^7.0.0
   supabase_flutter: ^2.5.0
   syncfusion_flutter_charts: ^27.1.50
+  notification_listener_service: ^0.3.5
   timezone: ^0.9.4
 
 dev_dependencies:

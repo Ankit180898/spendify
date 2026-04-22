@@ -146,7 +146,8 @@ class HomeController extends GetxController {
       CustomToast.errorToast("Error", error.message);
       return;
     } catch (error) {
-      CustomToast.errorToast("Error", 'Failed to delete account');
+      debugPrint('deleteAccount error: $error');
+      CustomToast.errorToast("Error", error.toString());
       return;
     } finally {
       await prefs.remove('name');

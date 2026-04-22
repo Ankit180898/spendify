@@ -1,3 +1,4 @@
+import 'dart:io' show Platform;
 import 'dart:ui' show ImageFilter;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -9,11 +10,13 @@ import 'package:spendify/config/app_theme.dart';
 import 'package:spendify/controller/goals_controller/goals_controller.dart';
 import 'package:spendify/controller/groups_controller/groups_controller.dart';
 import 'package:spendify/controller/savings_controller/savings_controller.dart';
+import 'package:spendify/controller/upi_capture_controller/upi_capture_controller.dart';
 import 'package:spendify/controller/walkthrough_controller.dart';
 import 'package:spendify/view/goals/goals_screen.dart';
 import 'package:spendify/view/home/home_screen.dart';
 import 'package:spendify/view/profile/profile_screen.dart';
 import 'package:spendify/view/splits/splits_screen.dart';
+import 'package:spendify/view/upi_capture/upi_permission_screen.dart';
 import 'package:spendify/view/wallet/statistics_screen.dart';
 import 'package:spendify/view/wallet/add_transaction_screen.dart';
 
@@ -43,9 +46,21 @@ class _BottomNavState extends State<BottomNav> {
     if (!Get.isRegistered<GoalsController>()) Get.put(GoalsController());
     if (!Get.isRegistered<SavingsController>()) Get.put(SavingsController());
     if (!Get.isRegistered<GroupsController>()) Get.put(GroupsController(), permanent: true);
-    if (!Get.isRegistered<WalkthroughController>()) {
-      Get.put(WalkthroughController());
+    if (!Get.isRegistered<WalkthroughController>()) Get.put(WalkthroughController());
+    if (Platform.isAndroid) {
+      if (!Get.isRegistered<UpiCaptureController>()) Get.put(UpiCaptureController(), permanent: true);
+      _maybeShowUpiPermission();
     }
+  }
+
+  Future<void> _maybeShowUpiPermission() async {
+    final ctrl = Get.find<UpiCaptureController>();
+    final should = await ctrl.shouldPromptPermission();
+    if (!should || !mounted) return;
+    // Delay slightly so the home screen renders first
+    await Future.delayed(const Duration(seconds: 2));
+    if (!mounted) return;
+    Get.to(() => const UpiPermissionScreen(), transition: Transition.cupertino);
   }
 
   void _toggleDial(BuildContext context) {
