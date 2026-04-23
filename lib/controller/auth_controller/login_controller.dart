@@ -151,18 +151,19 @@ class LoginController extends GetxController {
       };
 
       // Create contact in Brevo
-      await http.post(
+      final contactRes = await http.post(
         Uri.parse('https://api.brevo.com/v3/contacts'),
         headers: headers,
         body: jsonEncode({
           'email': email,
           'attributes': {'FIRSTNAME': name},
-          'updateEnabled': true, // update if contact already exists
+          'updateEnabled': true,
         }),
       );
+      debugPrint('Brevo contact: ${contactRes.statusCode} ${contactRes.body}');
 
       // Send welcome email
-      await http.post(
+      final emailRes = await http.post(
         Uri.parse('https://api.brevo.com/v3/smtp/email'),
         headers: headers,
         body: jsonEncode({
@@ -183,6 +184,7 @@ class LoginController extends GetxController {
           ''',
         }),
       );
+      debugPrint('Brevo email: ${emailRes.statusCode} ${emailRes.body}');
     } catch (e) {
       debugPrint('LoginController: welcome email failed — $e');
     }

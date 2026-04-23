@@ -415,14 +415,16 @@ class NotificationService {
   }) async {
     if (!_initialized) return;
     try {
-      final reminderDay = (dueDay - 2).clamp(1, 28);
       final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+      final clampedDay = dueDay.clamp(1, 28);
 
-      // Find next occurrence of reminderDay at 9 AM
-      var fireDate = DateTime(now.year, now.month, reminderDay, 9, 0);
-      if (!fireDate.isAfter(now)) {
-        fireDate = DateTime(now.year, now.month + 1, reminderDay, 9, 0);
+      // Calculate next due date
+      var nextDue = DateTime(now.year, now.month, clampedDay);
+      if (!nextDue.isAfter(today.subtract(const Duration(days: 1)))) {
+        nextDue = DateTime(now.year, now.month + 1, clampedDay);
       }
+      final daysUntilDue = nextDue.difference(today).inDays;
 
       const details = NotificationDetails(
         android: AndroidNotificationDetails(
@@ -435,14 +437,34 @@ class NotificationService {
         iOS: DarwinNotificationDetails(),
       );
 
-      final notifId = (billId.hashCode.abs() % 100000000) + 200000000;
+      final baseId = (billId.hashCode.abs() % 100000000) + 200000000;
 
-      if (dueDay >= 3) {
-        // Repeat every month on the same day using matchDateTimeComponents
-        await _plugin.zonedSchedule(
-          notifId,
+      // If due within 3 days, fire an immediate notification right now
+      if (daysUntilDue <= 3) {
+        final msg = daysUntilDue <= 0
+            ? '$merchantName is due today!'
+            : '$merchantName is due in $daysUntilDue day${daysUntilDue == 1 ? '' : 's'}.';
+        await _plugin.show(
+          baseId,
           'Bill due soon',
-          '$merchantName payment of $currencySymbol${amount.toStringAsFixed(0)} is due in 2 days.',
+          '$currencySymbol${amount.toStringAsFixed(0)} — $msg',
+          details,
+        );
+      }
+
+      // Schedule monthly recurring reminder 2 days before due date for future months
+      final reminderDay = (clampedDay - 2).clamp(1, 28);
+      var fireDate = DateTime(now.year, now.month, reminderDay, 9, 0);
+      // If this month's reminder is already covered by the immediate above, start from next month
+      if (daysUntilDue <= 3 || !fireDate.isAfter(now)) {
+        fireDate = DateTime(now.year, now.month + 1, reminderDay, 9, 0);
+      }
+
+      if (clampedDay >= 3) {
+        await _plugin.zonedSchedule(
+          baseId + 1,
+          'Bill due soon',
+          '$merchantName — $currencySymbol${amount.toStringAsFixed(0)} is due in 2 days.',
           tz.TZDateTime.from(fireDate, tz.local),
           details,
           androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
@@ -451,11 +473,10 @@ class NotificationService {
           matchDateTimeComponents: DateTimeComponents.dayOfMonthAndTime,
         );
       } else {
-        // For bills due on 1st or 2nd, just schedule the next occurrence
         await _plugin.zonedSchedule(
-          notifId,
+          baseId + 1,
           'Bill due soon',
-          '$merchantName payment of $currencySymbol${amount.toStringAsFixed(0)} is due soon.',
+          '$merchantName — $currencySymbol${amount.toStringAsFixed(0)} is due soon.',
           tz.TZDateTime.from(fireDate, tz.local),
           details,
           androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
@@ -470,8 +491,9 @@ class NotificationService {
 
   static Future<void> cancelBillReminder(String billId) async {
     try {
-      final notifId = (billId.hashCode.abs() % 100000000) + 200000000;
-      await _plugin.cancel(notifId);
+      final baseId = (billId.hashCode.abs() % 100000000) + 200000000;
+      await _plugin.cancel(baseId);
+      await _plugin.cancel(baseId + 1);
     } catch (e) {
       debugPrint('cancelBillReminder error: $e');
     }

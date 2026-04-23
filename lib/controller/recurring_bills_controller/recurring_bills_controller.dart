@@ -68,7 +68,7 @@ class RecurringBillsController extends GetxController {
           .select()
           .single();
 
-      final bill = RecurringBill.fromJson(data as Map<String, dynamic>);
+      final bill = RecurringBill.fromJson(data);
       bills.add(bill);
       suggestions.removeWhere(
           (s) => s.merchantName.toLowerCase() == suggestion.merchantName.toLowerCase());
@@ -127,7 +127,7 @@ class RecurringBillsController extends GetxController {
           .select()
           .single();
 
-      final bill = RecurringBill.fromJson(data as Map<String, dynamic>);
+      final bill = RecurringBill.fromJson(data);
       bills.add(bill);
 
       await NotificationService.scheduleBillReminder(

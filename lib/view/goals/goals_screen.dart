@@ -791,14 +791,18 @@ class _BudgetRow extends StatelessWidget {
     if (category == 'All') return PhosphorIconsLight.wallet;
     final k = category.toLowerCase();
     if (k.contains('invest')) return PhosphorIconsLight.chartBar;
-    if (k.contains('health') || k.contains('medical'))
+    if (k.contains('health') || k.contains('medical')) {
       return PhosphorIconsLight.heart;
-    if (k.contains('bill') || k.contains('fee'))
+    }
+    if (k.contains('bill') || k.contains('fee')) {
       return PhosphorIconsLight.receipt;
-    if (k.contains('food') || k.contains('drink'))
+    }
+    if (k.contains('food') || k.contains('drink')) {
       return PhosphorIconsLight.coffee;
-    if (k.contains('car') || k.contains('vehicle'))
+    }
+    if (k.contains('car') || k.contains('vehicle')) {
       return PhosphorIconsLight.car;
+    }
     if (k.contains('grocer')) return PhosphorIconsLight.shoppingCart;
     if (k.contains('gift')) return PhosphorIconsLight.gift;
     if (k.contains('transport')) return PhosphorIconsLight.bus;
