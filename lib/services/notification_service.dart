@@ -23,7 +23,7 @@ class NotificationService {
   static const _monthlyRecapId  = 1000002;
   static const _dailySafeId     = 1000003;
 
-  static const _icon = '@drawable/ic_launcher_foreground';
+  static const _icon = '@drawable/ic_notification';
 
   // Monotonic counter — avoids ID collisions between rapid immediate notifications
   static int _nextImmediateId = 1;
@@ -496,6 +496,14 @@ class NotificationService {
       await _plugin.cancel(baseId + 1);
     } catch (e) {
       debugPrint('cancelBillReminder error: $e');
+    }
+  }
+
+  static Future<void> cancelAllNotifications() async {
+    try {
+      await _plugin.cancelAll();
+    } catch (e) {
+      debugPrint('cancelAllNotifications error: $e');
     }
   }
 

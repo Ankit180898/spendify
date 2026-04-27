@@ -1,5 +1,8 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:spendify/controller/home_controller/home_controller.dart';
 import 'package:spendify/main.dart';
 import 'package:spendify/model/recurring_bill_model.dart';
@@ -33,6 +36,19 @@ class RecurringBillsController extends GetxController {
       bills.value =
           (data as List).map((e) => RecurringBill.fromJson(e as Map<String, dynamic>)).toList();
 
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(
+        'cached_bills',
+        jsonEncode(bills
+            .map((b) => {
+                  'due_day': b.dueDay,
+                  'amount': b.amount,
+                  'merchant_name': b.merchantName,
+                })
+            .toList()),
+      );
+
+      _rescheduleBillNotifications();
       _detectSuggestions();
     } catch (e) {
       debugPrint('RecurringBillsController.fetchBills error: $e');
@@ -182,6 +198,20 @@ class RecurringBillsController extends GetxController {
       } catch (e) {
         debugPrint('RecurringBillsController.autoMarkPaid error: $e');
       }
+    }
+  }
+
+  void _rescheduleBillNotifications() {
+    final sym = Get.find<HomeController>().currencySymbol.value;
+    for (final bill in bills) {
+      if (!bill.isActive) continue;
+      NotificationService.scheduleBillReminder(
+        billId: bill.id,
+        merchantName: bill.merchantName,
+        amount: bill.amount,
+        dueDay: bill.dueDay,
+        currencySymbol: sym,
+      );
     }
   }
 }

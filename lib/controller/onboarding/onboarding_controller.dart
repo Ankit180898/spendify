@@ -153,4 +153,5 @@ class OnboardingController extends GetxController {
       isSaving.value = false;
     }
   }
+
 }

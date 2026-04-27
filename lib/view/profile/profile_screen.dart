@@ -1,11 +1,16 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:notification_listener_service/notification_listener_service.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:spendify/config/app_color.dart';
 import 'package:spendify/controller/home_controller/home_controller.dart';
 import 'package:spendify/controller/theme_controller.dart';
+import 'package:spendify/controller/upi_capture_controller/upi_capture_controller.dart';
 import 'package:spendify/routes/app_pages.dart';
+import 'package:spendify/view/admin/admin_screen.dart';
 import 'package:spendify/view/profile/edit_profile_screen.dart';
 import 'package:spendify/widgets/toast/custom_toast.dart';
 
@@ -109,6 +114,19 @@ class ProfileScreen extends StatelessWidget {
               child: Text('Settings', style: TextStyle(color: textMuted, fontSize: 12, fontWeight: FontWeight.w500)),
             ),
 
+            Obx(() => ctrl.isAdmin.value
+              ? _SettingRow(
+                  icon: PhosphorIconsLight.shieldStar,
+                  label: 'Admin Panel',
+                  subtitle: 'View and reply to support tickets',
+                  trailing: PhosphorIcon(PhosphorIconsLight.caretRight, size: 18, color: textMuted),
+                  textPrimary: textPrimary,
+                  textMuted: textMuted,
+                  divColor: divColor,
+                  onTap: () => Get.to(() => const AdminScreen()),
+                )
+              : const SizedBox.shrink()),
+
             _SettingRow(
               icon: PhosphorIconsLight.sliders,
               label: 'Edit Preferences',
@@ -134,6 +152,30 @@ class ProfileScreen extends StatelessWidget {
               textMuted: textMuted,
               divColor: divColor,
             )),
+
+            if (Platform.isAndroid)
+              Obx(() {
+                final upiCtrl = Get.find<UpiCaptureController>();
+                return _SettingRow(
+                  icon: PhosphorIconsLight.bellRinging,
+                  label: 'UPI Auto-Capture',
+                  subtitle: 'Detect UPI payments from notifications',
+                  trailing: Switch(
+                    value: upiCtrl.isPermissionGranted.value,
+                    onChanged: (_) async {
+                      // Both enabling and disabling require going to system settings —
+                      // Android doesn't allow toggling notification access programmatically.
+                      await NotificationListenerService.requestPermission();
+                    },
+                    activeTrackColor: AppColor.primary,
+                    inactiveTrackColor: isDark ? AppColor.darkElevated : const Color(0xFFE4E4E7),
+                    trackOutlineColor: WidgetStateProperty.all(Colors.transparent),
+                  ),
+                  textPrimary: textPrimary,
+                  textMuted: textMuted,
+                  divColor: divColor,
+                );
+              }),
 
             _SettingRow(
               icon: PhosphorIconsLight.headset,

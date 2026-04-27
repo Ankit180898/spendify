@@ -10,9 +10,10 @@ class GetStartedScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const bg = Color(0xFF050011);
-    const textPrimary = Color(0xFFFFFFFF);
-    const textMuted = Color(0xFF8080A0);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bg = isDark ? AppColor.darkBg : Colors.white;
+    final textPrimary = isDark ? AppColor.textPrimary : const Color(0xFF09090B);
+    final textMuted = isDark ? AppColor.textSecondary : const Color(0xFF71717A);
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: const SystemUiOverlayStyle(
@@ -63,7 +64,7 @@ class GetStartedScreen extends StatelessWidget {
                         ),
                         const SizedBox(height: 44),
 
-                        const Text(
+                        Text(
                           'Spendify',
                           style: TextStyle(
                             color: textPrimary,
@@ -73,7 +74,7 @@ class GetStartedScreen extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(height: 14),
-                        const Text(
+                        Text(
                           'Take control of your money.\nTrack, budget, and grow.',
                           textAlign: TextAlign.center,
                           style: TextStyle(

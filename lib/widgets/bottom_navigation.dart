@@ -17,8 +17,8 @@ import 'package:spendify/view/goals/goals_screen.dart';
 import 'package:spendify/view/home/home_screen.dart';
 import 'package:spendify/view/profile/profile_screen.dart';
 import 'package:spendify/view/splits/splits_screen.dart';
-import 'package:spendify/view/upi_capture/upi_permission_screen.dart';
 import 'package:spendify/view/wallet/statistics_screen.dart';
+import 'package:spendify/view/upi_capture/upi_permission_screen.dart';
 import 'package:spendify/view/wallet/add_transaction_screen.dart';
 
 class BottomNav extends StatefulWidget {
@@ -53,18 +53,7 @@ class _BottomNavState extends State<BottomNav> {
     }
     if (Platform.isAndroid) {
       if (!Get.isRegistered<UpiCaptureController>()) Get.put(UpiCaptureController(), permanent: true);
-      _maybeShowUpiPermission();
     }
-  }
-
-  Future<void> _maybeShowUpiPermission() async {
-    final ctrl = Get.find<UpiCaptureController>();
-    final should = await ctrl.shouldPromptPermission();
-    if (!should || !mounted) return;
-    // Delay slightly so the home screen renders first
-    await Future.delayed(const Duration(seconds: 2));
-    if (!mounted) return;
-    Get.to(() => const UpiPermissionScreen(), transition: Transition.cupertino);
   }
 
   void _toggleDial(BuildContext context) {
@@ -110,6 +99,17 @@ class _BottomNavState extends State<BottomNav> {
     Get.to(() => const SplitsScreen(), transition: Transition.cupertino);
   }
 
+  Future<void> _maybeShowUpiPermission() async {
+    if (!Platform.isAndroid) return;
+    if (!Get.isRegistered<UpiCaptureController>()) return;
+    final ctrl = Get.find<UpiCaptureController>();
+    final should = await ctrl.shouldPromptPermission();
+    if (!should) return;
+    await Future.delayed(const Duration(milliseconds: 500));
+    if (!mounted) return;
+    Get.to(() => const UpiPermissionScreen(), transition: Transition.cupertino);
+  }
+
   void _maybeStartShowcase(BuildContext ctx) {
     if (_showcaseTriggered) return;
     _showcaseTriggered = true;
@@ -131,7 +131,7 @@ class _BottomNavState extends State<BottomNav> {
 
     return ShowCaseWidget(
       blurValue: 2,
-      onFinish: () {},
+      onFinish: () => _maybeShowUpiPermission(),
       builder: (showcaseCtx) {
         _maybeStartShowcase(showcaseCtx);
         return Scaffold(

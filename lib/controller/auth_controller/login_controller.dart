@@ -127,11 +127,12 @@ class LoginController extends GetxController {
             user.userMetadata?['name'] ??
             '';
         if (email.isNotEmpty) {
-          _sendWelcomeEmail(email: email, name: name);
+          await _sendWelcomeEmail(email: email, name: name);
         }
         Get.offAllNamed(Routes.ONBOARDING);
       }
-    } catch (_) {
+    } catch (e) {
+      debugPrint('LoginController: _navigateAfterAuth failed — $e');
       Get.offAllNamed(Routes.ONBOARDING);
     }
   }

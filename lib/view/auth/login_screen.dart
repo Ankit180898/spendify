@@ -1,7 +1,7 @@
-import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
 import 'package:spendify/config/app_color.dart';
 import 'package:spendify/controller/auth_controller/login_controller.dart';
@@ -97,23 +97,23 @@ class LoginScreen extends StatelessWidget {
                 const SizedBox(height: 12),
 
                 // Apple button (iOS only)
-                if (Platform.isIOS)
-                  Obx(() => _SocialButton(
-                        onTap: controller.isGoogleLoading.isFalse &&
-                                controller.isAppleLoading.isFalse
-                            ? controller.signInWithApple
-                            : null,
-                        isLoading: controller.isAppleLoading.isTrue,
-                        label: 'Continue with Apple',
-                        icon: Icon(
-                          Icons.apple,
-                          color: textPrimary,
-                          size: 22,
-                        ),
-                        cardBg: cardBg,
-                        border: border,
-                        textPrimary: textPrimary,
-                      )),
+                // if (Platform.isIOS)
+                //   Obx(() => _SocialButton(
+                //         onTap: controller.isGoogleLoading.isFalse &&
+                //                 controller.isAppleLoading.isFalse
+                //             ? controller.signInWithApple
+                //             : null,
+                //         isLoading: controller.isAppleLoading.isTrue,
+                //         label: 'Continue with Apple',
+                //         icon: Icon(
+                //           Icons.apple,
+                //           color: textPrimary,
+                //           size: 22,
+                //         ),
+                //         cardBg: cardBg,
+                //         border: border,
+                //         textPrimary: textPrimary,
+                //       )),
 
                 const Spacer(flex: 1),
 
@@ -201,74 +201,6 @@ class _SocialButton extends StatelessWidget {
 class _GoogleIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cutoutColor = isDark ? AppColor.darkCard : const Color(0xFFF4F4F5);
-    return CustomPaint(painter: _GooglePainter(cutoutColor: cutoutColor));
+    return SvgPicture.asset('assets/google_logo.svg', width: 20, height: 20);
   }
-}
-
-class _GooglePainter extends CustomPainter {
-  final Color cutoutColor;
-  const _GooglePainter({required this.cutoutColor});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final s = size.width;
-    final cx = s / 2;
-    final cy = s / 2;
-    final r = s / 2;
-
-    final bluePaint = Paint()
-      ..color = const Color(0xFF4285F4)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = s * 0.18
-      ..strokeCap = StrokeCap.butt;
-
-    final redPaint = Paint()
-      ..color = const Color(0xFFEA4335)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = s * 0.18
-      ..strokeCap = StrokeCap.butt;
-
-    final yellowPaint = Paint()
-      ..color = const Color(0xFFFBBC05)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = s * 0.18
-      ..strokeCap = StrokeCap.butt;
-
-    final greenPaint = Paint()
-      ..color = const Color(0xFF34A853)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = s * 0.18
-      ..strokeCap = StrokeCap.butt;
-
-    final rect = Rect.fromCircle(center: Offset(cx, cy), radius: r * 0.72);
-
-    canvas.drawArc(rect, -0.52, 1.57, false, bluePaint);
-    canvas.drawArc(rect, 1.05, 1.57, false, greenPaint);
-    canvas.drawArc(rect, 2.62, 1.57, false, yellowPaint);
-    canvas.drawArc(rect, 4.19, 1.57, false, redPaint);
-
-    // Inner cutout circle
-    canvas.drawCircle(
-      Offset(cx, cy),
-      r * 0.42,
-      Paint()
-        ..color = cutoutColor
-        ..style = PaintingStyle.fill,
-    );
-
-    // Horizontal bar (right side of G)
-    canvas.drawRect(
-      Rect.fromLTWH(
-          cx, cy - s * 0.09, r * 0.72 - r * 0.42 + s * 0.18 / 2, s * 0.18),
-      Paint()
-        ..color = const Color(0xFF4285F4)
-        ..style = PaintingStyle.fill,
-    );
-  }
-
-  @override
-  bool shouldRepaint(_GooglePainter oldDelegate) =>
-      oldDelegate.cutoutColor != cutoutColor;
 }

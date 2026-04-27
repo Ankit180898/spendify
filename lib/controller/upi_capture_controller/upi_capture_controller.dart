@@ -68,6 +68,8 @@ class UpiCaptureController extends GetxController with WidgetsBindingObserver {
 
   void _showSheet() {
     if (pendingCaptures.isEmpty) return;
+    final route = Get.currentRoute;
+    if (route == '/onboarding' || route == '/login' || route == '/getStarted' || route == '/splash') return;
     _sheetOpen = true;
     Get.bottomSheet(
       const UpiConfirmSheet(),
