@@ -7,7 +7,9 @@ import 'package:showcaseview/showcaseview.dart';
 import 'package:spendify/config/app_color.dart';
 import 'package:spendify/controller/home_controller/home_controller.dart';
 import 'package:spendify/controller/goals_controller/goals_controller.dart';
+import 'package:spendify/controller/health_score_controller/health_score_controller.dart';
 import 'package:spendify/controller/savings_controller/savings_controller.dart';
+import 'package:spendify/view/health_score/health_score_screen.dart';
 import 'package:spendify/controller/wallet_controller/wallet_controller.dart';
 import 'package:spendify/controller/walkthrough_controller.dart';
 import 'package:spendify/model/savings_goal_model.dart';
@@ -44,6 +46,7 @@ class HomeScreen extends StatelessWidget {
           SliverToBoxAdapter(child: _Header(isDark: isDark, ctrl: ctrl)),
           SliverToBoxAdapter(child: _MonthSummary(isDark: isDark, ctrl: ctrl)),
           SliverToBoxAdapter(child: _InsightsStrip(isDark: isDark, ctrl: ctrl)),
+          SliverToBoxAdapter(child: _HealthScoreCard(isDark: isDark)),
           SliverToBoxAdapter(child: _BudgetAlertsBanner(isDark: isDark)),
           SliverToBoxAdapter(child: _UrgentGoalsBanner(isDark: isDark)),
           const SliverToBoxAdapter(child: TransactionsContent(0)),
@@ -1399,4 +1402,280 @@ class _UrgentGoalTile extends StatelessWidget {
       ),
     );
   }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Financial Health Score card — compact home screen entry point
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _HealthScoreCard extends StatelessWidget {
+  final bool isDark;
+  const _HealthScoreCard({required this.isDark});
+
+  @override
+  Widget build(BuildContext context) {
+    HealthScoreController ctrl;
+    try {
+      ctrl = Get.find<HealthScoreController>();
+    } catch (_) {
+      return const SizedBox.shrink();
+    }
+
+    final textPrimary = isDark ? AppColor.textPrimary : const Color(0xFF09090B);
+    final textMuted = isDark ? AppColor.textSecondary : const Color(0xFF71717A);
+    final trackColor = isDark ? AppColor.darkBorder : const Color(0xFFE4E4E7);
+    final divColor = isDark ? AppColor.darkBorder : const Color(0xFFF4F4F5);
+
+    return Obx(() {
+      final score = ctrl.score.value;
+
+      // Not enough data yet — show a lightweight nudge row instead of nothing
+      if (score == null) {
+        return Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+              child: Row(
+                children: [
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: AppColor.primary.withValues(alpha: 0.10),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Center(
+                      child: PhosphorIcon(
+                        PhosphorIconsLight.heartbeat,
+                        size: 16,
+                        color: AppColor.primary,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Financial Health Score',
+                          style: TextStyle(
+                            color: textPrimary,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Log a few transactions to unlock your score',
+                          style: TextStyle(color: textMuted, fontSize: 11),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Divider(height: 1, color: divColor),
+          ],
+        );
+      }
+
+      final change = ctrl.weeklyChange;
+      final history = ctrl.history.toList();
+
+      return GestureDetector(
+        onTap: () {
+          HapticFeedback.lightImpact();
+          Get.to(() => const HealthScoreScreen(),
+              transition: Transition.cupertino);
+        },
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 14),
+              child: Row(
+                children: [
+                  SizedBox(
+                    width: 56,
+                    height: 56,
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        CustomPaint(
+                          size: const Size(56, 56),
+                          painter: _MiniArcPainter(
+                            progress: score.total / 100,
+                            color: score.levelColor,
+                            trackColor: trackColor,
+                          ),
+                        ),
+                        Text(
+                          '${score.total}',
+                          style: TextStyle(
+                            color: textPrimary,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Text(
+                              'Financial Health',
+                              style: TextStyle(
+                                color: textMuted,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            const Spacer(),
+                            PhosphorIcon(
+                              PhosphorIconsLight.caretRight,
+                              size: 13,
+                              color: textMuted,
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: score.levelColor.withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(100),
+                              ),
+                              child: Text(
+                                score.levelLabel,
+                                style: TextStyle(
+                                  color: score.levelColor,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                            if (change != null) ...[
+                              const SizedBox(width: 8),
+                              PhosphorIcon(
+                                change >= 0
+                                    ? PhosphorIconsLight.trendUp
+                                    : PhosphorIconsLight.trendDown,
+                                size: 11,
+                                color: change >= 0
+                                    ? AppColor.income
+                                    : AppColor.expense,
+                              ),
+                              const SizedBox(width: 3),
+                              Text(
+                                '${change >= 0 ? '+' : ''}$change',
+                                style: TextStyle(
+                                  color: change >= 0
+                                      ? AppColor.income
+                                      : AppColor.expense,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                        if (history.length > 1) ...[
+                          const SizedBox(height: 8),
+                          SizedBox(
+                            height: 16,
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: history.map((h) {
+                                final frac = h.total / 100;
+                                final isLatest = h == history.last;
+                                return Expanded(
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 1),
+                                    child: Container(
+                                      height: (frac * 12).clamp(2.0, 12.0),
+                                      decoration: BoxDecoration(
+                                        color: isLatest
+                                            ? score.levelColor
+                                            : score.levelColor
+                                                .withValues(alpha: 0.3),
+                                        borderRadius: BorderRadius.circular(2),
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              }).toList(),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Divider(height: 1, color: divColor),
+          ],
+        ),
+      );
+    });
+  }
+}
+
+class _MiniArcPainter extends CustomPainter {
+  final double progress;
+  final Color color;
+  final Color trackColor;
+
+  const _MiniArcPainter({
+    required this.progress,
+    required this.color,
+    required this.trackColor,
+  });
+
+  static const double _start = 135.0 * 3.14159265 / 180;
+  static const double _sweep = 270.0 * 3.14159265 / 180;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = (size.shortestSide - 5) / 2;
+    final rect = Rect.fromCircle(center: center, radius: radius);
+
+    canvas.drawArc(
+      rect, _start, _sweep, false,
+      Paint()
+        ..color = trackColor
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 4
+        ..strokeCap = StrokeCap.round,
+    );
+
+    if (progress > 0) {
+      canvas.drawArc(
+        rect, _start, _sweep * progress.clamp(0.0, 1.0), false,
+        Paint()
+          ..color = color
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 4
+          ..strokeCap = StrokeCap.round,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(_MiniArcPainter old) =>
+      old.progress != progress || old.color != color;
 }

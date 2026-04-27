@@ -9,6 +9,7 @@ import 'package:spendify/config/app_color.dart';
 import 'package:spendify/config/app_theme.dart';
 import 'package:spendify/controller/goals_controller/goals_controller.dart';
 import 'package:spendify/controller/groups_controller/groups_controller.dart';
+import 'package:spendify/controller/health_score_controller/health_score_controller.dart';
 import 'package:spendify/controller/savings_controller/savings_controller.dart';
 import 'package:spendify/controller/recurring_bills_controller/recurring_bills_controller.dart';
 import 'package:spendify/controller/upi_capture_controller/upi_capture_controller.dart';
@@ -46,6 +47,7 @@ class _BottomNavState extends State<BottomNav> {
     super.initState();
     if (!Get.isRegistered<GoalsController>()) Get.put(GoalsController());
     if (!Get.isRegistered<SavingsController>()) Get.put(SavingsController());
+    if (!Get.isRegistered<HealthScoreController>()) Get.put(HealthScoreController());
     if (!Get.isRegistered<GroupsController>()) Get.put(GroupsController(), permanent: true);
     if (!Get.isRegistered<WalkthroughController>()) Get.put(WalkthroughController());
     if (!Get.isRegistered<RecurringBillsController>()) {
