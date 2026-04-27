@@ -9,7 +9,9 @@ import 'package:spendify/controller/home_controller/home_controller.dart';
 import 'package:spendify/controller/goals_controller/goals_controller.dart';
 import 'package:spendify/controller/health_score_controller/health_score_controller.dart';
 import 'package:spendify/controller/savings_controller/savings_controller.dart';
+import 'package:spendify/controller/weekly_digest_controller/weekly_digest_controller.dart';
 import 'package:spendify/view/health_score/health_score_screen.dart';
+import 'package:spendify/view/weekly_digest/weekly_digest_screen.dart';
 import 'package:spendify/controller/wallet_controller/wallet_controller.dart';
 import 'package:spendify/controller/walkthrough_controller.dart';
 import 'package:spendify/model/savings_goal_model.dart';
@@ -46,6 +48,7 @@ class HomeScreen extends StatelessWidget {
           SliverToBoxAdapter(child: _Header(isDark: isDark, ctrl: ctrl)),
           SliverToBoxAdapter(child: _MonthSummary(isDark: isDark, ctrl: ctrl)),
           SliverToBoxAdapter(child: _InsightsStrip(isDark: isDark, ctrl: ctrl)),
+          SliverToBoxAdapter(child: _WeeklyDigestBanner(isDark: isDark)),
           SliverToBoxAdapter(child: _HealthScoreCard(isDark: isDark)),
           SliverToBoxAdapter(child: _BudgetAlertsBanner(isDark: isDark)),
           SliverToBoxAdapter(child: _UrgentGoalsBanner(isDark: isDark)),
@@ -1429,8 +1432,21 @@ class _HealthScoreCard extends StatelessWidget {
     return Obx(() {
       final score = ctrl.score.value;
 
-      // Not enough data yet — show a lightweight nudge row instead of nothing
       if (score == null) {
+        // Read HomeController observables inside Obx so this block re-runs
+        // when loading finishes or allTransactions changes.
+        HomeController? homeC;
+        try {
+          homeC = Get.find<HomeController>();
+        } catch (_) {}
+
+        final isLoading = homeC?.isOverviewLoading.value ?? true;
+        final txCount = homeC?.allTransactions.length ?? 0;
+
+        // Still fetching from Supabase — stay invisible, don't flash a wrong message
+        if (isLoading || txCount >= 3) return const SizedBox.shrink();
+
+        // Confirmed: data has loaded and user genuinely has fewer than 3 transactions
         return Column(
           children: [
             Padding(
@@ -1490,6 +1506,7 @@ class _HealthScoreCard extends StatelessWidget {
           Get.to(() => const HealthScoreScreen(),
               transition: Transition.cupertino);
         },
+        behavior: HitTestBehavior.opaque,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -1678,4 +1695,128 @@ class _MiniArcPainter extends CustomPainter {
   @override
   bool shouldRepaint(_MiniArcPainter old) =>
       old.progress != progress || old.color != color;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Weekly Digest Banner — shown Mon–Thu when last week's digest is ready
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _WeeklyDigestBanner extends StatelessWidget {
+  final bool isDark;
+  const _WeeklyDigestBanner({required this.isDark});
+
+  @override
+  Widget build(BuildContext context) {
+    WeeklyDigestController? ctrl;
+    try {
+      ctrl = Get.find<WeeklyDigestController>();
+    } catch (_) {
+      return const SizedBox.shrink();
+    }
+
+    return Obx(() {
+      if (!ctrl!.shouldShowBanner) return const SizedBox.shrink();
+      final d = ctrl.digest.value!;
+      final sym = Get.find<HomeController>().currencySymbol.value;
+      final amt = d.totalSpent >= 1000
+          ? '$sym${(d.totalSpent / 1000).toStringAsFixed(1)}K'
+          : '$sym${d.totalSpent.toStringAsFixed(0)}';
+      final cardBg = isDark ? AppColor.darkSurface : Colors.white;
+      final border = isDark ? AppColor.darkBorder : const Color(0xFFE8E6E2);
+
+      return GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () => Get.to(
+          () => WeeklyDigestScreen(digest: d),
+          transition: Transition.cupertino,
+        ),
+        child: Container(
+          margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          decoration: BoxDecoration(
+            color: cardBg,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: border),
+            boxShadow: isDark
+                ? null
+                : [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.05),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    )
+                  ],
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: AppColor.primaryExtraSoft,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  PhosphorIconsLight.chartBar,
+                  color: AppColor.primary,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Week ${d.weekNumber} digest is ready',
+                      style: TextStyle(
+                        color: isDark
+                            ? AppColor.textPrimary
+                            : const Color(0xFF1A1916),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '$amt spent · tap to see the full breakdown',
+                      style: TextStyle(
+                        color: isDark
+                            ? AppColor.textSecondary
+                            : const Color(0xFF6B6960),
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    PhosphorIconsLight.arrowRight,
+                    color: AppColor.primary,
+                    size: 16,
+                  ),
+                  const SizedBox(width: 8),
+                  GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: ctrl.dismissBanner,
+                    child: Icon(
+                      PhosphorIconsLight.x,
+                      color: isDark
+                          ? AppColor.textSecondary
+                          : const Color(0xFF9A9890),
+                      size: 16,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      );
+    });
+  }
 }
