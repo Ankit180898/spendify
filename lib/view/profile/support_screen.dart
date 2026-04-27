@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:intl/intl.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:spendify/config/app_color.dart';
@@ -13,12 +14,15 @@ class SupportScreen extends StatefulWidget {
   State<SupportScreen> createState() => _SupportScreenState();
 }
 
-class _SupportScreenState extends State<SupportScreen> {
+class _SupportScreenState extends State<SupportScreen> with SingleTickerProviderStateMixin {
+  late final TabController _tabCtrl;
   final _formKey = GlobalKey<FormState>();
   final _subjectCtrl = TextEditingController();
   final _messageCtrl = TextEditingController();
   String _selectedCategory = 'General Help';
   bool _isLoading = false;
+  List<Map<String, dynamic>> _myTickets = [];
+  bool _ticketsLoading = true;
 
   static const _categories = [
     'General Help',
@@ -37,10 +41,45 @@ class _SupportScreenState extends State<SupportScreen> {
   };
 
   @override
+  void initState() {
+    super.initState();
+    _tabCtrl = TabController(length: 2, vsync: this);
+    _fetchMyTickets();
+  }
+
+  @override
   void dispose() {
+    _tabCtrl.dispose();
     _subjectCtrl.dispose();
     _messageCtrl.dispose();
     super.dispose();
+  }
+
+  Future<void> _deleteTicket(String id) async {
+    try {
+      await Supabase.instance.client.from('support_messages').delete().eq('id', id);
+      CustomToast.successToast('Deleted', 'Ticket removed');
+      _fetchMyTickets();
+    } catch (e) {
+      CustomToast.errorToast('Error', 'Failed to delete ticket');
+    }
+  }
+
+  Future<void> _fetchMyTickets() async {
+    setState(() => _ticketsLoading = true);
+    try {
+      final uid = Supabase.instance.client.auth.currentUser?.id;
+      if (uid == null) return;
+      final res = await Supabase.instance.client
+          .from('support_messages')
+          .select()
+          .eq('user_id', uid)
+          .order('created_at', ascending: false);
+      if (mounted) setState(() => _myTickets = List<Map<String, dynamic>>.from(res));
+    } catch (_) {
+    } finally {
+      if (mounted) setState(() => _ticketsLoading = false);
+    }
   }
 
   Future<void> _submit() async {
@@ -58,7 +97,10 @@ class _SupportScreenState extends State<SupportScreen> {
       });
       if (mounted) {
         CustomToast.successToast('Sent!', 'We\'ll get back to you shortly');
-        Get.back();
+        _subjectCtrl.clear();
+        _messageCtrl.clear();
+        await _fetchMyTickets();
+        _tabCtrl.animateTo(1);
       }
     } catch (e) {
       CustomToast.errorToast('Error', 'Failed to send. Please try again.');
@@ -87,12 +129,26 @@ class _SupportScreenState extends State<SupportScreen> {
           onPressed: () => Get.back(),
         ),
         title: Text('Help & Support', style: TextStyle(color: textPrimary, fontSize: 17, fontWeight: FontWeight.w600)),
+        bottom: TabBar(
+          controller: _tabCtrl,
+          labelColor: AppColor.primary,
+          unselectedLabelColor: textMuted,
+          indicatorColor: AppColor.primary,
+          indicatorSize: TabBarIndicatorSize.label,
+          dividerColor: isDark ? AppColor.darkBorder : const Color(0xFFE4E4E7),
+          labelStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+          tabs: const [Tab(text: 'New Ticket'), Tab(text: 'My Tickets')],
+        ),
       ),
-      body: Form(
-        key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 40),
-          children: [
+      body: TabBarView(
+        controller: _tabCtrl,
+        children: [
+          // ── Tab 1: Submit form ──────────────────────────
+          Form(
+            key: _formKey,
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 40),
+              children: [
 
             // ── Hero header ──────────────────────────────
             Container(
@@ -216,6 +272,124 @@ class _SupportScreenState extends State<SupportScreen> {
             ),
           ],
         ),
+      ),
+
+          // ── Tab 2: My Tickets ───────────────────────────
+          _ticketsLoading
+              ? const Center(child: CircularProgressIndicator())
+              : _myTickets.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          PhosphorIcon(PhosphorIconsLight.chatDots, size: 40, color: textMuted),
+                          const SizedBox(height: 12),
+                          Text('No tickets yet', style: TextStyle(color: textMuted, fontSize: 15)),
+                          const SizedBox(height: 4),
+                          Text('Submit a message and we\'ll reply here', style: TextStyle(color: textMuted, fontSize: 13)),
+                        ],
+                      ),
+                    )
+                  : RefreshIndicator(
+                      onRefresh: _fetchMyTickets,
+                      child: ListView.separated(
+                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 40),
+                        itemCount: _myTickets.length,
+                        separatorBuilder: (_, __) => const SizedBox(height: 10),
+                        itemBuilder: (_, i) {
+                          final t = _myTickets[i];
+                          final replied = t['admin_reply'] != null;
+                          final date = t['created_at'] != null
+                              ? DateFormat('d MMM, h:mm a').format(DateTime.parse(t['created_at']).toLocal())
+                              : '';
+                          return Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: isDark ? AppColor.darkCard : const Color(0xFFF9F9F9),
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(color: isDark ? AppColor.darkBorder : const Color(0xFFE4E4E7)),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(t['subject'] ?? '',
+                                          style: TextStyle(color: textPrimary, fontSize: 14, fontWeight: FontWeight.w600),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Builder(builder: (_) {
+                                      final status = t['status'] ?? 'open';
+                                      const colors = {
+                                        'open': Color(0xFF3B82F6),
+                                        'in_progress': Color(0xFFF59E0B),
+                                        'resolved': Color(0xFF22C55E),
+                                        'closed': Color(0xFF71717A),
+                                      };
+                                      final color = colors[status] ?? const Color(0xFF3B82F6);
+                                      return Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                        decoration: BoxDecoration(
+                                          color: color.withValues(alpha: 0.12),
+                                          borderRadius: BorderRadius.circular(6),
+                                        ),
+                                        child: Text(
+                                          status.replaceAll('_', ' '),
+                                          style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w600),
+                                        ),
+                                      );
+                                    }),
+                                    const SizedBox(width: 4),
+                                    GestureDetector(
+                                      onTap: () => _deleteTicket(t['id'].toString()),
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(4),
+                                        child: PhosphorIcon(PhosphorIconsLight.trash, size: 16, color: AppColor.expense),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 6),
+                                Text(t['message'] ?? '',
+                                    style: TextStyle(color: textMuted, fontSize: 13, height: 1.4)),
+                                if (replied) ...[
+                                  const SizedBox(height: 10),
+                                  Container(
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: AppColor.primary.withValues(alpha: 0.07),
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            PhosphorIcon(PhosphorIconsLight.arrowBendUpLeft, size: 13, color: AppColor.primary),
+                                            const SizedBox(width: 5),
+                                            Text('Reply from Spendify',
+                                                style: TextStyle(color: AppColor.primary, fontSize: 12, fontWeight: FontWeight.w600)),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 6),
+                                        Text(t['admin_reply'],
+                                            style: TextStyle(color: textPrimary, fontSize: 13, height: 1.4)),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                                const SizedBox(height: 8),
+                                Text(date, style: TextStyle(color: textMuted, fontSize: 11)),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+        ],
       ),
     );
   }

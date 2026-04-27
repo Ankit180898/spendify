@@ -7,7 +7,11 @@ import 'package:showcaseview/showcaseview.dart';
 import 'package:spendify/config/app_color.dart';
 import 'package:spendify/controller/home_controller/home_controller.dart';
 import 'package:spendify/controller/goals_controller/goals_controller.dart';
+import 'package:spendify/controller/health_score_controller/health_score_controller.dart';
 import 'package:spendify/controller/savings_controller/savings_controller.dart';
+import 'package:spendify/controller/weekly_digest_controller/weekly_digest_controller.dart';
+import 'package:spendify/view/health_score/health_score_screen.dart';
+import 'package:spendify/view/weekly_digest/weekly_digest_screen.dart';
 import 'package:spendify/controller/wallet_controller/wallet_controller.dart';
 import 'package:spendify/controller/walkthrough_controller.dart';
 import 'package:spendify/model/savings_goal_model.dart';
@@ -16,6 +20,8 @@ import 'package:spendify/view/home/components/transaction_list.dart';
 import 'package:spendify/view/wallet/add_transaction_screen.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:spendify/view/wallet/sms_import_screen.dart';
+import 'package:spendify/view/splits/splits_screen.dart';
+import 'package:spendify/view/goals/goals_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -42,6 +48,8 @@ class HomeScreen extends StatelessWidget {
           SliverToBoxAdapter(child: _Header(isDark: isDark, ctrl: ctrl)),
           SliverToBoxAdapter(child: _MonthSummary(isDark: isDark, ctrl: ctrl)),
           SliverToBoxAdapter(child: _InsightsStrip(isDark: isDark, ctrl: ctrl)),
+          SliverToBoxAdapter(child: _WeeklyDigestBanner(isDark: isDark)),
+          SliverToBoxAdapter(child: _HealthScoreCard(isDark: isDark)),
           SliverToBoxAdapter(child: _BudgetAlertsBanner(isDark: isDark)),
           SliverToBoxAdapter(child: _UrgentGoalsBanner(isDark: isDark)),
           const SliverToBoxAdapter(child: TransactionsContent(0)),
@@ -425,22 +433,39 @@ class _MonthSummary extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Row(
                 children: [
-                  Expanded(
-                    child: _QuickAction(
-                      label: 'Add expense',
-                      color: AppColor.expense,
-                      onTap: () => Get.to(() =>
-                          const AddTransactionScreen(initialType: 'expense')),
-                    ),
+                  _QuickAction(
+                    icon: PhosphorIconsLight.arrowCircleDown,
+                    label: 'Expense',
+                    color: AppColor.expense,
+                    isDark: isDark,
+                    onTap: () => Get.to(() =>
+                        const AddTransactionScreen(initialType: 'expense')),
                   ),
                   const SizedBox(width: 10),
-                  Expanded(
-                    child: _QuickAction(
-                      label: 'Add income',
-                      color: AppColor.income,
-                      onTap: () => Get.to(() =>
-                          const AddTransactionScreen(initialType: 'income')),
-                    ),
+                  _QuickAction(
+                    icon: PhosphorIconsLight.arrowCircleUp,
+                    label: 'Income',
+                    color: AppColor.income,
+                    isDark: isDark,
+                    onTap: () => Get.to(() =>
+                        const AddTransactionScreen(initialType: 'income')),
+                  ),
+                  const SizedBox(width: 10),
+                  _QuickAction(
+                    icon: PhosphorIconsLight.usersThree,
+                    label: 'Split',
+                    color: AppColor.primary,
+                    isDark: isDark,
+                    onTap: () => Get.to(() => const SplitsScreen(),
+                        transition: Transition.cupertino),
+                  ),
+                  const SizedBox(width: 10),
+                  _QuickAction(
+                    icon: PhosphorIconsLight.target,
+                    label: 'Goals',
+                    color: const Color(0xFFE87B35),
+                    isDark: isDark,
+                    onTap: () => showGoalsAddPicker(context),
                   ),
                 ],
               ),
@@ -690,38 +715,66 @@ class _MiniStat extends StatelessWidget {
 }
 
 class _QuickAction extends StatelessWidget {
+  final PhosphorIconData icon;
   final String label;
   final Color color;
+  final bool isDark;
   final VoidCallback onTap;
 
   const _QuickAction({
+    required this.icon,
     required this.label,
     required this.color,
+    required this.isDark,
     required this.onTap,
   });
 
   @override
-  Widget build(BuildContext context) => GestureDetector(
-        onTap: onTap,
+  Widget build(BuildContext context) {
+    final bg = isDark ? AppColor.darkCard : const Color(0xFFF4F4F5);
+    final textMuted = isDark ? AppColor.textSecondary : const Color(0xFF71717A);
+
+    return Expanded(
+      child: GestureDetector(
+        onTap: () {
+          HapticFeedback.lightImpact();
+          onTap();
+        },
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 11),
+          padding: const EdgeInsets.symmetric(vertical: 14),
           decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.07),
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: color.withValues(alpha: 0.15)),
+            color: bg,
+            borderRadius: BorderRadius.circular(14),
           ),
-          child: Center(
-            child: Text(
-              label,
-              style: TextStyle(
-                color: color,
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: Center(
+                  child: PhosphorIcon(icon, color: color, size: 18),
+                ),
               ),
-            ),
+              const SizedBox(height: 8),
+              Text(
+                label,
+                style: TextStyle(
+                  color: textMuted,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
           ),
         ),
-      );
+      ),
+    );
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -900,144 +953,78 @@ class _InsightsStrip extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
-            child: Text('Insights',
-                style: TextStyle(
-                    color: textPrimary,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600)),
+            padding: const EdgeInsets.fromLTRB(20, 20, 0, 10),
+            child: Row(
+              children: [
+                Text('Insights',
+                    style: TextStyle(
+                        color: textPrimary,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600)),
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: AppColor.primary.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(100),
+                  ),
+                  child: Text(
+                    '${insights.length}',
+                    style: TextStyle(
+                      color: AppColor.primary,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
           SizedBox(
-            height: 148,
+            height: 36,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 20),
               itemCount: insights.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 10),
-              itemBuilder: (_, i) => GestureDetector(
-                onTap: () => _showInsightSheet(context, insights[i], isDark),
-                child: _InsightCard(insight: insights[i], isDark: isDark),
-              ),
+              separatorBuilder: (_, __) => const SizedBox(width: 8),
+              itemBuilder: (_, i) {
+                final ins = insights[i];
+                return GestureDetector(
+                  onTap: () => _showInsightSheet(context, ins, isDark),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: ins.accentColor.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(100),
+                      border: Border.all(
+                          color: ins.accentColor.withValues(alpha: 0.25)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(ins.emoji,
+                            style: const TextStyle(fontSize: 13)),
+                        const SizedBox(width: 6),
+                        Text(
+                          ins.title,
+                          style: TextStyle(
+                            color: ins.accentColor,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
           Divider(height: 1, color: divColor),
         ],
       );
     });
-  }
-}
-
-class _InsightCard extends StatelessWidget {
-  final Insight insight;
-  final bool isDark;
-  const _InsightCard({required this.insight, required this.isDark});
-
-  @override
-  Widget build(BuildContext context) {
-    final accent = insight.accentColor;
-    final cardBg = isDark ? AppColor.darkCard : const Color(0xFFF4F4F5);
-    final textPrimary =
-        isDark ? AppColor.textPrimary : AppColor.lightTextPrimary;
-    final textMuted =
-        isDark ? AppColor.textSecondary : AppColor.lightTextSecondary;
-
-    final typeLabel = switch (insight.type) {
-      InsightType.warning => 'Watch out',
-      InsightType.positive => 'Nice',
-      InsightType.info => 'Info',
-    };
-
-    return Container(
-      width: 240,
-      padding: const EdgeInsets.all(13),
-      decoration: BoxDecoration(
-        color: cardBg,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: accent.withValues(alpha: 0.3), width: 1.5),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 32,
-                height: 32,
-                decoration: BoxDecoration(
-                  color: accent.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(9),
-                ),
-                child: Center(
-                  child: Text(insight.emoji, style: const TextStyle(fontSize: 15)),
-                ),
-              ),
-              const Spacer(),
-              if (insight.stat != null)
-                Text(
-                  insight.stat!,
-                  style: TextStyle(
-                    color: accent,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: -0.3,
-                  ),
-                )
-              else
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: accent.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(100),
-                  ),
-                  child: Text(
-                    typeLabel,
-                    style: TextStyle(
-                        color: accent, fontSize: 10, fontWeight: FontWeight.w600),
-                  ),
-                ),
-            ],
-          ),
-          const SizedBox(height: 9),
-          Text(
-            insight.title,
-            style: TextStyle(
-              color: textPrimary,
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-              letterSpacing: -0.2,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          const SizedBox(height: 4),
-          Expanded(
-            child: Text(
-              insight.body,
-              style: TextStyle(
-                color: textMuted,
-                fontSize: 11,
-                height: 1.45,
-              ),
-              maxLines: 3,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          if (insight.progress != null) ...[
-            const SizedBox(height: 8),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(100),
-              child: LinearProgressIndicator(
-                value: insight.progress,
-                minHeight: 4,
-                backgroundColor: accent.withValues(alpha: 0.1),
-                valueColor: AlwaysStoppedAnimation<Color>(accent),
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
   }
 }
 
@@ -1417,5 +1404,419 @@ class _UrgentGoalTile extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Financial Health Score card — compact home screen entry point
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _HealthScoreCard extends StatelessWidget {
+  final bool isDark;
+  const _HealthScoreCard({required this.isDark});
+
+  @override
+  Widget build(BuildContext context) {
+    HealthScoreController ctrl;
+    try {
+      ctrl = Get.find<HealthScoreController>();
+    } catch (_) {
+      return const SizedBox.shrink();
+    }
+
+    final textPrimary = isDark ? AppColor.textPrimary : const Color(0xFF09090B);
+    final textMuted = isDark ? AppColor.textSecondary : const Color(0xFF71717A);
+    final trackColor = isDark ? AppColor.darkBorder : const Color(0xFFE4E4E7);
+    final divColor = isDark ? AppColor.darkBorder : const Color(0xFFF4F4F5);
+
+    return Obx(() {
+      final score = ctrl.score.value;
+
+      if (score == null) {
+        // Read HomeController observables inside Obx so this block re-runs
+        // when loading finishes or allTransactions changes.
+        HomeController? homeC;
+        try {
+          homeC = Get.find<HomeController>();
+        } catch (_) {}
+
+        final isLoading = homeC?.isOverviewLoading.value ?? true;
+        final txCount = homeC?.allTransactions.length ?? 0;
+
+        // Still fetching from Supabase — stay invisible, don't flash a wrong message
+        if (isLoading || txCount >= 3) return const SizedBox.shrink();
+
+        // Confirmed: data has loaded and user genuinely has fewer than 3 transactions
+        return Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+              child: Row(
+                children: [
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: AppColor.primary.withValues(alpha: 0.10),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Center(
+                      child: PhosphorIcon(
+                        PhosphorIconsLight.heartbeat,
+                        size: 16,
+                        color: AppColor.primary,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Financial Health Score',
+                          style: TextStyle(
+                            color: textPrimary,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Log a few transactions to unlock your score',
+                          style: TextStyle(color: textMuted, fontSize: 11),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Divider(height: 1, color: divColor),
+          ],
+        );
+      }
+
+      final change = ctrl.weeklyChange;
+      final history = ctrl.history.toList();
+
+      return GestureDetector(
+        onTap: () {
+          HapticFeedback.lightImpact();
+          Get.to(() => const HealthScoreScreen(),
+              transition: Transition.cupertino);
+        },
+        behavior: HitTestBehavior.opaque,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 14),
+              child: Row(
+                children: [
+                  SizedBox(
+                    width: 56,
+                    height: 56,
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        CustomPaint(
+                          size: const Size(56, 56),
+                          painter: _MiniArcPainter(
+                            progress: score.total / 100,
+                            color: score.levelColor,
+                            trackColor: trackColor,
+                          ),
+                        ),
+                        Text(
+                          '${score.total}',
+                          style: TextStyle(
+                            color: textPrimary,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Text(
+                              'Financial Health',
+                              style: TextStyle(
+                                color: textMuted,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            const Spacer(),
+                            PhosphorIcon(
+                              PhosphorIconsLight.caretRight,
+                              size: 13,
+                              color: textMuted,
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: score.levelColor.withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(100),
+                              ),
+                              child: Text(
+                                score.levelLabel,
+                                style: TextStyle(
+                                  color: score.levelColor,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                            if (change != null) ...[
+                              const SizedBox(width: 8),
+                              PhosphorIcon(
+                                change >= 0
+                                    ? PhosphorIconsLight.trendUp
+                                    : PhosphorIconsLight.trendDown,
+                                size: 11,
+                                color: change >= 0
+                                    ? AppColor.income
+                                    : AppColor.expense,
+                              ),
+                              const SizedBox(width: 3),
+                              Text(
+                                '${change >= 0 ? '+' : ''}$change',
+                                style: TextStyle(
+                                  color: change >= 0
+                                      ? AppColor.income
+                                      : AppColor.expense,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                        if (history.length > 1) ...[
+                          const SizedBox(height: 8),
+                          SizedBox(
+                            height: 16,
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: history.map((h) {
+                                final frac = h.total / 100;
+                                final isLatest = h == history.last;
+                                return Expanded(
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 1),
+                                    child: Container(
+                                      height: (frac * 12).clamp(2.0, 12.0),
+                                      decoration: BoxDecoration(
+                                        color: isLatest
+                                            ? score.levelColor
+                                            : score.levelColor
+                                                .withValues(alpha: 0.3),
+                                        borderRadius: BorderRadius.circular(2),
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              }).toList(),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Divider(height: 1, color: divColor),
+          ],
+        ),
+      );
+    });
+  }
+}
+
+class _MiniArcPainter extends CustomPainter {
+  final double progress;
+  final Color color;
+  final Color trackColor;
+
+  const _MiniArcPainter({
+    required this.progress,
+    required this.color,
+    required this.trackColor,
+  });
+
+  static const double _start = 135.0 * 3.14159265 / 180;
+  static const double _sweep = 270.0 * 3.14159265 / 180;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = (size.shortestSide - 5) / 2;
+    final rect = Rect.fromCircle(center: center, radius: radius);
+
+    canvas.drawArc(
+      rect, _start, _sweep, false,
+      Paint()
+        ..color = trackColor
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 4
+        ..strokeCap = StrokeCap.round,
+    );
+
+    if (progress > 0) {
+      canvas.drawArc(
+        rect, _start, _sweep * progress.clamp(0.0, 1.0), false,
+        Paint()
+          ..color = color
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 4
+          ..strokeCap = StrokeCap.round,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(_MiniArcPainter old) =>
+      old.progress != progress || old.color != color;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Weekly Digest Banner — shown Mon–Thu when last week's digest is ready
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _WeeklyDigestBanner extends StatelessWidget {
+  final bool isDark;
+  const _WeeklyDigestBanner({required this.isDark});
+
+  @override
+  Widget build(BuildContext context) {
+    WeeklyDigestController? ctrl;
+    try {
+      ctrl = Get.find<WeeklyDigestController>();
+    } catch (_) {
+      return const SizedBox.shrink();
+    }
+
+    return Obx(() {
+      if (!ctrl!.shouldShowBanner) return const SizedBox.shrink();
+      final d = ctrl.digest.value!;
+      final sym = Get.find<HomeController>().currencySymbol.value;
+      final amt = d.totalSpent >= 1000
+          ? '$sym${(d.totalSpent / 1000).toStringAsFixed(1)}K'
+          : '$sym${d.totalSpent.toStringAsFixed(0)}';
+      final cardBg = isDark ? AppColor.darkSurface : Colors.white;
+      final border = isDark ? AppColor.darkBorder : const Color(0xFFE8E6E2);
+
+      return GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () => Get.to(
+          () => WeeklyDigestScreen(digest: d),
+          transition: Transition.cupertino,
+        ),
+        child: Container(
+          margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          decoration: BoxDecoration(
+            color: cardBg,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: border),
+            boxShadow: isDark
+                ? null
+                : [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.05),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    )
+                  ],
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: AppColor.primaryExtraSoft,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  PhosphorIconsLight.chartBar,
+                  color: AppColor.primary,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Week ${d.weekNumber} digest is ready',
+                      style: TextStyle(
+                        color: isDark
+                            ? AppColor.textPrimary
+                            : const Color(0xFF1A1916),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '$amt spent · tap to see the full breakdown',
+                      style: TextStyle(
+                        color: isDark
+                            ? AppColor.textSecondary
+                            : const Color(0xFF6B6960),
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    PhosphorIconsLight.arrowRight,
+                    color: AppColor.primary,
+                    size: 16,
+                  ),
+                  const SizedBox(width: 8),
+                  GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: ctrl.dismissBanner,
+                    child: Icon(
+                      PhosphorIconsLight.x,
+                      color: isDark
+                          ? AppColor.textSecondary
+                          : const Color(0xFF9A9890),
+                      size: 16,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      );
+    });
   }
 }

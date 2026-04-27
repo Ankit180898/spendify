@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_sms_inbox/flutter_sms_inbox.dart';
 import 'package:get/get.dart';
@@ -110,7 +111,7 @@ class SmsController extends GetxController {
   static String _hashOf(String raw) {
     final trimmed = raw.trim();
     final prefix = trimmed.substring(0, trimmed.length.clamp(0, 120));
-    return base64.encode(utf8.encode(prefix));
+    return sha256.convert(utf8.encode(prefix)).toString();
   }
 
   // amount|merchant(lowercase)|yyyyMMdd — stable key across different SMS wordings

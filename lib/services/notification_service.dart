@@ -16,13 +16,14 @@ class NotificationService {
   static const _milestoneChannelId = 'milestones';
   static const _spikeChannelId     = 'spend_spike';
   static const _splitsChannelId    = 'group_splits';
+  static const _billChannelId      = 'bill_reminders';
 
   static const _logReminderId   = 999999;
   static const _weeklyDigestId  = 1000001;
   static const _monthlyRecapId  = 1000002;
   static const _dailySafeId     = 1000003;
 
-  static const _icon = '@drawable/ic_launcher_foreground';
+  static const _icon = '@drawable/ic_notification';
 
   // Monotonic counter — avoids ID collisions between rapid immediate notifications
   static int _nextImmediateId = 1;
@@ -400,6 +401,109 @@ class NotificationService {
       );
     } catch (e) {
       debugPrint('showSplitAlert error: $e');
+    }
+  }
+
+  // ── Bill reminders (recurring monthly) ───────────────────────────────────
+
+  static Future<void> scheduleBillReminder({
+    required String billId,
+    required String merchantName,
+    required double amount,
+    required int dueDay,
+    required String currencySymbol,
+  }) async {
+    if (!_initialized) return;
+    try {
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+      final clampedDay = dueDay.clamp(1, 28);
+
+      // Calculate next due date
+      var nextDue = DateTime(now.year, now.month, clampedDay);
+      if (!nextDue.isAfter(today.subtract(const Duration(days: 1)))) {
+        nextDue = DateTime(now.year, now.month + 1, clampedDay);
+      }
+      final daysUntilDue = nextDue.difference(today).inDays;
+
+      const details = NotificationDetails(
+        android: AndroidNotificationDetails(
+          _billChannelId, 'Bill Reminders',
+          channelDescription: 'Reminders for upcoming recurring bills',
+          importance: Importance.high,
+          priority: Priority.high,
+          icon: _icon,
+        ),
+        iOS: DarwinNotificationDetails(),
+      );
+
+      final baseId = (billId.hashCode.abs() % 100000000) + 200000000;
+
+      // If due within 3 days, fire an immediate notification right now
+      if (daysUntilDue <= 3) {
+        final msg = daysUntilDue <= 0
+            ? '$merchantName is due today!'
+            : '$merchantName is due in $daysUntilDue day${daysUntilDue == 1 ? '' : 's'}.';
+        await _plugin.show(
+          baseId,
+          'Bill due soon',
+          '$currencySymbol${amount.toStringAsFixed(0)} — $msg',
+          details,
+        );
+      }
+
+      // Schedule monthly recurring reminder 2 days before due date for future months
+      final reminderDay = (clampedDay - 2).clamp(1, 28);
+      var fireDate = DateTime(now.year, now.month, reminderDay, 9, 0);
+      // If this month's reminder is already covered by the immediate above, start from next month
+      if (daysUntilDue <= 3 || !fireDate.isAfter(now)) {
+        fireDate = DateTime(now.year, now.month + 1, reminderDay, 9, 0);
+      }
+
+      if (clampedDay >= 3) {
+        await _plugin.zonedSchedule(
+          baseId + 1,
+          'Bill due soon',
+          '$merchantName — $currencySymbol${amount.toStringAsFixed(0)} is due in 2 days.',
+          tz.TZDateTime.from(fireDate, tz.local),
+          details,
+          androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+          uiLocalNotificationDateInterpretation:
+              UILocalNotificationDateInterpretation.absoluteTime,
+          matchDateTimeComponents: DateTimeComponents.dayOfMonthAndTime,
+        );
+      } else {
+        await _plugin.zonedSchedule(
+          baseId + 1,
+          'Bill due soon',
+          '$merchantName — $currencySymbol${amount.toStringAsFixed(0)} is due soon.',
+          tz.TZDateTime.from(fireDate, tz.local),
+          details,
+          androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+          uiLocalNotificationDateInterpretation:
+              UILocalNotificationDateInterpretation.absoluteTime,
+        );
+      }
+    } catch (e) {
+      debugPrint('scheduleBillReminder error: $e');
+    }
+  }
+
+  static Future<void> cancelBillReminder(String billId) async {
+    try {
+      final baseId = (billId.hashCode.abs() % 100000000) + 200000000;
+      await _plugin.cancel(baseId);
+      await _plugin.cancel(baseId + 1);
+    } catch (e) {
+      debugPrint('cancelBillReminder error: $e');
+    }
+  }
+
+  static Future<void> cancelAllNotifications() async {
+    try {
+      await _plugin.cancelAll();
+    } catch (e) {
+      debugPrint('cancelAllNotifications error: $e');
     }
   }
 

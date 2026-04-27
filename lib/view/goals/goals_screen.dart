@@ -8,8 +8,10 @@ import 'package:spendify/config/app_color.dart';
 import 'package:spendify/config/app_theme.dart';
 import 'package:spendify/controller/goals_controller/goals_controller.dart';
 import 'package:spendify/controller/home_controller/home_controller.dart';
+import 'package:spendify/controller/recurring_bills_controller/recurring_bills_controller.dart';
 import 'package:spendify/controller/savings_controller/savings_controller.dart';
 import 'package:spendify/model/categories_model.dart';
+import 'package:spendify/model/recurring_bill_model.dart';
 import 'package:spendify/model/savings_goal_model.dart';
 import 'package:spendify/model/spending_goal_model.dart';
 import 'package:spendify/utils/utils.dart';
@@ -31,19 +33,14 @@ class GoalsScreen extends StatefulWidget {
 class _GoalsScreenState extends State<GoalsScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  int _tabIndex = 0;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
-    _tabController.addListener(() {
-      if (!_tabController.indexIsChanging) {
-        setState(() => _tabIndex = _tabController.index);
-      }
-    });
-    if (!Get.isRegistered<SavingsController>()) {
-      Get.put(SavingsController());
+    _tabController = TabController(length: 3, vsync: this);
+    if (!Get.isRegistered<SavingsController>()) Get.put(SavingsController());
+    if (!Get.isRegistered<RecurringBillsController>()) {
+      Get.put(RecurringBillsController());
     }
   }
 
@@ -63,26 +60,13 @@ class _GoalsScreenState extends State<GoalsScreen>
 
     final spendingC = Get.find<GoalsController>();
     final savingsC = Get.find<SavingsController>();
+    final billsC = Get.find<RecurringBillsController>();
 
     return Scaffold(
       backgroundColor: bg,
       appBar: AppBar(
         automaticallyImplyLeading: false,
         title: Text('Goals', style: AppTypography.heading2(textPrimary)),
-        actions: [
-          IconButton(
-            tooltip: _tabIndex == 0 ? 'Add budget limit' : 'Add savings goal',
-            onPressed: () {
-              HapticFeedback.lightImpact();
-              if (_tabIndex == 0) {
-                _showAddBudgetSheet(context, spendingC);
-              } else {
-                _showAddSavingsSheet(context, savingsC);
-              }
-            },
-            icon: const PhosphorIcon(PhosphorIconsLight.plusCircle),
-          ),
-        ],
         bottom: TabBar(
           controller: _tabController,
           indicatorColor: AppColor.primary,
@@ -97,6 +81,7 @@ class _GoalsScreenState extends State<GoalsScreen>
           tabs: const [
             Tab(text: 'Budget'),
             Tab(text: 'Savings'),
+            Tab(text: 'Bills'),
           ],
         ),
       ),
@@ -105,26 +90,168 @@ class _GoalsScreenState extends State<GoalsScreen>
         children: [
           _BudgetTab(controller: spendingC, isDark: isDark),
           _SavingsTab(controller: savingsC, isDark: isDark),
+          _BillsTab(controller: billsC, isDark: isDark),
         ],
       ),
     );
   }
 
-  void _showAddBudgetSheet(BuildContext ctx, GoalsController controller) {
-    showModalBottomSheet(
-      context: ctx,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => _AddBudgetSheet(controller: controller),
-    );
-  }
+}
 
-  void _showAddSavingsSheet(BuildContext ctx, SavingsController controller) {
-    showModalBottomSheet(
-      context: ctx,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => _AddSavingsSheet(controller: controller),
+// Public entry-point called from BottomNav's universal + button.
+void showGoalsAddPicker(BuildContext ctx) {
+  final spendingC = Get.find<GoalsController>();
+  final savingsC = Get.find<SavingsController>();
+  final billsC = Get.find<RecurringBillsController>();
+  final isDark = Theme.of(ctx).brightness == Brightness.dark;
+  final bg = isDark ? AppColor.darkCard : Colors.white;
+  final textPrimary = isDark ? AppColor.textPrimary : AppColor.lightTextPrimary;
+  final textSecondary =
+      isDark ? AppColor.textSecondary : AppColor.lightTextSecondary;
+
+  showModalBottomSheet(
+    context: ctx,
+    backgroundColor: Colors.transparent,
+    builder: (_) => Container(
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Center(
+            child: Container(
+              width: 36,
+              height: 4,
+              decoration: BoxDecoration(
+                color: textSecondary.withValues(alpha: 0.3),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+          Text('What would you like to add?',
+              style: AppTypography.bodySemiBold(textPrimary)),
+          const SizedBox(height: 16),
+          _PickerOption(
+            icon: PhosphorIconsLight.chartPieSlice,
+            label: 'Budget Limit',
+            subtitle: 'Set a spending cap for a category',
+            isDark: isDark,
+            onTap: () {
+              Navigator.pop(ctx);
+              showModalBottomSheet(
+                context: ctx,
+                isScrollControlled: true,
+                backgroundColor: Colors.transparent,
+                builder: (_) => _AddBudgetSheet(controller: spendingC),
+              );
+            },
+          ),
+          const SizedBox(height: 10),
+          _PickerOption(
+            icon: PhosphorIconsLight.piggyBank,
+            label: 'Savings Goal',
+            subtitle: 'Track progress toward a financial goal',
+            isDark: isDark,
+            onTap: () {
+              Navigator.pop(ctx);
+              showModalBottomSheet(
+                context: ctx,
+                isScrollControlled: true,
+                backgroundColor: Colors.transparent,
+                builder: (_) => _AddSavingsSheet(controller: savingsC),
+              );
+            },
+          ),
+          const SizedBox(height: 10),
+          _PickerOption(
+            icon: PhosphorIconsLight.calendarCheck,
+            label: 'Recurring Bill',
+            subtitle: 'Track a subscription or regular payment',
+            isDark: isDark,
+            onTap: () {
+              Navigator.pop(ctx);
+              showModalBottomSheet(
+                context: ctx,
+                isScrollControlled: true,
+                backgroundColor: Colors.transparent,
+                builder: (_) => _AddBillSheet(controller: billsC),
+              );
+            },
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+class _PickerOption extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String subtitle;
+  final bool isDark;
+  final VoidCallback onTap;
+
+  const _PickerOption({
+    required this.icon,
+    required this.label,
+    required this.subtitle,
+    required this.isDark,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final bg = isDark ? AppColor.darkBg : const Color(0xFFF5F5F5);
+    final textPrimary =
+        isDark ? AppColor.textPrimary : AppColor.lightTextPrimary;
+    final textSecondary =
+        isDark ? AppColor.textSecondary : AppColor.lightTextSecondary;
+
+    return InkWell(
+      onTap: () {
+        HapticFeedback.lightImpact();
+        onTap();
+      },
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: AppColor.primary.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, color: AppColor.primary, size: 20),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(label,
+                      style: AppTypography.bodySemiBold(textPrimary)),
+                  Text(subtitle,
+                      style: AppTypography.caption(textSecondary)),
+                ],
+              ),
+            ),
+            Icon(PhosphorIconsLight.caretRight,
+                color: textSecondary, size: 16),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -664,14 +791,18 @@ class _BudgetRow extends StatelessWidget {
     if (category == 'All') return PhosphorIconsLight.wallet;
     final k = category.toLowerCase();
     if (k.contains('invest')) return PhosphorIconsLight.chartBar;
-    if (k.contains('health') || k.contains('medical'))
+    if (k.contains('health') || k.contains('medical')) {
       return PhosphorIconsLight.heart;
-    if (k.contains('bill') || k.contains('fee'))
+    }
+    if (k.contains('bill') || k.contains('fee')) {
       return PhosphorIconsLight.receipt;
-    if (k.contains('food') || k.contains('drink'))
+    }
+    if (k.contains('food') || k.contains('drink')) {
       return PhosphorIconsLight.coffee;
-    if (k.contains('car') || k.contains('vehicle'))
+    }
+    if (k.contains('car') || k.contains('vehicle')) {
       return PhosphorIconsLight.car;
+    }
     if (k.contains('grocer')) return PhosphorIconsLight.shoppingCart;
     if (k.contains('gift')) return PhosphorIconsLight.gift;
     if (k.contains('transport')) return PhosphorIconsLight.bus;
@@ -1501,6 +1632,548 @@ class _AddSavingsSheetState extends State<_AddSavingsSheet> {
                             strokeWidth: 2, color: Colors.white),
                       )
                     : const Text('Create goal'),
+              ),
+            ),
+            const SizedBox(height: AppDimens.spaceMD),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Bills Tab ─────────────────────────────────────────────────────────────────
+
+class _BillsTab extends StatelessWidget {
+  final RecurringBillsController controller;
+  final bool isDark;
+
+  const _BillsTab({required this.controller, required this.isDark});
+
+  @override
+  Widget build(BuildContext context) {
+    final textPrimary = isDark ? AppColor.textPrimary : AppColor.lightTextPrimary;
+    final textSecondary =
+        isDark ? AppColor.textSecondary : AppColor.lightTextSecondary;
+
+    return Obx(() {
+      if (controller.isLoading.value) {
+        return const Center(child: CircularProgressIndicator());
+      }
+
+      final hasSuggestions = controller.suggestions.isNotEmpty;
+      final hasBills = controller.bills.isNotEmpty;
+
+      if (!hasSuggestions && !hasBills) {
+        return _EmptyView(
+          icon: PhosphorIconsLight.calendarCheck,
+          title: 'No recurring bills yet',
+          subtitle:
+              'Spendify will automatically detect subscriptions and regular payments as you add more transactions.',
+          cta: 'Tap + to add a bill manually',
+          textPrimary: textPrimary,
+          textSecondary: textSecondary,
+        );
+      }
+
+      return RefreshIndicator(
+        onRefresh: controller.fetchBills,
+        child: ListView(
+          padding: const EdgeInsets.only(
+              left: AppDimens.spaceLG,
+              right: AppDimens.spaceLG,
+              top: AppDimens.spaceLG,
+              bottom: 100),
+          children: [
+            if (hasSuggestions) ...[
+              _SectionHeader(
+                title: 'We noticed these',
+                subtitle: 'Confirm to start tracking & get reminders',
+                isDark: isDark,
+              ),
+              const SizedBox(height: AppDimens.spaceMD),
+              ...controller.suggestions.map((s) => Padding(
+                    padding: const EdgeInsets.only(bottom: AppDimens.spaceMD),
+                    child: _SuggestionCard(
+                      suggestion: s,
+                      controller: controller,
+                      isDark: isDark,
+                    ),
+                  )),
+              if (hasBills) const SizedBox(height: AppDimens.spaceXL),
+            ],
+            if (hasBills) ...[
+              _SectionHeader(
+                title: 'Tracked bills',
+                subtitle: 'Swipe left to remove',
+                isDark: isDark,
+              ),
+              const SizedBox(height: AppDimens.spaceMD),
+              ...controller.bills.map((b) => Padding(
+                    padding: const EdgeInsets.only(bottom: AppDimens.spaceMD),
+                    child: _BillCard(
+                      bill: b,
+                      controller: controller,
+                      isDark: isDark,
+                    ),
+                  )),
+            ],
+          ],
+        ),
+      );
+    });
+  }
+}
+
+class _SectionHeader extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  final bool isDark;
+
+  const _SectionHeader({
+    required this.title,
+    required this.subtitle,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final textPrimary = isDark ? AppColor.textPrimary : AppColor.lightTextPrimary;
+    final textSecondary =
+        isDark ? AppColor.textSecondary : AppColor.lightTextSecondary;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(title, style: AppTypography.bodySemiBold(textPrimary)),
+        Text(subtitle, style: AppTypography.caption(textSecondary)),
+      ],
+    );
+  }
+}
+
+class _SuggestionCard extends StatelessWidget {
+  final RecurringBillSuggestion suggestion;
+  final RecurringBillsController controller;
+  final bool isDark;
+
+  const _SuggestionCard({
+    required this.suggestion,
+    required this.controller,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cardBg = isDark ? AppColor.darkCard : AppColor.lightSurface;
+    final border = isDark ? AppColor.darkBorder : AppColor.lightBorder;
+    final textPrimary = isDark ? AppColor.textPrimary : AppColor.lightTextPrimary;
+    final textSecondary =
+        isDark ? AppColor.textSecondary : AppColor.lightTextSecondary;
+    final sym = Get.find<HomeController>().currencySymbol.value;
+    final fmt = NumberFormat('#,##0', 'en_IN');
+
+    return Container(
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: BorderRadius.circular(AppDimens.radiusXL),
+        border: Border.all(color: border),
+      ),
+      padding: const EdgeInsets.all(AppDimens.spaceLG),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: AppColor.primary.withValues(alpha: 0.10),
+                  borderRadius: BorderRadius.circular(AppDimens.radiusMD),
+                ),
+                child: const Center(
+                  child: PhosphorIcon(PhosphorIconsLight.sparkle,
+                      color: AppColor.primary, size: 20),
+                ),
+              ),
+              const SizedBox(width: AppDimens.spaceMD),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(suggestion.merchantName,
+                        style: AppTypography.bodySemiBold(textPrimary),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis),
+                    Text(
+                      '$sym${fmt.format(suggestion.avgAmount)} · ${suggestion.frequency} · ${suggestion.occurrences}x detected',
+                      style: AppTypography.caption(textSecondary),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppDimens.spaceMD),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () => controller.dismissSuggestion(suggestion),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: textSecondary,
+                    side: BorderSide(color: border),
+                    padding:
+                        const EdgeInsets.symmetric(vertical: AppDimens.spaceSM),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppDimens.radiusMD),
+                    ),
+                  ),
+                  child: Text('Dismiss',
+                      style: AppTypography.body(textSecondary)),
+                ),
+              ),
+              const SizedBox(width: AppDimens.spaceMD),
+              Expanded(
+                child: FilledButton(
+                  onPressed: () => controller.confirmSuggestion(suggestion),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColor.primary,
+                    padding:
+                        const EdgeInsets.symmetric(vertical: AppDimens.spaceSM),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppDimens.radiusMD),
+                    ),
+                  ),
+                  child: Text('Track this',
+                      style: AppTypography.bodySemiBold(Colors.white)),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BillCard extends StatelessWidget {
+  final RecurringBill bill;
+  final RecurringBillsController controller;
+  final bool isDark;
+
+  const _BillCard({
+    required this.bill,
+    required this.controller,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cardBg = isDark ? AppColor.darkCard : AppColor.lightSurface;
+    final border = isDark ? AppColor.darkBorder : AppColor.lightBorder;
+    final textPrimary = isDark ? AppColor.textPrimary : AppColor.lightTextPrimary;
+    final textSecondary =
+        isDark ? AppColor.textSecondary : AppColor.lightTextSecondary;
+    final sym = Get.find<HomeController>().currencySymbol.value;
+    final fmt = NumberFormat('#,##0', 'en_IN');
+
+    Color statusColor;
+    if (bill.isPaidThisCycle) {
+      statusColor = AppColor.income;
+    } else if (bill.isOverdue) {
+      statusColor = AppColor.expense;
+    } else if (bill.isUrgent) {
+      statusColor = AppColor.warning;
+    } else {
+      statusColor = isDark ? AppColor.textSecondary : AppColor.lightTextSecondary;
+    }
+
+    return Dismissible(
+      key: Key(bill.id),
+      direction: DismissDirection.endToStart,
+      background: Container(
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: AppDimens.spaceLG),
+        decoration: BoxDecoration(
+          color: AppColor.expense.withValues(alpha: 0.10),
+          borderRadius: BorderRadius.circular(AppDimens.radiusXL),
+        ),
+        child:
+            const PhosphorIcon(PhosphorIconsLight.trash, color: AppColor.expense),
+      ),
+      onDismissed: (_) => controller.deleteBill(bill.id),
+      child: Container(
+        decoration: BoxDecoration(
+          color: cardBg,
+          borderRadius: BorderRadius.circular(AppDimens.radiusXL),
+          border: Border.all(color: border),
+        ),
+        padding: const EdgeInsets.all(AppDimens.spaceLG),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: statusColor.withValues(alpha: 0.10),
+                borderRadius: BorderRadius.circular(AppDimens.radiusMD),
+              ),
+              child: Center(
+                child: PhosphorIcon(_billIcon(bill.merchantName),
+                    color: statusColor, size: 20),
+              ),
+            ),
+            const SizedBox(width: AppDimens.spaceMD),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(bill.merchantName,
+                      style: AppTypography.bodySemiBold(textPrimary),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis),
+                  Text(
+                    '$sym${fmt.format(bill.amount)} · ${bill.frequency}',
+                    style: AppTypography.caption(textSecondary),
+                  ),
+                ],
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: AppDimens.spaceMD, vertical: AppDimens.spaceXXS + 2),
+              decoration: BoxDecoration(
+                color: statusColor.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(AppDimens.radiusCircle),
+              ),
+              child: Text(bill.statusLabel,
+                  style: AppTypography.captionSemiBold(statusColor)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  PhosphorIconData _billIcon(String name) {
+    final n = name.toLowerCase();
+    if (n.contains('jio') || n.contains('airtel') || n.contains('vi') || n.contains('bsnl')) {
+      return PhosphorIconsLight.simCard;
+    }
+    if (n.contains('netflix') || n.contains('hotstar') || n.contains('spotify') ||
+        n.contains('prime') || n.contains('youtube')) {
+      return PhosphorIconsLight.television;
+    }
+    if (n.contains('electricity') || n.contains('water') || n.contains('gas')) {
+      return PhosphorIconsLight.lightningA;
+    }
+    if (n.contains('rent') || n.contains('maintenance')) {
+      return PhosphorIconsLight.houseSimple;
+    }
+    if (n.contains('gym') || n.contains('fitness')) {
+      return PhosphorIconsLight.barbell;
+    }
+    if (n.contains('emi') || n.contains('loan')) {
+      return PhosphorIconsLight.bank;
+    }
+    return PhosphorIconsLight.calendarCheck;
+  }
+}
+
+// ── Add Bill Sheet (manual entry) ─────────────────────────────────────────────
+
+class _AddBillSheet extends StatefulWidget {
+  final RecurringBillsController controller;
+
+  const _AddBillSheet({required this.controller});
+
+  @override
+  State<_AddBillSheet> createState() => _AddBillSheetState();
+}
+
+class _AddBillSheetState extends State<_AddBillSheet> {
+  final _nameController = TextEditingController();
+  final _amountController = TextEditingController();
+  String _frequency = 'monthly';
+  int _dueDay = 1;
+  bool _isSaving = false;
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _amountController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    final name = _nameController.text.trim();
+    final amount = double.tryParse(_amountController.text.trim());
+    if (name.isEmpty) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Enter a bill name')));
+      return;
+    }
+    if (amount == null || amount <= 0) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Enter a valid amount')));
+      return;
+    }
+    setState(() => _isSaving = true);
+    await widget.controller.addBillManually(
+      merchantName: name,
+      amount: amount,
+      frequency: _frequency,
+      dueDay: _dueDay,
+    );
+    setState(() => _isSaving = false);
+    if (mounted) Navigator.of(context).pop();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final sheetBg = isDark ? AppColor.darkSurface : AppColor.lightSurface;
+    final textPrimary = isDark ? AppColor.textPrimary : AppColor.lightTextPrimary;
+    final textSecondary =
+        isDark ? AppColor.textSecondary : AppColor.lightTextSecondary;
+    final chipBg = isDark ? AppColor.darkCard : AppColor.lightBg;
+    final keyboardH = MediaQuery.of(context).viewInsets.bottom;
+
+    return Container(
+      constraints:
+          BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.88),
+      decoration: BoxDecoration(
+        color: sheetBg,
+        borderRadius: const BorderRadius.vertical(
+            top: Radius.circular(AppDimens.radiusXXXL)),
+      ),
+      child: SingleChildScrollView(
+        padding: EdgeInsets.fromLTRB(AppDimens.spaceXXL, AppDimens.spaceXXL,
+            AppDimens.spaceXXL, AppDimens.spaceXXL + keyboardH),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: isDark ? AppColor.darkBorder : AppColor.lightBorder,
+                  borderRadius: BorderRadius.circular(AppDimens.radiusCircle),
+                ),
+              ),
+            ),
+            const SizedBox(height: AppDimens.spaceXXL),
+            Text('Add recurring bill',
+                style: AppTypography.heading2(textPrimary)),
+            const SizedBox(height: AppDimens.spaceXXL),
+            TextField(
+              controller: _nameController,
+              textCapitalization: TextCapitalization.words,
+              decoration: const InputDecoration(
+                labelText: 'Bill name',
+                hintText: 'e.g. Netflix, Jio, Rent',
+                prefixIcon: PhosphorIcon(PhosphorIconsLight.tag),
+              ),
+            ),
+            const SizedBox(height: AppDimens.spaceMD),
+            TextField(
+              controller: _amountController,
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
+              decoration: InputDecoration(
+                labelText: 'Amount',
+                hintText: 'e.g. 649',
+                prefixIcon: Align(
+                  widthFactor: 1.0,
+                  child: Text(
+                    Get.find<HomeController>().currencySymbol.value,
+                    style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        color: textSecondary),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: AppDimens.spaceXL),
+            Text('Frequency', style: AppTypography.bodySemiBold(textPrimary)),
+            const SizedBox(height: AppDimens.spaceSM),
+            Row(
+              children: ['monthly', 'quarterly', 'yearly'].map((f) {
+                final selected = _frequency == f;
+                return Padding(
+                  padding: const EdgeInsets.only(right: AppDimens.spaceSM),
+                  child: GestureDetector(
+                    onTap: () => setState(() => _frequency = f),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: AppDimens.spaceLG,
+                          vertical: AppDimens.spaceSM),
+                      decoration: BoxDecoration(
+                        color: selected ? AppColor.primary : chipBg,
+                        borderRadius: BorderRadius.circular(AppDimens.radiusMD),
+                        border: Border.all(
+                          color: selected
+                              ? AppColor.primary
+                              : (isDark
+                                  ? AppColor.darkBorder
+                                  : AppColor.lightBorder),
+                        ),
+                      ),
+                      child: Text(
+                        '${f[0].toUpperCase()}${f.substring(1)}',
+                        style: AppTypography.bodySemiBold(
+                            selected ? Colors.white : textSecondary),
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: AppDimens.spaceXL),
+            Text('Due day of month',
+                style: AppTypography.bodySemiBold(textPrimary)),
+            const SizedBox(height: AppDimens.spaceSM),
+            Row(
+              children: [
+                Expanded(
+                  child: Slider(
+                    value: _dueDay.toDouble(),
+                    min: 1,
+                    max: 28,
+                    divisions: 27,
+                    label: '$_dueDay',
+                    activeColor: AppColor.primary,
+                    onChanged: (v) => setState(() => _dueDay = v.round()),
+                  ),
+                ),
+                SizedBox(
+                  width: 36,
+                  child: Text(
+                    '$_dueDay',
+                    style: AppTypography.bodySemiBold(textPrimary),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppDimens.spaceXXXL),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: _isSaving ? null : _save,
+                child: _isSaving
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: Colors.white),
+                      )
+                    : const Text('Add bill'),
               ),
             ),
             const SizedBox(height: AppDimens.spaceMD),

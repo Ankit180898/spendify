@@ -1,3 +1,4 @@
+import 'dart:io' show Platform;
 import 'dart:ui' show ImageFilter;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -8,13 +9,18 @@ import 'package:spendify/config/app_color.dart';
 import 'package:spendify/config/app_theme.dart';
 import 'package:spendify/controller/goals_controller/goals_controller.dart';
 import 'package:spendify/controller/groups_controller/groups_controller.dart';
+import 'package:spendify/controller/health_score_controller/health_score_controller.dart';
 import 'package:spendify/controller/savings_controller/savings_controller.dart';
+import 'package:spendify/controller/weekly_digest_controller/weekly_digest_controller.dart';
+import 'package:spendify/controller/recurring_bills_controller/recurring_bills_controller.dart';
+import 'package:spendify/controller/upi_capture_controller/upi_capture_controller.dart';
 import 'package:spendify/controller/walkthrough_controller.dart';
 import 'package:spendify/view/goals/goals_screen.dart';
 import 'package:spendify/view/home/home_screen.dart';
 import 'package:spendify/view/profile/profile_screen.dart';
 import 'package:spendify/view/splits/splits_screen.dart';
 import 'package:spendify/view/wallet/statistics_screen.dart';
+import 'package:spendify/view/upi_capture/upi_permission_screen.dart';
 import 'package:spendify/view/wallet/add_transaction_screen.dart';
 
 class BottomNav extends StatefulWidget {
@@ -42,14 +48,25 @@ class _BottomNavState extends State<BottomNav> {
     super.initState();
     if (!Get.isRegistered<GoalsController>()) Get.put(GoalsController());
     if (!Get.isRegistered<SavingsController>()) Get.put(SavingsController());
+    if (!Get.isRegistered<HealthScoreController>()) Get.put(HealthScoreController());
+    if (!Get.isRegistered<WeeklyDigestController>()) Get.put(WeeklyDigestController());
     if (!Get.isRegistered<GroupsController>()) Get.put(GroupsController(), permanent: true);
-    if (!Get.isRegistered<WalkthroughController>()) {
-      Get.put(WalkthroughController());
+    if (!Get.isRegistered<WalkthroughController>()) Get.put(WalkthroughController());
+    if (!Get.isRegistered<RecurringBillsController>()) {
+      Get.put(RecurringBillsController(), permanent: true);
+    }
+    if (Platform.isAndroid) {
+      if (!Get.isRegistered<UpiCaptureController>()) Get.put(UpiCaptureController(), permanent: true);
     }
   }
 
-  void _toggleDial() {
+  void _toggleDial(BuildContext context) {
     HapticFeedback.mediumImpact();
+    if (_current == 2) {
+      if (_dialOpen) _closeDial();
+      showGoalsAddPicker(context);
+      return;
+    }
     if (_dialOpen) {
       _closeDial();
       return;
@@ -86,6 +103,17 @@ class _BottomNavState extends State<BottomNav> {
     Get.to(() => const SplitsScreen(), transition: Transition.cupertino);
   }
 
+  Future<void> _maybeShowUpiPermission() async {
+    if (!Platform.isAndroid) return;
+    if (!Get.isRegistered<UpiCaptureController>()) return;
+    final ctrl = Get.find<UpiCaptureController>();
+    final should = await ctrl.shouldPromptPermission();
+    if (!should) return;
+    await Future.delayed(const Duration(milliseconds: 500));
+    if (!mounted) return;
+    Get.to(() => const UpiPermissionScreen(), transition: Transition.cupertino);
+  }
+
   void _maybeStartShowcase(BuildContext ctx) {
     if (_showcaseTriggered) return;
     _showcaseTriggered = true;
@@ -107,7 +135,7 @@ class _BottomNavState extends State<BottomNav> {
 
     return ShowCaseWidget(
       blurValue: 2,
-      onFinish: () {},
+      onFinish: () => _maybeShowUpiPermission(),
       builder: (showcaseCtx) {
         _maybeStartShowcase(showcaseCtx);
         return Scaffold(
@@ -139,7 +167,7 @@ class _BottomNavState extends State<BottomNav> {
               _closeDial();
               setState(() => _current = i);
             },
-            onAdd: _toggleDial,
+            onAdd: () => _toggleDial(context),
             dialOpen: _dialOpen,
           ),
         );

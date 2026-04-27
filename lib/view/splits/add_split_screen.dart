@@ -7,6 +7,7 @@ import 'package:spendify/config/app_color.dart';
 import 'package:spendify/controller/splits_controller/splits_controller.dart';
 import 'package:spendify/main.dart';
 import 'package:spendify/model/group_model.dart';
+import 'package:spendify/view/splits/bill_scanner_screen.dart';
 
 class AddSplitScreen extends StatefulWidget {
   final SplitsController ctrl;
@@ -101,6 +102,29 @@ class _AddSplitScreenState extends State<AddSplitScreen> {
             fontWeight: FontWeight.w700,
           ),
         ),
+        actions: [
+          IconButton(
+            tooltip: 'Scan bill QR',
+            icon: PhosphorIcon(PhosphorIconsLight.qrCode, color: textPrimary, size: 20),
+            onPressed: () async {
+              final result = await Get.to<BillScanResult>(
+                () => const BillScannerScreen(),
+                transition: Transition.cupertino,
+              );
+              if (result == null) return;
+              if (result.title != null && result.title!.isNotEmpty) {
+                _titleCtrl.text = result.title!;
+              }
+              if (result.amount != null && result.amount!.isNotEmpty) {
+                _amountCtrl.text = result.amount!;
+                setState(() {});
+              }
+              if (result.notes != null && result.notes!.isNotEmpty) {
+                _notesCtrl.text = result.notes!;
+              }
+            },
+          ),
+        ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),
           child: Divider(height: 1, color: border),

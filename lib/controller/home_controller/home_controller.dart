@@ -10,6 +10,7 @@ import 'package:spendify/model/transaction_model.dart';
 import 'package:spendify/services/widget_service.dart';
 import 'package:spendify/utils/utils.dart';
 import 'package:spendify/widgets/toast/custom_toast.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../routes/app_pages.dart';
@@ -18,6 +19,7 @@ import 'package:spendify/services/notification_service.dart';
 class HomeController extends GetxController {
   var userEmail = ''.obs;
   var userName = ''.obs;
+  var isAdmin = false.obs;
   var totalBalance = 0.0.obs;
   RxDouble newBalance = RxDouble(0.0);
   var imageUrl = ''.obs;
@@ -92,6 +94,7 @@ class HomeController extends GetxController {
 
       userEmail.value = userData['email'];
       userName.value = userData['name'];
+      isAdmin.value = userData['is_admin'] ?? false;
       totalBalance.value = (userData['balance'] ?? 0.0).toDouble();
       debugPrint(totalBalance.value.toString());
 
@@ -105,6 +108,8 @@ class HomeController extends GetxController {
         if (profile != null) {
           if (profile['currency_symbol'] != null) {
             currencySymbol.value = profile['currency_symbol'] as String;
+            final prefs = await SharedPreferences.getInstance();
+            await prefs.setString('currency_symbol', currencySymbol.value);
           }
           monthlyBudget.value =
               (profile['monthly_budget'] as num?)?.toDouble() ?? 0.0;
@@ -124,6 +129,7 @@ class HomeController extends GetxController {
     final prefs = await SharedPreferences.getInstance();
     try {
       await supabaseC.auth.signOut();
+      await NotificationService.cancelAllNotifications();
       CustomToast.successToast("Success", "Signed out successfully");
     } on AuthException catch (error) {
       CustomToast.errorToast("Error", error.message);
@@ -133,8 +139,34 @@ class HomeController extends GetxController {
       await prefs.remove('name');
       await prefs.remove('email');
       await prefs.remove('walkthrough_shown_v1');
+      await prefs.remove('cached_bills');
       Get.offAllNamed(Routes.LOGIN);
     }
+  }
+
+  Future<void> deleteAccount() async {
+    final prefs = await SharedPreferences.getInstance();
+    try {
+      await supabaseC.rpc('delete_user');
+      await GoogleSignIn().signOut();
+      await supabaseC.auth.signOut();
+    } on AuthException catch (error) {
+      CustomToast.errorToast("Error", error.message);
+      return;
+    } catch (error) {
+      debugPrint('deleteAccount error: $error');
+      CustomToast.errorToast("Error", error.toString());
+      return;
+    } finally {
+      await NotificationService.cancelAllNotifications();
+      await prefs.remove('name');
+      await prefs.remove('email');
+      await prefs.remove('walkthrough_shown_v1');
+      await prefs.remove('upi_perm_prompted');
+      await prefs.remove('cached_bills');
+    }
+    Get.offAllNamed(Routes.LOGIN);
+    CustomToast.successToast('Account deleted', 'Your account has been permanently deleted.');
   }
 
   Future<void> getTransactions() async {

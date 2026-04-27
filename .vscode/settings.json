@@ -1,12 +1,4 @@
 {
-  "files.readonlyInclude": {
-    "**": true
-  },
-  "files.readonlyExclude": {
-    "lib/custom_code/**": true,
-    "lib/flutter_flow/custom_functions.dart": true,
-    "pubspec.yaml": true,
-    "lib/flutter_flow/function_changes.json": true,
-    ".vscode/settings.json": true
-  }
+  "dart.flutterSdkPath": "/Users/ankitkumar/Developer/flutter",
+  "dart.sdkPath": "/Users/ankitkumar/Developer/flutter/bin/cache/dart-sdk"
 }
