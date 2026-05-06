@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:spendify/config/app_color.dart';
 import 'package:spendify/controller/home_controller/home_controller.dart';
@@ -47,7 +48,7 @@ class TransactionListItem extends StatelessWidget {
                 shape: BoxShape.circle,
               ),
               child: Center(
-                child: PhosphorIcon(ctrl.getCategoryIcon(category, categoryList), color: catColor, size: 17),
+                child: PhosphorIcon(ctrl.getCategoryIcon(category, categoryList, isIncome: !isExpense), color: catColor, size: 17),
               ),
             ),
             const SizedBox(width: 12),
@@ -57,14 +58,14 @@ class TransactionListItem extends StatelessWidget {
                 children: [
                   Text(
                     tx['description']?.toString().isNotEmpty == true ? tx['description'].toString() : category.isNotEmpty ? category : 'Transaction',
-                    style: TextStyle(color: textPrimary, fontSize: 14, fontWeight: FontWeight.w500),
+                    style: GoogleFonts.urbanist(color: textPrimary, fontSize: 14, fontWeight: FontWeight.w500),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 2),
                   Text(
                     category.isNotEmpty ? '$category · ${ctrl.formatDateTime(tx['date'].toString())}' : ctrl.formatDateTime(tx['date'].toString()),
-                    style: TextStyle(color: textMuted, fontSize: 12),
+                    style: GoogleFonts.urbanist(color: textMuted, fontSize: 12),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -74,7 +75,7 @@ class TransactionListItem extends StatelessWidget {
             const SizedBox(width: 12),
             Text(
               '${isExpense ? '-' : '+'}${ctrl.currencySymbol.value}${tx['amount']}',
-              style: TextStyle(
+              style: GoogleFonts.urbanist(
                 color: amountColor,
                 fontSize: 14,
                 fontWeight: FontWeight.w600,

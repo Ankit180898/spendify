@@ -81,7 +81,7 @@ class TransactionDetailsScreen extends StatelessWidget {
                   Container(
                     width: 56, height: 56,
                     decoration: BoxDecoration(color: iconBg, borderRadius: BorderRadius.circular(14)),
-                    child: Icon(ctrl.getCategoryIcon(category, categoryList), color: iconFg, size: 24),
+                    child: Icon(ctrl.getCategoryIcon(category, categoryList, isIncome: !isExpense), color: iconFg, size: 24),
                   ),
                   const SizedBox(height: 16),
                   if (description.isNotEmpty)

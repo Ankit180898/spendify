@@ -1,6 +1,8 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:spendify/config/app_color.dart';
@@ -10,6 +12,25 @@ import 'package:spendify/model/categories_model.dart';
 import 'package:spendify/utils/utils.dart';
 import 'package:spendify/view/wallet/all_transaction_screen.dart';
 import 'package:spendify/view/wallet/transaction_details_screen.dart';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Shared helpers
+// ─────────────────────────────────────────────────────────────────────────────
+
+PhosphorIconData _categoryIcon(String category, bool isIncome) {
+  final match = categoryList.firstWhere(
+    (c) => c.name == category,
+    orElse: () => CategoriesModel(
+      name: category,
+      icon: isIncome ? PhosphorIconsLight.arrowCircleDown : PhosphorIconsLight.tag,
+    ),
+  );
+  return match.icon as PhosphorIconData;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Screen
+// ─────────────────────────────────────────────────────────────────────────────
 
 class StatisticsScreen extends StatefulWidget {
   const StatisticsScreen({super.key});
@@ -52,8 +73,6 @@ class _StatisticsScreenState extends State<StatisticsScreen>
   Future<void> _pickMonth() async {
     final now = DateTime.now();
     int pickerYear = _month.year;
-
-    // Build a set of "yyyy-M" keys for months that have at least one transaction
     final allTx = Get.find<HomeController>().allTransactions;
     final activeMonths = <String>{};
     for (final t in allTx) {
@@ -64,15 +83,10 @@ class _StatisticsScreenState extends State<StatisticsScreen>
     await showDialog<void>(
       context: context,
       builder: (ctx) {
-        final isDark = Theme.of(ctx).brightness == Brightness.dark;
-        final bg = isDark ? AppColor.darkCard : Colors.white;
-        final textPrimary = isDark ? AppColor.textPrimary : const Color(0xFF09090B);
-        final textMuted = isDark ? AppColor.textSecondary : const Color(0xFF71717A);
         final months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-
         return StatefulBuilder(builder: (ctx, setLocal) {
           return Dialog(
-            backgroundColor: bg,
+            backgroundColor: Colors.white,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
             child: Padding(
               padding: const EdgeInsets.all(20),
@@ -86,21 +100,19 @@ class _StatisticsScreenState extends State<StatisticsScreen>
                         onPressed: () => setLocal(() => pickerYear--),
                         icon: const PhosphorIcon(PhosphorIconsLight.caretLeft, color: AppColor.primary, size: 16),
                       ),
-                      Text('$pickerYear', style: TextStyle(color: textPrimary, fontSize: 16, fontWeight: FontWeight.w600)),
+                      Text('$pickerYear',
+                          style: GoogleFonts.urbanist(color: AppColor.textPrimary, fontSize: 16, fontWeight: FontWeight.w600)),
                       IconButton(
                         onPressed: pickerYear >= now.year ? null : () => setLocal(() => pickerYear++),
                         icon: PhosphorIcon(PhosphorIconsLight.caretRight,
-                            color: pickerYear >= now.year ? textMuted.withValues(alpha: 0.3) : AppColor.primary, size: 16),
+                            color: pickerYear >= now.year ? AppColor.textTertiary : AppColor.primary, size: 16),
                       ),
                     ],
                   ),
                   const SizedBox(height: 12),
                   GridView.count(
-                    crossAxisCount: 3,
-                    shrinkWrap: true,
-                    childAspectRatio: 2.0,
-                    mainAxisSpacing: 8,
-                    crossAxisSpacing: 8,
+                    crossAxisCount: 3, shrinkWrap: true,
+                    childAspectRatio: 2.0, mainAxisSpacing: 8, crossAxisSpacing: 8,
                     physics: const NeverScrollableScrollPhysics(),
                     children: List.generate(12, (i) {
                       final isFuture = pickerYear == now.year && (i + 1) > now.month;
@@ -114,24 +126,21 @@ class _StatisticsScreenState extends State<StatisticsScreen>
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 150),
                           decoration: BoxDecoration(
-                            color: isSelected ? AppColor.primary : (isDark ? AppColor.darkBg : const Color(0xFFF4F4F5)),
+                            color: isSelected ? AppColor.primary : const Color(0xFFF4F4F5),
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Text(
-                                months[i],
-                                style: TextStyle(
-                                  color: isFuture ? textMuted.withValues(alpha: 0.3) : (isSelected ? Colors.white : textPrimary),
-                                  fontSize: 13,
-                                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                                ),
-                              ),
+                              Text(months[i],
+                                  style: GoogleFonts.urbanist(
+                                    color: isFuture ? AppColor.textTertiary : (isSelected ? Colors.white : AppColor.textPrimary),
+                                    fontSize: 13,
+                                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                                  )),
                               const SizedBox(height: 3),
                               Container(
-                                width: 4,
-                                height: 4,
+                                width: 4, height: 4,
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
                                   color: hasData && !isFuture
@@ -154,10 +163,9 @@ class _StatisticsScreenState extends State<StatisticsScreen>
     );
   }
 
-  List<Map<String, dynamic>> _txForMonth(
-      List<Map<String, dynamic>> all, DateTime month) {
+  List<Map<String, dynamic>> _txForMonth(List<Map<String, dynamic>> all, DateTime month) {
     final start = DateTime(month.year, month.month, 1);
-    final end = DateTime(month.year, month.month + 1, 0, 23, 59, 59);
+    final end   = DateTime(month.year, month.month + 1, 0, 23, 59, 59);
     return all.where((t) {
       final d = t['parsedDate'] as DateTime? ?? DateTime.tryParse(t['date'] ?? '');
       if (d == null) return false;
@@ -165,12 +173,10 @@ class _StatisticsScreenState extends State<StatisticsScreen>
     }).toList();
   }
 
-  double _sum(List<Map<String, dynamic>> list, String type) => list
-      .where((t) => t['type'] == type)
-      .fold(0.0, (s, t) => s + (t['amount'] as num).toDouble());
+  double _sum(List<Map<String, dynamic>> list, String type) =>
+      list.where((t) => t['type'] == type).fold(0.0, (s, t) => s + (t['amount'] as num).toDouble());
 
-  Map<String, double> _categoryTotals(
-      List<Map<String, dynamic>> list, String type) {
+  Map<String, double> _categoryTotals(List<Map<String, dynamic>> list, String type) {
     final Map<String, double> out = {};
     for (final t in list) {
       if (t['type'] != type) continue;
@@ -181,75 +187,69 @@ class _StatisticsScreenState extends State<StatisticsScreen>
     return out;
   }
 
+  // Previous month total for comparison
+  double _prevMonthSum(List<Map<String, dynamic>> all, String type) {
+    final prev = DateTime(_month.year, _month.month - 1);
+    return _sum(_txForMonth(all, prev), type);
+  }
+
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle(
+      value: const SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
-        statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+        statusBarIconBrightness: Brightness.dark,
       ),
       child: Scaffold(
-        backgroundColor: isDark ? AppColor.darkBg : Colors.white,
+        backgroundColor: Colors.white,
         body: SafeArea(
           bottom: false,
           child: Obx(() {
-            final controller = Get.find<HomeController>();
-            final all = controller.allTransactions;
+            final ctrl    = Get.find<HomeController>();
+            final all     = ctrl.allTransactions;
             final monthTx = _txForMonth(all, _month);
 
             final income = _sum(monthTx, 'income');
-            final spent = _sum(monthTx, 'expense');
-            final net = income - spent;
+            final spent  = _sum(monthTx, 'expense');
+            final net    = income - spent;
 
-            final viewType = _tab.index == 0 ? 'expense' : 'income';
+            final viewType    = _tab.index == 0 ? 'expense' : 'income';
             final activeTotal = viewType == 'expense' ? spent : income;
-            final activeColor =
-                viewType == 'expense' ? AppColor.expense : AppColor.income;
+            final activeColor = viewType == 'expense' ? AppColor.expense : AppColor.income;
 
-            final cats = _categoryTotals(monthTx, viewType);
-            final sorted = cats.entries.toList()
-              ..sort((a, b) => b.value.compareTo(a.value));
+            final prevTotal = _prevMonthSum(all, viewType);
+            final diff      = activeTotal - prevTotal;
 
-            final filteredTx = monthTx
-                .where((t) => t['type'] == viewType)
-                .toList()
+            final cats   = _categoryTotals(monthTx, viewType);
+            final sorted = cats.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
+
+            final filteredTx = monthTx.where((t) => t['type'] == viewType).toList()
               ..sort((a, b) {
-                  final da = a['parsedDate'] as DateTime? ?? DateTime.tryParse(a['date'] ?? '') ?? DateTime(0);
-                  final db = b['parsedDate'] as DateTime? ?? DateTime.tryParse(b['date'] ?? '') ?? DateTime(0);
-                  return db.compareTo(da);
-                });
+                final da = a['parsedDate'] as DateTime? ?? DateTime.tryParse(a['date'] ?? '') ?? DateTime(0);
+                final db = b['parsedDate'] as DateTime? ?? DateTime.tryParse(b['date'] ?? '') ?? DateTime(0);
+                return db.compareTo(da);
+              });
 
-            final daysInMonth =
-                DateTime(_month.year, _month.month + 1, 0).day;
+            final daysInMonth = DateTime(_month.year, _month.month + 1, 0).day;
             final dayMap = <int, double>{};
             for (final tx in monthTx) {
               if (tx['type'] != viewType) continue;
               final d = (tx['parsedDate'] as DateTime? ?? DateTime.tryParse(tx['date'] ?? ''))?.day;
               if (d == null) continue;
-              dayMap[d] =
-                  (dayMap[d] ?? 0) + (tx['amount'] as num).toDouble();
+              dayMap[d] = (dayMap[d] ?? 0) + (tx['amount'] as num).toDouble();
             }
-            final hasData = dayMap.isNotEmpty;
-            final maxVal = hasData
-                ? dayMap.values.reduce((a, b) => a > b ? a : b)
-                : 1.0;
 
             return CustomScrollView(
-              physics: const BouncingScrollPhysics(
-                  parent: AlwaysScrollableScrollPhysics()),
+              physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
               slivers: [
                 SliverToBoxAdapter(
-                  child: _TopSection(
+                  child: _HeroSection(
                     month: _month,
-                    isDark: isDark,
                     tab: _tab,
                     onPrev: _prevMonth,
                     onNext: _nextMonth,
                     onMonthPick: _pickMonth,
-                    canGoNext: !(_month.year == DateTime.now().year &&
-                        _month.month == DateTime.now().month),
+                    canGoNext: !(_month.year == DateTime.now().year && _month.month == DateTime.now().month),
                     spent: spent,
                     income: income,
                     net: net,
@@ -258,32 +258,28 @@ class _StatisticsScreenState extends State<StatisticsScreen>
                     viewType: viewType,
                     daysInMonth: daysInMonth,
                     dayMap: dayMap,
-                    hasData: hasData,
-                    maxVal: maxVal,
+                    diff: diff,
+                    prevTotal: prevTotal,
                   ),
                 ),
                 SliverToBoxAdapter(
-                  child: _CategoryBreakdown(
+                  child: _CategorySection(
                     sorted: sorted,
                     total: activeTotal,
                     viewType: viewType,
-                    isDark: isDark,
                     month: _month,
                   ),
                 ),
                 SliverToBoxAdapter(
-                  child: _TransactionsSection(
+                  child: _TransactionSection(
                     filteredTx: filteredTx,
                     viewType: viewType,
-                    isDark: isDark,
                     month: _month,
                   ),
                 ),
                 SliverToBoxAdapter(
                   child: SizedBox(
-                    height: MediaQuery.of(context).padding.bottom +
-                        AppDimens.navBarHeight +
-                        AppDimens.spaceLG,
+                    height: MediaQuery.of(context).padding.bottom + AppDimens.navBarHeight + AppDimens.spaceLG,
                   ),
                 ),
               ],
@@ -296,44 +292,22 @@ class _StatisticsScreenState extends State<StatisticsScreen>
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Shared icon helper — used by both categories and transactions
+// Hero — month nav + tabs + big number + area chart + overview stats
 // ─────────────────────────────────────────────────────────────────────────────
 
-PhosphorIconData _categoryIcon(String category, bool isIncome) {
-  if (isIncome) return PhosphorIconsLight.wallet;
-  final match = categoryList.firstWhere(
-    (c) => c.name == category,
-    orElse: () => CategoriesModel(name: category, icon: PhosphorIconsLight.tag),
-  );
-  return match.icon as PhosphorIconData;
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Top section — stateful so sparkline can hold tap selection
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _TopSection extends StatefulWidget {
+class _HeroSection extends StatefulWidget {
   final DateTime month;
-  final bool isDark;
   final TabController tab;
-  final VoidCallback onPrev;
-  final VoidCallback onNext;
-  final VoidCallback onMonthPick;
+  final VoidCallback onPrev, onNext, onMonthPick;
   final bool canGoNext;
-  final double spent;
-  final double income;
-  final double net;
-  final double activeTotal;
+  final double spent, income, net, activeTotal, prevTotal, diff;
   final Color activeColor;
   final String viewType;
   final int daysInMonth;
   final Map<int, double> dayMap;
-  final bool hasData;
-  final double maxVal;
 
-  const _TopSection({
+  const _HeroSection({
     required this.month,
-    required this.isDark,
     required this.tab,
     required this.onPrev,
     required this.onNext,
@@ -347,818 +321,795 @@ class _TopSection extends StatefulWidget {
     required this.viewType,
     required this.daysInMonth,
     required this.dayMap,
-    required this.hasData,
-    required this.maxVal,
+    required this.diff,
+    required this.prevTotal,
   });
 
   @override
-  State<_TopSection> createState() => _TopSectionState();
+  State<_HeroSection> createState() => _HeroSectionState();
 }
 
-class _TopSectionState extends State<_TopSection> {
-  int? _selectedDay; // null = nothing selected
+class _HeroSectionState extends State<_HeroSection> {
+  int? _selectedDay;
 
   @override
-  void didUpdateWidget(_TopSection old) {
+  void didUpdateWidget(_HeroSection old) {
     super.didUpdateWidget(old);
-    // Clear selection when tab or month changes
     if (old.viewType != widget.viewType || old.month != widget.month) {
       _selectedDay = null;
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final isDark = widget.isDark;
-    final textPrimary =
-        isDark ? AppColor.textPrimary : AppColor.lightTextPrimary;
-    final textMuted =
-        isDark ? AppColor.textSecondary : AppColor.lightTextSecondary;
-    final textDim =
-        isDark ? AppColor.textTertiary : AppColor.lightTextTertiary;
-    final divider = isDark ? AppColor.darkBorder : AppColor.lightBorder;
-    final segBg = isDark ? AppColor.darkCard : const Color(0xFFEEECE8);
-    final tooltipBg = isDark ? AppColor.darkElevated : Colors.white;
-    final fmt = NumberFormat('#,##0', 'en_IN');
-    final sym = Get.find<HomeController>().currencySymbol.value;
-    final isExpense = widget.viewType == 'expense';
-    final isPositive = widget.net >= 0;
-    final activeColor = widget.activeColor;
-    final now = DateTime.now();
-
-    // Tooltip text for selected day
-    final selVal = _selectedDay != null ? (widget.dayMap[_selectedDay!] ?? 0) : 0.0;
-    final selDate = _selectedDay != null
-        ? DateTime(widget.month.year, widget.month.month, _selectedDay!)
-        : null;
-    final selLabel = selDate != null
-        ? '${DateFormat('d MMM').format(selDate)}  ·  $sym${fmt.format(selVal)}'
-        : null;
-
-    return GestureDetector(
-      // Tap anywhere outside bars clears selection
-      onTap: () => setState(() => _selectedDay = null),
-      behavior: HitTestBehavior.translucent,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // ── Month nav ──────────────────────────────────────
-            Row(
-              children: [
-                GestureDetector(
-                  onTap: widget.onPrev,
-                  behavior: HitTestBehavior.opaque,
-                  child: const Padding(
-                    padding: EdgeInsets.only(right: 12, top: 4, bottom: 4),
-                    child: PhosphorIcon(PhosphorIconsLight.caretLeft,
-                        size: 15, color: AppColor.primary),
-                  ),
-                ),
-                GestureDetector(
-                  onTap: widget.onMonthPick,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        DateFormat('MMMM yyyy').format(widget.month),
-                        style: TextStyle(
-                            color: textMuted,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500),
-                      ),
-                      const SizedBox(width: 4),
-                      const PhosphorIcon(PhosphorIconsLight.caretUpDown,
-                          size: 12, color: AppColor.primary),
-                    ],
-                  ),
-                ),
-                GestureDetector(
-                  onTap: widget.canGoNext ? widget.onNext : null,
-                  behavior: HitTestBehavior.opaque,
-                  child: Padding(
-                    padding: const EdgeInsets.only(left: 12, top: 4, bottom: 4),
-                    child: PhosphorIcon(PhosphorIconsLight.caretRight,
-                        size: 15,
-                        color: widget.canGoNext ? AppColor.primary : textDim),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 18),
-
-            // ── Segmented control ──────────────────────────────
-            Container(
-              height: 40,
-              padding: const EdgeInsets.all(3),
-              decoration: BoxDecoration(
-                color: segBg,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: TabBar(
-                controller: widget.tab,
-                indicator: BoxDecoration(
-                  color: isDark ? AppColor.darkElevated : Colors.white,
-                  borderRadius: BorderRadius.circular(9),
-                  boxShadow: isDark
-                      ? null
-                      : [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.06),
-                            blurRadius: 4,
-                            offset: const Offset(0, 1),
-                          ),
-                        ],
-                ),
-                indicatorSize: TabBarIndicatorSize.tab,
-                dividerColor: Colors.transparent,
-                labelPadding: EdgeInsets.zero,
-                tabs: [
-                  Tab(
-                    child: Text(
-                      'Expenses',
-                      style: TextStyle(
-                        color: widget.tab.index == 0
-                            ? AppColor.expense
-                            : textMuted,
-                        fontSize: 13,
-                        fontWeight: widget.tab.index == 0
-                            ? FontWeight.w600
-                            : FontWeight.w400,
-                      ),
-                    ),
-                  ),
-                  Tab(
-                    child: Text(
-                      'Income',
-                      style: TextStyle(
-                        color: widget.tab.index == 1
-                            ? AppColor.income
-                            : textMuted,
-                        fontSize: 13,
-                        fontWeight: widget.tab.index == 1
-                            ? FontWeight.w600
-                            : FontWeight.w400,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 22),
-
-            // ── Hero number ────────────────────────────────────
-            AnimatedSwitcher(
-              duration: const Duration(milliseconds: 200),
-              child: SizedBox(
-                width: double.infinity,
-                key: ValueKey(widget.viewType),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '$sym${fmt.format(widget.activeTotal)}',
-                      style: TextStyle(
-                        color: textPrimary,
-                        fontSize: 42,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -2,
-                        height: 1.0,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '${isExpense ? 'spent' : 'earned'} in ${DateFormat('MMMM').format(widget.month)}',
-                      style: TextStyle(color: textDim, fontSize: 13),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // ── Secondary stats ────────────────────────────────
-            Row(
-              children: [
-                _InlineStat(
-                  label: isExpense ? 'Income' : 'Expenses',
-                  value: '$sym${fmt.format(isExpense ? widget.income : widget.spent)}',
-                  color: isExpense ? AppColor.income : AppColor.expense,
-                  textMuted: textMuted,
-                ),
-                Container(
-                  width: 1,
-                  height: 28,
-                  color: divider,
-                  margin: const EdgeInsets.symmetric(horizontal: 16),
-                ),
-                _InlineStat(
-                  label: isPositive ? 'Saved' : 'Over',
-                  value: '$sym${fmt.format(widget.net.abs())}',
-                  color: isPositive ? AppColor.income : AppColor.expense,
-                  textMuted: textMuted,
-                ),
-                if (widget.income > 0 && widget.spent > 0) ...[
-                  Container(
-                    width: 1,
-                    height: 28,
-                    color: divider,
-                    margin: const EdgeInsets.symmetric(horizontal: 16),
-                  ),
-                  _InlineStat(
-                    label: 'Spend rate',
-                    value:
-                        '${(widget.spent / widget.income * 100).toStringAsFixed(0)}%',
-                    color: textPrimary,
-                    textMuted: textMuted,
-                  ),
-                ],
-              ],
-            ),
-            const SizedBox(height: 24),
-
-            // ── Sparkline header row: label + tooltip pill ─────
-            Row(
-              children: [
-                Text(
-                  'Daily ${isExpense ? 'spend' : 'income'}',
-                  style: TextStyle(
-                    color: textDim,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w500,
-                    letterSpacing: 0.3,
-                  ),
-                ),
-                if (selLabel != null) ...[
-                  const SizedBox(width: 8),
-                  AnimatedOpacity(
-                    opacity: 1.0,
-                    duration: const Duration(milliseconds: 150),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: tooltipBg,
-                        borderRadius: BorderRadius.circular(6),
-                        border: Border.all(
-                          color: activeColor.withValues(alpha: 0.3),
-                          width: 0.5,
-                        ),
-                        boxShadow: isDark
-                            ? null
-                            : [
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.06),
-                                  blurRadius: 6,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ],
-                      ),
-                      child: Text(
-                        selLabel,
-                        style: TextStyle(
-                          color: activeColor,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: -0.2,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ],
-            ),
-            const SizedBox(height: 8),
-
-            // ── Sparkline bars ─────────────────────────────────
-            // Extra 10px top padding so the "today" dot has room above the bar
-            SizedBox(
-              height: 66, // 46 bar + 10 dot zone + 10 top buffer
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: List.generate(widget.daysInMonth, (i) {
-                  final day = i + 1;
-                  final val = widget.dayMap[day] ?? 0;
-                  final frac = val > 0 ? val / widget.maxVal : 0.0;
-                  final isToday = day == now.day &&
-                      widget.month.month == now.month &&
-                      widget.month.year == now.year;
-                  final isSelected = _selectedDay == day;
-                  final hasValue = val > 0;
-
-                  // Bar opacity: selected = full, rest dim slightly; today always full
-                  final barAlpha = _selectedDay == null
-                      ? (isToday ? 1.0 : 0.55)
-                      : (isSelected ? 1.0 : 0.25);
-
-                  return Expanded(
-                    child: GestureDetector(
-                      onTap: () {
-                        if (!hasValue) return; // can't select empty bars
-                        HapticFeedback.selectionClick();
-                        setState(() {
-                          _selectedDay = isSelected ? null : day;
-                        });
-                      },
-                      behavior: HitTestBehavior.opaque,
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 0.8),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
-                            // Today dot — 4px circle above bar, only for current month
-                            SizedBox(
-                              height: 10,
-                              child: Center(
-                                child: isToday
-                                    ? Container(
-                                        width: 4,
-                                        height: 4,
-                                        decoration: BoxDecoration(
-                                          color: activeColor,
-                                          shape: BoxShape.circle,
-                                        ),
-                                      )
-                                    : const SizedBox.shrink(),
-                              ),
-                            ),
-                            // The bar itself
-                            AnimatedContainer(
-                              duration: const Duration(milliseconds: 200),
-                              height: hasValue
-                                  ? (frac * 46).clamp(3.0, 46.0)
-                                  : 3,
-                              decoration: BoxDecoration(
-                                color: hasValue
-                                    ? activeColor.withValues(alpha: barAlpha)
-                                    : (isDark
-                                        ? Colors.white.withValues(alpha: 0.05)
-                                        : Colors.black.withValues(alpha: 0.04)),
-                                borderRadius: BorderRadius.circular(2),
-                              ),
-                            ),
-                            const SizedBox(height: 10),
-                          ],
-                        ),
-                      ),
-                    ),
-                  );
-                }),
-              ),
-            ),
-
-            // ── Axis labels ────────────────────────────────────
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: ['1', '7', '14', '21', '${widget.daysInMonth}']
-                  .map((l) =>
-                      Text(l, style: TextStyle(color: textDim, fontSize: 10)))
-                  .toList(),
-            ),
-            const SizedBox(height: 24),
-            Divider(height: 1, thickness: 0.5, color: divider),
-          ],
-        ),
-      ),
-    );
+  // Build cumulative spending list (for area chart)
+  List<double> _cumulativePoints() {
+    double cum = 0;
+    return List.generate(widget.daysInMonth, (i) {
+      cum += widget.dayMap[i + 1] ?? 0;
+      return cum;
+    });
   }
-}
-
-class _InlineStat extends StatelessWidget {
-  final String label;
-  final String value;
-  final Color color;
-  final Color textMuted;
-
-  const _InlineStat({
-    required this.label,
-    required this.value,
-    required this.color,
-    required this.textMuted,
-  });
 
   @override
   Widget build(BuildContext context) {
+    final fmt        = NumberFormat('#,##0', 'en_IN');
+    final sym        = Get.find<HomeController>().currencySymbol.value;
+    final isExpense  = widget.viewType == 'expense';
+    final isPositive = widget.net >= 0;
+    final color      = widget.activeColor;
+    final now        = DateTime.now();
+    final cumPoints  = _cumulativePoints();
+    final maxCum     = cumPoints.isNotEmpty ? cumPoints.reduce(math.max) : 1.0;
+    final hasData    = maxCum > 0;
+
+    // Tooltip for selected day
+    String? tooltipText;
+    if (_selectedDay != null) {
+      final dayVal = widget.dayMap[_selectedDay!] ?? 0;
+      final selDate = DateTime(widget.month.year, widget.month.month, _selectedDay!);
+      tooltipText = '${DateFormat('d MMM').format(selDate)}  ·  $sym${fmt.format(dayVal)}';
+    }
+
+    // vs last month pill
+    final hasPrev = widget.prevTotal > 0;
+    final pctDiff = hasPrev ? (widget.diff / widget.prevTotal * 100) : 0.0;
+    final isUp    = widget.diff >= 0;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label,
-            style: TextStyle(
-                color: textMuted, fontSize: 11, fontWeight: FontWeight.w400)),
-        const SizedBox(height: 2),
-        Text(value,
-            style: TextStyle(
+
+        // ── Month nav ─────────────────────────────────────────
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+          child: Row(
+            children: [
+              GestureDetector(
+                onTap: widget.onPrev,
+                behavior: HitTestBehavior.opaque,
+                child: const Padding(
+                  padding: EdgeInsets.only(right: 12, top: 4, bottom: 4),
+                  child: PhosphorIcon(PhosphorIconsLight.caretLeft, size: 15, color: AppColor.primary),
+                ),
+              ),
+              GestureDetector(
+                onTap: widget.onMonthPick,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      DateFormat('MMMM yyyy').format(widget.month),
+                      style: GoogleFonts.urbanist(
+                          color: AppColor.textSecondary, fontSize: 13, fontWeight: FontWeight.w500),
+                    ),
+                    const SizedBox(width: 4),
+                    const PhosphorIcon(PhosphorIconsLight.caretUpDown, size: 12, color: AppColor.primary),
+                  ],
+                ),
+              ),
+              GestureDetector(
+                onTap: widget.canGoNext ? widget.onNext : null,
+                behavior: HitTestBehavior.opaque,
+                child: Padding(
+                  padding: const EdgeInsets.only(left: 12, top: 4, bottom: 4),
+                  child: PhosphorIcon(PhosphorIconsLight.caretRight,
+                      size: 15,
+                      color: widget.canGoNext ? AppColor.primary : AppColor.textTertiary),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 20),
+
+        // ── Tab — two underlined text buttons ─────────────────
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Row(
+            children: [
+              _TabButton(
+                label: 'Expenses',
+                active: widget.tab.index == 0,
+                activeColor: AppColor.expense,
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  widget.tab.animateTo(0);
+                },
+              ),
+              const SizedBox(width: 24),
+              _TabButton(
+                label: 'Income',
+                active: widget.tab.index == 1,
+                activeColor: AppColor.income,
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  widget.tab.animateTo(1);
+                },
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 20),
+
+        // ── Big amount + comparison pill ──────────────────────
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 200),
+            child: SizedBox(
+              key: ValueKey(widget.viewType),
+              width: double.infinity,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '$sym${fmt.format(widget.activeTotal)}',
+                    style: GoogleFonts.urbanist(
+                      color: AppColor.textPrimary,
+                      fontSize: 42,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -2.0,
+                      height: 1.0,
+                      fontFeatures: const [FontFeature.tabularFigures()],
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Text(
+                        '${isExpense ? 'spent' : 'earned'} in ${DateFormat('MMMM').format(widget.month)}',
+                        style: GoogleFonts.urbanist(color: AppColor.textSecondary, fontSize: 13),
+                      ),
+                      if (hasPrev) ...[
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: isUp
+                                ? (isExpense ? AppColor.expense : AppColor.income).withValues(alpha: 0.1)
+                                : AppColor.income.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              PhosphorIcon(
+                                isUp ? PhosphorIconsLight.trendUp : PhosphorIconsLight.trendDown,
+                                size: 11,
+                                color: isUp
+                                    ? (isExpense ? AppColor.expense : AppColor.income)
+                                    : AppColor.income,
+                              ),
+                              const SizedBox(width: 3),
+                              Text(
+                                '${pctDiff.abs().toStringAsFixed(0)}%',
+                                style: GoogleFonts.urbanist(
+                                  color: isUp
+                                      ? (isExpense ? AppColor.expense : AppColor.income)
+                                      : AppColor.income,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 28),
+
+        // ── Area chart ────────────────────────────────────────
+        if (hasData) ...[
+          SizedBox(
+            height: 160,
+            child: _AreaChartWidget(
+              cumPoints: cumPoints,
+              maxCum: maxCum,
+              dayMap: widget.dayMap,
+              daysInMonth: widget.daysInMonth,
               color: color,
-              fontSize: 15,
-              fontWeight: FontWeight.w700,
-              letterSpacing: -0.5,
-            )),
+              currentMonth: widget.month,
+              todayDay: (widget.month.year == now.year && widget.month.month == now.month)
+                  ? now.day : null,
+              selectedDay: _selectedDay,
+              onDaySelected: (d) => setState(() => _selectedDay = d),
+            ),
+          ),
+          // X-axis labels
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: ['1', '7', '14', '21', '${widget.daysInMonth}']
+                  .map((l) => Text(l,
+                      style: GoogleFonts.urbanist(color: AppColor.textTertiary, fontSize: 10)))
+                  .toList(),
+            ),
+          ),
+          // Tooltip
+          if (tooltipText != null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+              child: Text(
+                tooltipText,
+                style: GoogleFonts.urbanist(color: color, fontSize: 12, fontWeight: FontWeight.w600),
+              ),
+            ),
+          const SizedBox(height: 24),
+        ] else ...[
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+            child: Container(
+              height: 100,
+              decoration: BoxDecoration(
+                color: const Color(0xFFF6F5FA),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Center(
+                child: Text(
+                  'No ${isExpense ? 'expenses' : 'income'} this month',
+                  style: GoogleFonts.urbanist(color: AppColor.textTertiary, fontSize: 13),
+                ),
+              ),
+            ),
+          ),
+        ],
+
+        // ── Overview stats ─────────────────────────────────────
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('OVERVIEW',
+                  style: GoogleFonts.urbanist(
+                    color: AppColor.textTertiary,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.8,
+                  )),
+              const SizedBox(height: 12),
+              _StatRow(
+                label: isExpense ? 'Income this month' : 'Expenses this month',
+                value: '$sym${fmt.format(isExpense ? widget.income : widget.spent)}',
+                valueColor: isExpense ? AppColor.income : AppColor.expense,
+              ),
+              _StatRow(
+                label: isPositive ? 'Saved' : 'Over budget',
+                value: '${isPositive ? '+' : '-'}$sym${fmt.format(widget.net.abs())}',
+                valueColor: isPositive ? AppColor.income : AppColor.expense,
+              ),
+              if (widget.income > 0 && widget.spent > 0)
+                _StatRow(
+                  label: 'Spend rate',
+                  value: '${(widget.spent / widget.income * 100).toStringAsFixed(0)}% of income',
+                  valueColor: AppColor.textPrimary,
+                  last: true,
+                ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 24),
+        const Divider(height: 1, thickness: 0.5, color: AppColor.border),
       ],
     );
   }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Category breakdown
-// Each category gets a shade of the tab's accent color (expense = coral family,
-// income = mint family) so the stacked bar and row bars always feel cohesive.
+// Tab button — underline style
 // ─────────────────────────────────────────────────────────────────────────────
 
-// Returns an ordered list of colors for N categories, all within the tab hue.
-List<Color> _tabPalette(String viewType, int count) {
-  // Expense: coral-red family.  Income: mint-green family.
-  final isExpense = viewType == 'expense';
+class _TabButton extends StatelessWidget {
+  final String label;
+  final bool active;
+  final Color activeColor;
+  final VoidCallback onTap;
 
-  // Define 6 stops per family — enough for top-5 + tail
-  final List<Color> palette = isExpense
-      ? const [
-          Color(0xFFFF5370), // coral (AppColor.expense)
-          Color(0xFFFF7A5C),
-          Color(0xFFFF9A6C),
-          Color(0xFFFFB88A),
-          Color(0xFFFFD0A8),
-          Color(0xFFFFE8CC),
-        ]
-      : const [
-          Color(0xFF00C896), // mint (AppColor.income)
-          Color(0xFF26D4A4),
-          Color(0xFF4DDEB4),
-          Color(0xFF80E8C8),
-          Color(0xFFAAF0DA),
-          Color(0xFFCCF7EC),
-        ];
-
-  return List.generate(count, (i) => palette[i.clamp(0, palette.length - 1)]);
-}
-
-class _CategoryBreakdown extends StatefulWidget {
-  final List<MapEntry<String, double>> sorted;
-  final double total;
-  final String viewType;
-  final bool isDark;
-  final DateTime month;
-
-  const _CategoryBreakdown({
-    required this.sorted,
-    required this.total,
-    required this.viewType,
-    required this.isDark,
-    required this.month,
-  });
-
-  @override
-  State<_CategoryBreakdown> createState() => _CategoryBreakdownState();
-}
-
-class _CategoryBreakdownState extends State<_CategoryBreakdown> {
-  bool _showAll = false;
-
-  @override
-  void didUpdateWidget(_CategoryBreakdown old) {
-    super.didUpdateWidget(old);
-    // Reset when month/type changes
-    if (old.month != widget.month || old.viewType != widget.viewType) {
-      _showAll = false;
-    }
-  }
+  const _TabButton({required this.label, required this.active, required this.activeColor, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    final sorted = widget.sorted;
-    final total = widget.total;
-    final viewType = widget.viewType;
-    final isDark = widget.isDark;
-    final month = widget.month;
-
-    final textMuted =
-        isDark ? AppColor.textSecondary : AppColor.lightTextSecondary;
-    final textPrimary =
-        isDark ? AppColor.textPrimary : AppColor.lightTextPrimary;
-    final divider = isDark ? AppColor.darkBorder : AppColor.lightBorder;
-    final sym = Get.find<HomeController>().currencySymbol.value;
-    final fmt = NumberFormat('#,##0', 'en_IN');
-    final isExpense = viewType == 'expense';
-    final top5 = sorted.take(5).toList();
-    final visible = _showAll ? sorted : top5;
-
-    // One palette call — same colors used in bar AND rows
-    final colors = _tabPalette(viewType, visible.length);
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Categories',
-            style: TextStyle(
-              color: textMuted,
-              fontSize: 11,
-              fontWeight: FontWeight.w500,
-              letterSpacing: 0.3,
+            label,
+            style: GoogleFonts.urbanist(
+              color: active ? AppColor.textPrimary : AppColor.textTertiary,
+              fontSize: 15,
+              fontWeight: active ? FontWeight.w700 : FontWeight.w400,
             ),
           ),
-          const SizedBox(height: 14),
-
-          if (sorted.isEmpty)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 28),
-              child: Center(
-                child: Column(
-                  children: [
-                    Container(
-                      width: 52,
-                      height: 52,
-                      decoration: BoxDecoration(
-                        color: textMuted.withValues(alpha: 0.07),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Center(
-                        child: PhosphorIcon(
-                          isExpense ? PhosphorIconsLight.chartPie : PhosphorIconsLight.trendUp,
-                          color: textMuted.withValues(alpha: 0.35),
-                          size: 22,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      'No ${isExpense ? 'expense' : 'income'} categories this month',
-                      style: TextStyle(color: textMuted, fontSize: 13),
-                    ),
-                  ],
-                ),
-              ),
-            )
-          else ...[
-            // ── Stacked proportion bar ────────────────────────
-            // Uses tab-palette colors so bar segments visually match the rows
-            ClipRRect(
-              borderRadius: BorderRadius.circular(4),
-              child: SizedBox(
-                height: 6,
-                child: Row(
-                  children: [
-                    ...visible.asMap().entries.map((e) {
-                      final flex = total > 0
-                          ? (e.value.value / total * 1000).round()
-                          : 0;
-                      return Flexible(
-                        flex: flex < 1 ? 1 : flex,
-                        child: Container(color: colors[e.key]),
-                      );
-                    }),
-                    if (!_showAll && sorted.length > 5)
-                      Flexible(
-                        flex: sorted.skip(5).fold<int>(
-                              0,
-                              (s, e) => s +
-                                  (total > 0
-                                      ? (e.value / total * 1000).round()
-                                      : 0),
-                            ),
-                        child: Container(
-                          color: isDark
-                              ? Colors.white.withValues(alpha: 0.10)
-                              : Colors.black.withValues(alpha: 0.06),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
+          const SizedBox(height: 4),
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            height: 2,
+            width: active ? 32.0 : 0.0,
+            decoration: BoxDecoration(
+              color: activeColor,
+              borderRadius: BorderRadius.circular(2),
             ),
-            const SizedBox(height: 6),
-
-            // ── Category rows ─────────────────────────────────
-            ...visible.asMap().entries.map((entry) {
-              final i = entry.key;
-              final cat = entry.value;
-              final pct = total > 0 ? cat.value / total : 0.0;
-              final color = colors[i];
-
-              return _CategoryRow(
-                name: cat.key,
-                amount: '$sym${fmt.format(cat.value)}',
-                pct: pct,
-                color: color,
-                isDark: isDark,
-                textPrimary: textPrimary,
-                textMuted: textMuted,
-                isExpense: isExpense,
-                dividerColor: divider,
-                showDivider: i < visible.length - 1 || (!_showAll && sorted.length > 5),
-                onTap: () => Get.to(
-                  () => AllTransactionsScreen(
-                    initialType: viewType,
-                    initialMonth: month,
-                    initialCategory: cat.key,
-                  ),
-                  transition: Transition.cupertino,
-                ),
-              );
-            }),
-
-            if (!_showAll && sorted.length > 5)
-              GestureDetector(
-                onTap: () {
-                  HapticFeedback.selectionClick();
-                  setState(() => _showAll = true);
-                },
-                child: Padding(
-                  padding: const EdgeInsets.only(top: 8, bottom: 4),
-                  child: Text(
-                    '+ ${sorted.length - 5} more categories',
-                    style: const TextStyle(
-                      color: AppColor.primary,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-              ),
-            if (_showAll && sorted.length > 5)
-              GestureDetector(
-                onTap: () {
-                  HapticFeedback.selectionClick();
-                  setState(() => _showAll = false);
-                },
-                child: const Padding(
-                  padding: EdgeInsets.only(top: 8, bottom: 4),
-                  child: Text(
-                    'Show less',
-                    style: TextStyle(
-                      color: AppColor.primary,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-              ),
-          ],
-          const SizedBox(height: 24),
-          Divider(height: 1, thickness: 0.5, color: divider),
+          ),
         ],
       ),
     );
   }
 }
 
-class _CategoryRow extends StatelessWidget {
-  final String name;
-  final String amount;
-  final double pct;
-  final Color color;
-  final bool isDark;
-  final Color textPrimary;
-  final Color textMuted;
-  final bool isExpense;
-  final Color dividerColor;
-  final bool showDivider;
-  final VoidCallback? onTap;
+// ─────────────────────────────────────────────────────────────────────────────
+// Smooth bezier area chart — cumulative spending curve (Finsight-style)
+// ─────────────────────────────────────────────────────────────────────────────
 
-  const _CategoryRow({
-    required this.name,
-    required this.amount,
-    required this.pct,
+class _AreaChartWidget extends StatelessWidget {
+  final List<double> cumPoints;
+  final double maxCum;
+  final Map<int, double> dayMap;
+  final int daysInMonth;
+  final Color color;
+  final DateTime currentMonth;
+  final int? todayDay;
+  final int? selectedDay;
+  final ValueChanged<int?> onDaySelected;
+
+  const _AreaChartWidget({
+    required this.cumPoints,
+    required this.maxCum,
+    required this.dayMap,
+    required this.daysInMonth,
     required this.color,
-    required this.isDark,
-    required this.textPrimary,
-    required this.textMuted,
-    required this.isExpense,
-    required this.dividerColor,
-    required this.showDivider,
-    this.onTap,
+    required this.currentMonth,
+    required this.todayDay,
+    required this.selectedDay,
+    required this.onDaySelected,
   });
+
+  int _dayFromX(double dx, double width) {
+    final ratio = (dx / width).clamp(0.0, 1.0);
+    return (ratio * (daysInMonth - 1)).round() + 1;
+  }
 
   @override
   Widget build(BuildContext context) {
-    final track = isDark
-        ? Colors.white.withValues(alpha: 0.07)
-        : Colors.black.withValues(alpha: 0.05);
+    return LayoutBuilder(builder: (ctx, constraints) {
+      final width = constraints.maxWidth;
+      return GestureDetector(
+        onTapDown: (d) => onDaySelected(_dayFromX(d.localPosition.dx, width)),
+        onPanUpdate: (d) => onDaySelected(_dayFromX(d.localPosition.dx, width)),
+        onTapUp: (_) => onDaySelected(null),
+        onPanEnd: (_) => onDaySelected(null),
+        behavior: HitTestBehavior.opaque,
+        child: CustomPaint(
+          size: Size(width, constraints.maxHeight),
+          painter: _AreaPainter(
+            cumPoints: cumPoints,
+            maxCum: maxCum,
+            color: color,
+            todayDayIndex: todayDay != null ? todayDay! - 1 : null,
+            selectedDayIndex: selectedDay != null ? selectedDay! - 1 : null,
+          ),
+        ),
+      );
+    });
+  }
+}
 
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Column(
+class _AreaPainter extends CustomPainter {
+  final List<double> cumPoints;
+  final double maxCum;
+  final Color color;
+  final int? todayDayIndex;
+  final int? selectedDayIndex;
+
+  const _AreaPainter({
+    required this.cumPoints,
+    required this.maxCum,
+    required this.color,
+    required this.todayDayIndex,
+    required this.selectedDayIndex,
+  });
+
+  List<Offset> _pixelPoints(Size size) {
+    final n = cumPoints.length;
+    if (n == 0) return [];
+    const padV = 16.0;
+    return List.generate(n, (i) {
+      final x = i / (n - 1) * size.width;
+      final y = padV + (1 - (maxCum > 0 ? cumPoints[i] / maxCum : 0)) * (size.height - padV * 2);
+      return Offset(x, y);
+    });
+  }
+
+  Path _smoothPath(List<Offset> pts) {
+    final path = Path();
+    if (pts.isEmpty) return path;
+    path.moveTo(pts[0].dx, pts[0].dy);
+    for (int i = 0; i < pts.length - 1; i++) {
+      final p0 = i > 0 ? pts[i - 1] : pts[i];
+      final p1 = pts[i];
+      final p2 = pts[i + 1];
+      final p3 = i < pts.length - 2 ? pts[i + 2] : p2;
+      final cp1 = Offset(p1.dx + (p2.dx - p0.dx) / 6, p1.dy + (p2.dy - p0.dy) / 6);
+      final cp2 = Offset(p2.dx - (p3.dx - p1.dx) / 6, p2.dy - (p3.dy - p1.dy) / 6);
+      path.cubicTo(cp1.dx, cp1.dy, cp2.dx, cp2.dy, p2.dx, p2.dy);
+    }
+    return path;
+  }
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final pts = _pixelPoints(size);
+    if (pts.isEmpty) return;
+
+    final linePath = _smoothPath(pts);
+
+    // Gradient fill under the curve
+    final fillPath = Path.from(linePath)
+      ..lineTo(pts.last.dx, size.height)
+      ..lineTo(pts.first.dx, size.height)
+      ..close();
+
+    canvas.drawPath(
+      fillPath,
+      Paint()
+        ..shader = LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [color.withValues(alpha: 0.18), color.withValues(alpha: 0.0)],
+        ).createShader(Rect.fromLTWH(0, 0, size.width, size.height))
+        ..style = PaintingStyle.fill,
+    );
+
+    // Line
+    canvas.drawPath(
+      linePath,
+      Paint()
+        ..color = color
+        ..strokeWidth = 2.0
+        ..style = PaintingStyle.stroke
+        ..strokeCap = StrokeCap.round
+        ..strokeJoin = StrokeJoin.round,
+    );
+
+    // Selected / today indicator
+    final showIdx = selectedDayIndex ?? todayDayIndex;
+    if (showIdx != null && showIdx >= 0 && showIdx < pts.length) {
+      final pt = pts[showIdx];
+
+      // Vertical dashed line
+      final dashPaint = Paint()
+        ..color = color.withValues(alpha: 0.25)
+        ..strokeWidth = 1.0;
+      double dy = 0;
+      while (dy < size.height) {
+        canvas.drawLine(Offset(pt.dx, dy), Offset(pt.dx, math.min(dy + 4, size.height)), dashPaint);
+        dy += 8;
+      }
+
+      // Outer glow circle
+      canvas.drawCircle(pt, 8, Paint()..color = color.withValues(alpha: 0.15));
+      // White fill
+      canvas.drawCircle(pt, 5, Paint()..color = Colors.white);
+      // Colored border
+      canvas.drawCircle(pt, 5, Paint()
+        ..color = color
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2.0);
+    }
+  }
+
+  @override
+  bool shouldRepaint(_AreaPainter old) =>
+      old.cumPoints != cumPoints ||
+      old.color != color ||
+      old.selectedDayIndex != selectedDayIndex ||
+      old.todayDayIndex != todayDayIndex;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Overview stat row (below chart)
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _StatRow extends StatelessWidget {
+  final String label;
+  final String value;
+  final Color valueColor;
+  final bool last;
+
+  const _StatRow({required this.label, required this.value, required this.valueColor, this.last = false});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.symmetric(vertical: 13),
+          padding: const EdgeInsets.symmetric(vertical: 11),
           child: Row(
             children: [
-              // Icon circle — tinted with row color
-              Container(
-                width: 34,
-                height: 34,
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: isDark ? 0.16 : 0.12),
-                  shape: BoxShape.circle,
-                ),
-                child: Center(
-                  child: PhosphorIcon(
-                    _categoryIcon(name, !isExpense),
-                    size: 15,
-                    color: color,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-
-              // Name + progress bar
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      name,
-                      style: TextStyle(
-                        color: textPrimary,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 5),
-                    Stack(
-                      children: [
-                        Container(
-                          height: 3,
-                          decoration: BoxDecoration(
-                            color: track,
-                            borderRadius: BorderRadius.circular(3),
-                          ),
-                        ),
-                        FractionallySizedBox(
-                          widthFactor: pct.clamp(0.0, 1.0),
-                          child: Container(
-                            height: 3,
-                            decoration: BoxDecoration(
-                              color: color,
-                              borderRadius: BorderRadius.circular(3),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 16),
-
-              // Amount + percentage stacked right-aligned
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    amount,
-                    style: TextStyle(
-                      color: textPrimary,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: -0.3,
-                    ),
-                  ),
-                  const SizedBox(height: 1),
-                  Text(
-                    '${(pct * 100).toStringAsFixed(0)}%',
-                    style: TextStyle(color: textMuted, fontSize: 11),
-                  ),
-                ],
-              ),
+              Text(label,
+                  style: GoogleFonts.urbanist(color: AppColor.textSecondary, fontSize: 13)),
+              const Spacer(),
+              Text(value,
+                  style: GoogleFonts.urbanist(
+                    color: valueColor,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                  )),
             ],
           ),
         ),
-        if (showDivider)
-          Divider(
-            height: 1,
-            thickness: 0.5,
-            color: dividerColor,
-            indent: 46,
-          ),
+        if (!last) const Divider(height: 1, thickness: 0.5, color: AppColor.border),
       ],
-    ),
     );
   }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Transactions — Phosphor icons, filtered by tab
+// Category section — flat list, Finsight "Your Investment" style
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _TransactionsSection extends StatelessWidget {
-  final List<Map<String, dynamic>> filteredTx;
+List<Color> _tabPalette(String viewType, int count) {
+  final isExpense = viewType == 'expense';
+  final palette = isExpense
+      ? const [
+          Color(0xFFFF5370), Color(0xFFFF7A5C), Color(0xFFFF9A6C),
+          Color(0xFFFFB88A), Color(0xFFFFD0A8), Color(0xFFFFE8CC),
+        ]
+      : const [
+          Color(0xFF00C896), Color(0xFF26D4A4), Color(0xFF4DDEB4),
+          Color(0xFF80E8C8), Color(0xFFAAF0DA), Color(0xFFCCF7EC),
+        ];
+  return List.generate(count, (i) => palette[i.clamp(0, palette.length - 1)]);
+}
+
+class _CategorySection extends StatefulWidget {
+  final List<MapEntry<String, double>> sorted;
+  final double total;
   final String viewType;
-  final bool isDark;
   final DateTime month;
 
-  const _TransactionsSection({
-    required this.filteredTx,
+  const _CategorySection({
+    required this.sorted,
+    required this.total,
     required this.viewType,
-    required this.isDark,
     required this.month,
   });
 
+  @override
+  State<_CategorySection> createState() => _CategorySectionState();
+}
+
+class _CategorySectionState extends State<_CategorySection> {
+  bool _showAll = false;
+
+  @override
+  void didUpdateWidget(_CategorySection old) {
+    super.didUpdateWidget(old);
+    if (old.month != widget.month || old.viewType != widget.viewType) _showAll = false;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final sorted    = widget.sorted;
+    final total     = widget.total;
+    final viewType  = widget.viewType;
+    final sym       = Get.find<HomeController>().currencySymbol.value;
+    final fmt       = NumberFormat('#,##0', 'en_IN');
+    final isExpense = viewType == 'expense';
+    final visible   = _showAll ? sorted : sorted.take(5).toList();
+    final colors    = _tabPalette(viewType, visible.length);
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('CATEGORIES',
+              style: GoogleFonts.urbanist(
+                color: AppColor.textTertiary,
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.8,
+              )),
+          const SizedBox(height: 14),
+
+          if (sorted.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 32),
+              child: Center(
+                child: Column(
+                  children: [
+                    Container(
+                      width: 52, height: 52,
+                      decoration: BoxDecoration(
+                        color: AppColor.textTertiary.withValues(alpha: 0.07),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Center(
+                        child: PhosphorIcon(
+                          isExpense ? PhosphorIconsLight.chartPie : PhosphorIconsLight.trendUp,
+                          color: AppColor.textTertiary.withValues(alpha: 0.35),
+                          size: 22,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Text('No ${isExpense ? 'expense' : 'income'} categories this month',
+                        style: GoogleFonts.urbanist(color: AppColor.textSecondary, fontSize: 13)),
+                  ],
+                ),
+              ),
+            )
+          else ...[
+            ...visible.asMap().entries.map((entry) {
+              final i     = entry.key;
+              final cat   = entry.value;
+              final pct   = total > 0 ? cat.value / total : 0.0;
+              final color = colors[i];
+
+              return GestureDetector(
+                onTap: () => Get.to(
+                  () => AllTransactionsScreen(
+                    initialType: viewType,
+                    initialMonth: widget.month,
+                    initialCategory: cat.key,
+                  ),
+                  transition: Transition.cupertino,
+                ),
+                behavior: HitTestBehavior.opaque,
+                child: Column(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 11),
+                      child: Row(
+                        children: [
+                          // Colored dot indicator
+                          Container(
+                            width: 10, height: 10,
+                            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+                          ),
+                          const SizedBox(width: 12),
+
+                          // Category name + thin bar
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(cat.key,
+                                    style: GoogleFonts.urbanist(
+                                      color: AppColor.textPrimary,
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis),
+                                const SizedBox(height: 5),
+                                // Full-width colored bar
+                                Stack(
+                                  children: [
+                                    Container(
+                                      height: 3,
+                                      decoration: BoxDecoration(
+                                        color: Colors.black.withValues(alpha: 0.05),
+                                        borderRadius: BorderRadius.circular(3),
+                                      ),
+                                    ),
+                                    FractionallySizedBox(
+                                      widthFactor: pct.clamp(0.0, 1.0),
+                                      child: Container(
+                                        height: 3,
+                                        decoration: BoxDecoration(
+                                          color: color,
+                                          borderRadius: BorderRadius.circular(3),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+
+                          // Amount + percentage
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Text(
+                                '$sym${fmt.format(cat.value)}',
+                                style: GoogleFonts.urbanist(
+                                  color: AppColor.textPrimary,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  letterSpacing: -0.3,
+                                  fontFeatures: const [FontFeature.tabularFigures()],
+                                ),
+                              ),
+                              const SizedBox(height: 1),
+                              Text('${(pct * 100).toStringAsFixed(0)}%',
+                                  style: GoogleFonts.urbanist(color: AppColor.textTertiary, fontSize: 11)),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (i < visible.length - 1)
+                      const Divider(height: 1, thickness: 0.5, color: AppColor.border, indent: 22),
+                  ],
+                ),
+              );
+            }),
+
+            if (!_showAll && sorted.length > 5)
+              GestureDetector(
+                onTap: () { HapticFeedback.selectionClick(); setState(() => _showAll = true); },
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 12, bottom: 4),
+                  child: Text('+ ${sorted.length - 5} more categories',
+                      style: GoogleFonts.urbanist(color: AppColor.primary, fontSize: 12, fontWeight: FontWeight.w600)),
+                ),
+              ),
+            if (_showAll && sorted.length > 5)
+              GestureDetector(
+                onTap: () { HapticFeedback.selectionClick(); setState(() => _showAll = false); },
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 12, bottom: 4),
+                  child: Text('Show less',
+                      style: GoogleFonts.urbanist(color: AppColor.primary, fontSize: 12, fontWeight: FontWeight.w600)),
+                ),
+              ),
+          ],
+          const SizedBox(height: 24),
+          const Divider(height: 1, thickness: 0.5, color: AppColor.border),
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Transaction section — flat list, Finsight "Your Investment" row style
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _TransactionSection extends StatelessWidget {
+  final List<Map<String, dynamic>> filteredTx;
+  final String viewType;
+  final DateTime month;
+
+  const _TransactionSection({
+    required this.filteredTx,
+    required this.viewType,
+    required this.month,
+  });
 
   String _title(Map<String, dynamic> tx) {
     final t = tx['description'];
@@ -1170,33 +1121,24 @@ class _TransactionsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final textPrimary =
-        isDark ? AppColor.textPrimary : AppColor.lightTextPrimary;
-    final textMuted =
-        isDark ? AppColor.textSecondary : AppColor.lightTextSecondary;
-    final textDim =
-        isDark ? AppColor.textTertiary : AppColor.lightTextTertiary;
-    final divColor = isDark ? AppColor.darkBorder : AppColor.lightBorder;
-    final sym = Get.find<HomeController>().currencySymbol.value;
+    final sym       = Get.find<HomeController>().currencySymbol.value;
     final isExpense = viewType == 'expense';
-    final amountColor = isExpense ? AppColor.expense : AppColor.income;
-    final fmt = NumberFormat('#,##0', 'en_IN');
+    final amtColor  = isExpense ? AppColor.expense : AppColor.income;
+    final fmt       = NumberFormat('#,##0', 'en_IN');
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+      padding: const EdgeInsets.fromLTRB(20, 24, 20, 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            isExpense ? 'Expenses' : 'Income',
-            style: TextStyle(
-              color: textMuted,
-              fontSize: 11,
-              fontWeight: FontWeight.w500,
-              letterSpacing: 0.3,
-            ),
-          ),
-          const SizedBox(height: 16),
+          Text(isExpense ? 'TRANSACTIONS' : 'INCOME',
+              style: GoogleFonts.urbanist(
+                color: AppColor.textTertiary,
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.8,
+              )),
+          const SizedBox(height: 14),
 
           if (filteredTx.isEmpty)
             Padding(
@@ -1205,54 +1147,43 @@ class _TransactionsSection extends StatelessWidget {
                 child: Column(
                   children: [
                     Container(
-                      width: 52,
-                      height: 52,
+                      width: 52, height: 52,
                       decoration: BoxDecoration(
-                        color: textMuted.withValues(alpha: 0.07),
+                        color: AppColor.textTertiary.withValues(alpha: 0.07),
                         borderRadius: BorderRadius.circular(16),
                       ),
                       child: Center(
-                        child: PhosphorIcon(
-                          PhosphorIconsLight.receipt,
-                          color: textMuted.withValues(alpha: 0.35),
-                          size: 22,
-                        ),
+                        child: PhosphorIcon(PhosphorIconsLight.receipt,
+                            color: AppColor.textTertiary.withValues(alpha: 0.35), size: 22),
                       ),
                     ),
                     const SizedBox(height: 10),
-                    Text(
-                      'No ${isExpense ? 'expenses' : 'income'} this month',
-                      style: TextStyle(color: textMuted, fontSize: 13),
-                    ),
+                    Text('No ${isExpense ? 'expenses' : 'income'} this month',
+                        style: GoogleFonts.urbanist(color: AppColor.textSecondary, fontSize: 13)),
                   ],
                 ),
               ),
             )
           else ...[
             ...filteredTx.take(5).toList().asMap().entries.map((e) {
-              final idx = e.key;
-              final tx = e.value;
-              final cat = (tx['category'] as String?) ?? '';
-              final catColor = cat.isNotEmpty
-                  ? AppColor.categoryColor(cat)
-                  : AppColor.primary;
+              final idx          = e.key;
+              final tx           = e.value;
+              final cat          = (tx['category'] as String?) ?? '';
+              final catColor     = cat.isNotEmpty ? AppColor.categoryColor(cat) : AppColor.primary;
               final displayTitle = _title(tx);
+              final dateStr      = tx['date'] != null
+                  ? DateFormat('d MMM').format(DateTime.tryParse(tx['date'].toString()) ?? DateTime.now())
+                  : '';
 
               return Column(
                 children: [
                   if (idx > 0)
-                    Divider(
-                      height: 1,
-                      thickness: 0.5,
-                      color: divColor,
-                      indent: 46,
-                    ),
+                    const Divider(height: 1, thickness: 0.5, color: AppColor.border, indent: 46),
                   InkWell(
                     onTap: () {
                       HapticFeedback.lightImpact();
                       Get.to(
-                        () => TransactionDetailsScreen(
-                            transaction: tx, categoryList: categoryList),
+                        () => TransactionDetailsScreen(transaction: tx, categoryList: categoryList),
                         transition: Transition.cupertino,
                       );
                     },
@@ -1261,8 +1192,7 @@ class _TransactionsSection extends StatelessWidget {
                       child: Row(
                         children: [
                           Container(
-                            width: 34,
-                            height: 34,
+                            width: 36, height: 36,
                             decoration: BoxDecoration(
                               color: catColor.withValues(alpha: 0.12),
                               shape: BoxShape.circle,
@@ -1270,8 +1200,7 @@ class _TransactionsSection extends StatelessWidget {
                             child: Center(
                               child: PhosphorIcon(
                                 _categoryIcon(cat, !isExpense),
-                                size: 15,
-                                color: catColor,
+                                size: 16, color: catColor,
                               ),
                             ),
                           ),
@@ -1280,31 +1209,29 @@ class _TransactionsSection extends StatelessWidget {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
+                                Text(displayTitle,
+                                    style: GoogleFonts.urbanist(
+                                      color: AppColor.textPrimary,
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis),
+                                const SizedBox(height: 2),
                                 Text(
-                                  displayTitle,
-                                  style: TextStyle(
-                                    color: textPrimary,
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
+                                  cat.isNotEmpty && cat != displayTitle ? '$cat · $dateStr' : dateStr,
+                                  style: GoogleFonts.urbanist(color: AppColor.textTertiary, fontSize: 11),
                                 ),
-                                if (cat.isNotEmpty && cat != displayTitle)
-                                  Text(cat,
-                                      style: TextStyle(
-                                        color: textDim,
-                                        fontSize: 11,
-                                      )),
                               ],
                             ),
                           ),
                           Text(
                             '${isExpense ? '−' : '+'}$sym${fmt.format((tx['amount'] as num).toDouble())}',
-                            style: TextStyle(
-                              color: amountColor,
-                              fontSize: 13,
+                            style: GoogleFonts.urbanist(
+                              color: amtColor,
+                              fontSize: 14,
                               fontWeight: FontWeight.w600,
+                              fontFeatures: const [FontFeature.tabularFigures()],
                             ),
                           ),
                         ],
@@ -1314,16 +1241,14 @@ class _TransactionsSection extends StatelessWidget {
                 ],
               );
             }),
+
             if (filteredTx.length > 5) ...[
-              Divider(height: 1, thickness: 0.5, color: divColor, indent: 46),
+              const Divider(height: 1, thickness: 0.5, color: AppColor.border, indent: 46),
               InkWell(
                 onTap: () {
                   HapticFeedback.lightImpact();
                   Get.to(
-                    () => AllTransactionsScreen(
-                      initialType: viewType,
-                      initialMonth: month,
-                    ),
+                    () => AllTransactionsScreen(initialType: viewType, initialMonth: month),
                     transition: Transition.cupertino,
                   );
                 },
@@ -1332,17 +1257,11 @@ class _TransactionsSection extends StatelessWidget {
                   child: Row(
                     children: [
                       const SizedBox(width: 46),
-                      Text(
-                        'See all ${filteredTx.length} transactions',
-                        style: const TextStyle(
-                          color: AppColor.primary,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
+                      Text('See all ${filteredTx.length} transactions',
+                          style: GoogleFonts.urbanist(
+                              color: AppColor.primary, fontSize: 13, fontWeight: FontWeight.w600)),
                       const SizedBox(width: 4),
-                      const PhosphorIcon(PhosphorIconsLight.arrowRight,
-                          color: AppColor.primary, size: 13),
+                      const PhosphorIcon(PhosphorIconsLight.arrowRight, color: AppColor.primary, size: 13),
                     ],
                   ),
                 ),

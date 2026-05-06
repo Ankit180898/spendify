@@ -82,7 +82,7 @@ class _BottomNavState extends State<BottomNav> {
     setState(() => _dialOpen = false);
     Future.delayed(const Duration(milliseconds: 220), () {
       if (!mounted) return;
-      if (_dialOpen) return; // reopened
+      if (_dialOpen) return;
       setState(() => _dialVisible = false);
     });
   }
@@ -99,7 +99,6 @@ class _BottomNavState extends State<BottomNav> {
 
   void _addSplitBill() {
     _closeDial();
-    // Splits is not a bottom-tab destination; open it as a flow.
     Get.to(() => const SplitsScreen(), transition: Transition.cupertino);
   }
 
@@ -117,7 +116,6 @@ class _BottomNavState extends State<BottomNav> {
   void _maybeStartShowcase(BuildContext ctx) {
     if (_showcaseTriggered) return;
     _showcaseTriggered = true;
-    // Capture showcase state before the async gap to avoid stale context
     final showcaseState = ShowCaseWidget.of(ctx);
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
@@ -131,8 +129,6 @@ class _BottomNavState extends State<BottomNav> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
     return ShowCaseWidget(
       blurValue: 2,
       onFinish: () => _maybeShowUpiPermission(),
@@ -150,7 +146,6 @@ class _BottomNavState extends State<BottomNav> {
               if (_dialVisible)
                 Positioned.fill(
                   child: _AddSpeedDial(
-                    isDark: isDark,
                     open: _dialOpen,
                     onClose: _closeDial,
                     onExpense: _addExpense,
@@ -162,7 +157,6 @@ class _BottomNavState extends State<BottomNav> {
           ),
           bottomNavigationBar: _NavBar(
             current: _current,
-            isDark: isDark,
             onTap: (i) {
               _closeDial();
               setState(() => _current = i);
@@ -180,14 +174,12 @@ class _BottomNavState extends State<BottomNav> {
 
 class _NavBar extends StatelessWidget {
   final int current;
-  final bool isDark;
   final ValueChanged<int> onTap;
   final VoidCallback onAdd;
   final bool dialOpen;
 
   const _NavBar({
     required this.current,
-    required this.isDark,
     required this.onTap,
     required this.onAdd,
     required this.dialOpen,
@@ -195,14 +187,12 @@ class _NavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bg = isDark ? AppColor.darkSurface : AppColor.lightSurface;
-    final border = isDark ? AppColor.darkBorder : AppColor.lightBorder;
     final wCtrl = Get.find<WalkthroughController>();
 
     return Container(
-      decoration: BoxDecoration(
-        color: bg,
-        border: Border(top: BorderSide(color: border, width: 1)),
+      decoration: const BoxDecoration(
+        color: AppColor.surface,
+        border: Border(top: BorderSide(color: AppColor.border, width: 1)),
       ),
       child: SafeArea(
         top: false,
@@ -210,7 +200,6 @@ class _NavBar extends StatelessWidget {
           height: AppDimens.navBarHeight,
           child: Row(
             children: [
-              // Home
               Expanded(
                 child: _NavItem(
                   icon: PhosphorIconsLight.house,
@@ -219,13 +208,11 @@ class _NavBar extends StatelessWidget {
                   onTap: () => onTap(0),
                 ),
               ),
-              // Stats — showcased
               Expanded(
                 child: Showcase(
                   key: wCtrl.statsNavKey,
                   title: 'Smart insights',
-                  description:
-                      'Charts and spending breakdowns to understand where your money goes.',
+                  description: 'Charts and spending breakdowns to understand where your money goes.',
                   targetShapeBorder: const CircleBorder(),
                   tooltipBackgroundColor: AppColor.primary,
                   textColor: Colors.white,
@@ -247,12 +234,10 @@ class _NavBar extends StatelessWidget {
                   ),
                 ),
               ),
-              // ── Centre + button — showcased ──
               Showcase(
                 key: wCtrl.addBtnKey,
                 title: 'Log a transaction',
-                description:
-                    'Tap + anytime to record an expense or income instantly.',
+                description: 'Tap + anytime to record an expense or income instantly.',
                 targetShapeBorder: const CircleBorder(),
                 tooltipBackgroundColor: AppColor.primary,
                 textColor: Colors.white,
@@ -268,8 +253,9 @@ class _NavBar extends StatelessWidget {
                 ),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
-                      horizontal: AppDimens.spaceLG,
-                      vertical: AppDimens.spaceSM),
+                    horizontal: AppDimens.spaceLG,
+                    vertical: AppDimens.spaceSM,
+                  ),
                   child: GestureDetector(
                     onTap: onAdd,
                     child: AnimatedContainer(
@@ -283,14 +269,14 @@ class _NavBar extends StatelessWidget {
                         boxShadow: dialOpen
                             ? [
                                 BoxShadow(
-                                  color: AppColor.primary.withValues(alpha: 0.55),
+                                  color: AppColor.primary.withValues(alpha: 0.40),
                                   blurRadius: 20,
-                                  spreadRadius: 3,
+                                  spreadRadius: 2,
                                 ),
                               ]
                             : [
                                 BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.18),
+                                  color: Colors.black.withValues(alpha: 0.15),
                                   blurRadius: 8,
                                   offset: const Offset(0, 3),
                                 ),
@@ -298,7 +284,7 @@ class _NavBar extends StatelessWidget {
                       ),
                       child: AnimatedRotation(
                         duration: const Duration(milliseconds: 220),
-                        turns: dialOpen ? 0.125 : 0.0, // 45°
+                        turns: dialOpen ? 0.125 : 0.0,
                         child: const PhosphorIcon(
                           PhosphorIconsLight.plus,
                           color: Colors.white,
@@ -309,13 +295,11 @@ class _NavBar extends StatelessWidget {
                   ),
                 ),
               ),
-              // Goals — showcased
               Expanded(
                 child: Showcase(
                   key: wCtrl.goalsNavKey,
                   title: 'Budgets & goals',
-                  description:
-                      'Set category spending limits and track your savings goals.',
+                  description: 'Set category spending limits and track your savings goals.',
                   targetShapeBorder: const CircleBorder(),
                   tooltipBackgroundColor: AppColor.primary,
                   textColor: Colors.white,
@@ -337,7 +321,6 @@ class _NavBar extends StatelessWidget {
                   ),
                 ),
               ),
-              // Profile
               Expanded(
                 child: _NavItem(
                   icon: PhosphorIconsLight.user,
@@ -382,7 +365,19 @@ class _NavItem extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          PhosphorIcon(icon, color: color, size: AppDimens.iconLG),
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            decoration: BoxDecoration(
+              color: isActive ? AppColor.primaryExtraSoft : Colors.transparent,
+              borderRadius: BorderRadius.circular(AppDimens.radiusCircle),
+            ),
+            child: PhosphorIcon(
+              icon,
+              color: color,
+              size: AppDimens.iconMD,
+            ),
+          ),
           const SizedBox(height: AppDimens.spaceXXS),
           Text(label, style: AppTypography.label(color)),
         ],
@@ -394,7 +389,6 @@ class _NavItem extends StatelessWidget {
 // ── Add speed dial overlay ────────────────────────────────────────────────────
 
 class _AddSpeedDial extends StatelessWidget {
-  final bool isDark;
   final bool open;
   final VoidCallback onClose;
   final VoidCallback onExpense;
@@ -402,7 +396,6 @@ class _AddSpeedDial extends StatelessWidget {
   final VoidCallback onIncome;
 
   const _AddSpeedDial({
-    required this.isDark,
     required this.open,
     required this.onClose,
     required this.onExpense,
@@ -413,14 +406,11 @@ class _AddSpeedDial extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bottomPad = MediaQuery.of(context).padding.bottom;
-    final scrim = Colors.black.withValues(alpha: isDark ? 0.60 : 0.40);
-
-    // Anchor close to the centre + button (which sits inside the nav bar)
+    const scrim = Color(0x66000000);
     final baseBottom = bottomPad + 18;
 
     return Stack(
       children: [
-        // Tap-to-dismiss scrim with backdrop blur
         GestureDetector(
           onTap: onClose,
           behavior: HitTestBehavior.opaque,
@@ -428,13 +418,11 @@ class _AddSpeedDial extends StatelessWidget {
             duration: const Duration(milliseconds: 200),
             opacity: open ? 1.0 : 0.0,
             child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 4, sigmaY: 4),
+              filter: ImageFilter.blur(sigmaX: 6, sigmaY: 6),
               child: Container(color: scrim),
             ),
           ),
         ),
-
-        // Actions (radial arc)
         Positioned(
           left: 0,
           right: 0,
@@ -605,7 +593,7 @@ class _DialAction extends StatelessWidget {
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: color.withValues(alpha: 0.45),
+                  color: color.withValues(alpha: 0.35),
                   blurRadius: 16,
                   spreadRadius: 1,
                   offset: const Offset(0, 6),
@@ -618,19 +606,14 @@ class _DialAction extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: 0.55),
+              color: AppColor.primary,
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
               label,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 0.2,
-              ),
+              style: AppTypography.label(Colors.white),
             ),
           ),
         ],

@@ -309,10 +309,13 @@ class HomeController extends GetxController {
   }
 
   // Function to get the category icon based on the category name
-  IconData getCategoryIcon(String category, List<CategoriesModel> categoryList) {
+  IconData getCategoryIcon(String category, List<CategoriesModel> categoryList, {bool isIncome = false}) {
     var matchingCategory = categoryList.firstWhere(
       (element) => element.name == category,
-      orElse: () => CategoriesModel(name: category, icon: PhosphorIconsLight.tag),
+      orElse: () => CategoriesModel(
+        name: category,
+        icon: isIncome ? PhosphorIconsLight.arrowCircleDown : PhosphorIconsLight.tag,
+      ),
     );
 
     return matchingCategory.icon;

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:spendify/config/app_color.dart';
@@ -53,19 +54,16 @@ class TransactionsContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ctrl = Get.find<HomeController>();
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textPrimary = isDark ? AppColor.textPrimary : const Color(0xFF09090B);
-    final textMuted = isDark ? AppColor.textSecondary : const Color(0xFF71717A);
-    final divColor = isDark ? AppColor.darkBorder : const Color(0xFFF4F4F5);
+    const textMuted = AppColor.textSecondary;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(20, 8, 12, 4),
+          padding: const EdgeInsets.fromLTRB(20, 12, 12, 4),
           child: Row(
             children: [
-              Text('Recent', style: TextStyle(color: textPrimary, fontSize: 15, fontWeight: FontWeight.w700)),
+              Text('RECENT', style: GoogleFonts.urbanist(color: AppColor.textTertiary, fontSize: 11, fontWeight: FontWeight.w600, letterSpacing: 0.8)),
               const Spacer(),
               TextButton(
                 onPressed: () => Get.to(() => const AllTransactionsScreen()),
@@ -75,7 +73,7 @@ class TransactionsContent extends StatelessWidget {
                   minimumSize: Size.zero,
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
-                child: const Text('See all', style: TextStyle(color: AppColor.primary, fontSize: 13)),
+                child: Text('See all', style: GoogleFonts.urbanist(color: AppColor.primary, fontSize: 12, fontWeight: FontWeight.w600)),
               ),
             ],
           ),
@@ -83,7 +81,7 @@ class TransactionsContent extends StatelessWidget {
 
         Obx(() {
           if (ctrl.isLoading.value) {
-            return _TransactionShimmer(isDark: isDark);
+            return const _TransactionShimmer(isDark: false);
           }
 
           if (ctrl.transactions.isEmpty) {
@@ -94,7 +92,7 @@ class TransactionsContent extends StatelessWidget {
                   children: [
                     PhosphorIcon(PhosphorIconsLight.receipt, size: 40, color: textMuted.withValues(alpha: 0.3)),
                     const SizedBox(height: 10),
-                    Text('No transactions yet', style: TextStyle(color: textMuted, fontSize: 14)),
+                    Text('No transactions yet', style: GoogleFonts.urbanist(color: textMuted, fontSize: 14)),
                     const SizedBox(height: 14),
                     OutlinedButton(
                       onPressed: () => Get.to(() => const AddTransactionScreen()),
@@ -129,14 +127,14 @@ class TransactionsContent extends StatelessWidget {
                 children: [
                   Padding(
                     padding: const EdgeInsets.fromLTRB(20, 12, 20, 4),
-                    child: Text(month, style: TextStyle(color: textMuted, fontSize: 12, fontWeight: FontWeight.w500)),
+                    child: Text(month, style: GoogleFonts.urbanist(color: textMuted, fontSize: 11, fontWeight: FontWeight.w500, letterSpacing: 0.3)),
                   ),
                   ListView.separated(
                     padding: EdgeInsets.zero,
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
                     itemCount: txs.length,
-                    separatorBuilder: (_, __) => Divider(height: 1, color: divColor, indent: 66, endIndent: 20),
+                    separatorBuilder: (_, __) => const Divider(height: 1, color: AppColor.border, indent: 66, endIndent: 20),
                     itemBuilder: (_, j) => TransactionListItem(
                       key: ValueKey(txs[j]),
                       transaction: txs,

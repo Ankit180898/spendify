@@ -3,65 +3,57 @@ import 'package:flutter/material.dart';
 class AppColor {
   AppColor._();
 
-  // ── BRAND ─────────────────────────────────────────────────────────────────
-  static const Color primary = Color(0xFF8552FF);       // vibrant violet — unchanged, pops on charcoal
-  static const Color primarySoft = Color(0xFFAA88FF);
-  static const Color primaryExtraSoft = Color(0x268552FF);
-  static const Color primaryGlow = Color(0x408552FF);
+  // ── FOUNDATION ────────────────────────────────────────────────────────────
+  static const Color bg = Color(0xFFF6F5FA);            // Ghost White
+  static const Color surface = Color(0xFFFFFFFF);        // Pure white
+  static const Color surfaceVariant = Color(0xFFF0EEF5); // Lifted surface
+  static const Color border = Color(0xFFE6E2DC);
+  static const Color borderFocus = Color(0xFF212121);
+
+  // ── PRIMARY ───────────────────────────────────────────────────────────────
+  static const Color primary = Color(0xFF212121);        // Eerie Black
+  static const Color primarySoft = Color(0xFFD8DFE9);    // Alice Blue
+  static const Color primaryExtraSoft = Color(0xFFEEF1F7);
+
+  // ── ACCENT PALETTE ────────────────────────────────────────────────────────
+  static const Color accentYellow = Color(0xFFEFF0A3);   // Vanilla
+  static const Color accentBlue = Color(0xFFD8DFE9);     // Alice Blue
+  static const Color accentGreen = Color(0xFFCFDECA);    // Honeydew
 
   // ── SEMANTIC ──────────────────────────────────────────────────────────────
-  static const Color income = Color(0xFF00C896);        // vivid mint-teal
-  static const Color incomeSoft = Color(0x2200C896);
-  static const Color expense = Color(0xFFFF5370);       // coral-red
-  static const Color expenseSoft = Color(0x22FF5370);
-  static const Color warning = Color(0xFFFFB300);       // amber
-  static const Color warningSoft = Color(0x22FFB300);
+  static const Color income = Color(0xFF00C896);
+  static const Color incomeSoft = Color(0xFFCFDECA);     // Honeydew
+  static const Color expense = Color(0xFFFF5370);
+  static const Color expenseSoft = Color(0xFFFFE8EC);
+  static const Color warning = Color(0xFFF5A623);
+  static const Color warningSoft = Color(0xFFFFF4E0);
 
-  // ── DARK THEME — warm charcoal, zero blue tint ────────────────────────────
-  static const Color darkBg = Color(0xFF111110);        // near-black warm charcoal
-  static const Color darkSurface = Color(0xFF1C1B1A);   // lifted surface
-  static const Color darkCard = Color(0xFF242320);      // card — visible against surface
-  static const Color darkElevated = Color(0xFF2E2D2A);  // sheets, bottom bars
-  static const Color darkBorder = Color(0xFF383633);    // subtle warm border
-  static const Color darkBorderFocus = Color(0xFF8552FF);
+  // ── TYPOGRAPHY ────────────────────────────────────────────────────────────
+  static const Color textPrimary = Color(0xFF212121);    // Eerie Black
+  static const Color textSecondary = Color(0xFF6B6860);
+  static const Color textTertiary = Color(0xFF9E9C96);
 
-  static const Color textPrimary = Color(0xFFF5F4F2);   // warm white
-  static const Color textSecondary = Color(0xFF908E88); // warm mid-grey
-  static const Color textTertiary = Color(0xFF525048);  // dim warm grey
-
-  // ── LIGHT THEME ───────────────────────────────────────────────────────────
-  static const Color lightBg = Color(0xFFF6F5F3);       // warm off-white
-  static const Color lightSurface = Color(0xFFFFFFFF);
-  static const Color lightCard = Color(0xFFFFFFFF);
-  static const Color lightBorder = Color(0xFFE8E6E2);
-  static const Color lightBorderFocus = Color(0xFF8552FF);
-
-  static const Color lightTextPrimary = Color(0xFF1A1916);
-  static const Color lightTextSecondary = Color(0xFF6B6960);
-  static const Color lightTextTertiary = Color(0xFF9A9890);
-
-  // ── CATEGORY COLOURS ──────────────────────────────────────────────────────
-  static const Color catInvestments = Color(0xFF8552FF);
+  // ── CATEGORY COLOURS ─────────────────────────────────────────────────────
+  static const Color catInvestments = Color(0xFF6B5BFF);
   static const Color catHealth = Color(0xFF00C896);
   static const Color catBills = Color(0xFFFF5370);
-  static const Color catFood = Color(0xFFFFB300);
-  static const Color catCar = Color(0xFF29B6F6);
+  static const Color catFood = Color(0xFFF5A623);
+  static const Color catCar = Color(0xFF4BAFD6);
   static const Color catGroceries = Color(0xFF26D0A0);
   static const Color catGifts = Color(0xFFFF4081);
   static const Color catTransport = Color(0xFF7986CB);
 
   // ── GRADIENTS ─────────────────────────────────────────────────────────────
-  static const LinearGradient primaryGradient = LinearGradient(
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-    colors: [Color(0xFF8552FF), Color(0xFF5B21B6)],
-  );
-
-  // Balance card: deep charcoal with a whisper of purple warmth
   static const LinearGradient balanceCardGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [Color(0xFF2A2730), Color(0xFF1A1820)],
+    colors: [Color(0xFF2D2D2D), Color(0xFF1A1A1A)],
+  );
+
+  static const LinearGradient primaryGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [Color(0xFF212121), Color(0xFF404040)],
   );
 
   static const LinearGradient incomeGradient = LinearGradient(
@@ -76,47 +68,17 @@ class AppColor {
     colors: [Color(0xFFFF5370), Color(0xFFD63050)],
   );
 
-  static const LinearGradient darkHeaderGradient = LinearGradient(
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-    colors: [Color(0xFF1C1B1A), Color(0xFF111110)],
-  );
-
-  static const LinearGradient darkGradient = LinearGradient(
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-    colors: [Color(0xFF1C1B1A), Color(0xFF111110)],
-  );
-
-  static const LinearGradient darkGradientAlt = LinearGradient(
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-    colors: [Color(0xFF242320), Color(0xFF1C1B1A)],
-  );
-
-  static final LinearGradient cardGlassGradient = LinearGradient(
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-    colors: [
-      Colors.white.withOpacity(0.08),
-      Colors.white.withOpacity(0.03),
-    ],
-  );
-
-  // Purple to mint accent — for hero elements and charts
   static const LinearGradient accentGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [Color(0xFF8552FF), Color(0xFF00C896)],
+    colors: [Color(0xFF212121), Color(0xFF00C896)],
   );
-
-  static const LinearGradient headerGradientDark = darkHeaderGradient;
 
   // ── CATEGORY COLOUR LOOKUP ────────────────────────────────────────────────
   static const List<Color> _customPalette = [
-    Color(0xFF29B6F6),
-    Color(0xFF8552FF),
-    Color(0xFFFFB300),
+    Color(0xFF4BAFD6),
+    Color(0xFF6B5BFF),
+    Color(0xFFF5A623),
     Color(0xFFFF5370),
     Color(0xFF00C896),
     Color(0xFF69F0AE),
@@ -133,25 +95,60 @@ class AppColor {
     if (k.contains('car') || k.contains('vehicle') || k.contains('fuel')) return catCar;
     if (k.contains('grocer') || k.contains('super') || k.contains('market')) return catGroceries;
     if (k.contains('gift') || k.contains('present')) return catGifts;
-    if (k.contains('transport') || k.contains('bus') || k.contains('train') || k.contains('cab') || k.contains('uber')) return catTransport;
+    if (k.contains('transport') || k.contains('bus') || k.contains('train') ||
+        k.contains('cab') || k.contains('uber')) {
+      return catTransport;
+    }
     if (k.isEmpty) return primary;
     return _customPalette[k.hashCode.abs() % _customPalette.length];
   }
 
   // ── BACKWARDS COMPATIBILITY ───────────────────────────────────────────────
-  static const Color darkBackground = darkBg;
-  static const Color darkSurfaceCompat = darkSurface;
+  // Keeps existing widget code compiling while screens are rewritten.
+  // All dark tokens now resolve to light equivalents.
+  static const Color darkBg = bg;
+  static const Color darkBackground = bg;
+  static const Color darkSurface = surface;
+  static const Color darkCard = surface;
+  static const Color darkElevated = surfaceVariant;
+  static const Color darkBorder = border;
+  static const Color darkBorderFocus = borderFocus;
+  static const Color primaryGlow = Color(0x00000000);
+
+  static const Color lightBg = bg;
+  static const Color lightSurface = surface;
+  static const Color lightCard = surface;
+  static const Color lightBorder = border;
+  static const Color lightBorderFocus = borderFocus;
+  static const Color lightTextPrimary = textPrimary;
+  static const Color lightTextSecondary = textSecondary;
+  static const Color lightTextTertiary = textTertiary;
+
+  static const LinearGradient darkHeaderGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [bg, surface],
+  );
+  static const LinearGradient darkGradient = darkHeaderGradient;
+  static const LinearGradient darkGradientAlt = darkHeaderGradient;
+  static const LinearGradient headerGradientDark = darkHeaderGradient;
+
   static Color get whiteColor => const Color(0xFFFFFFFF);
-  static Color get secondary => const Color(0xFF1C1B1A);
+  static Color get secondary => primary;
   static Color get secondarySoft => textSecondary;
-  static Color get secondaryExtraSoft => lightBorder;
+  static Color get secondaryExtraSoft => border;
   static Color get error => expense;
   static Color get success => income;
   static Color get primarySoftCompat => primarySoft;
   static Color get primaryExtraSoftCompat => primaryExtraSoft;
-  static LinearGradient get cardGradient => cardGlassGradient;
+  static LinearGradient get cardGradient => balanceCardGradient;
+  static LinearGradient get cardGlassGradient => const LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [Color(0xCCFFFFFF), Color(0x99FFFFFF)],
+      );
   static LinearGradient get secondaryGradient => LinearGradient(
-        colors: [secondary, secondary.withOpacity(0.5)],
+        colors: [primary, primary.withValues(alpha: 0.5)],
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
       );

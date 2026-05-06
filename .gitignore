@@ -17,7 +17,7 @@ android/key.properties
 .swiftpm/
 migrate_working_dir/
 .env
-
+design/
 # IntelliJ related
 *.iml
 *.ipr

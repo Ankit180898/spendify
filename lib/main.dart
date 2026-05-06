@@ -7,7 +7,6 @@ import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:spendify/config/app_theme.dart';
-import 'package:spendify/controller/theme_controller.dart';
 import 'package:spendify/routes/app_pages.dart';
 import 'package:spendify/services/connectivity_service.dart';
 import 'package:spendify/services/notification_service.dart';
@@ -118,22 +117,16 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Initialise the theme controller so it persists for the app lifetime.
-    final themeController = Get.put(ThemeController());
-
-    return Obx(
-      () => GetMaterialApp(
-        debugShowCheckedModeBanner: false,
-        title: 'Spendify',
-        theme: AppTheme.lightTheme(),
-        darkTheme: AppTheme.darkTheme(),
-        themeMode: themeController.themeMode,
-        scaffoldMessengerKey: scaffoldMessengerKey,
-        initialRoute: Routes.SPLASH,
-        getPages: AppPages.routes,
-        defaultTransition: Transition.fadeIn,
-        transitionDuration: const Duration(milliseconds: 250),
-      ),
+    return GetMaterialApp(
+      debugShowCheckedModeBanner: false,
+      title: 'Spendify',
+      theme: AppTheme.lightTheme(),
+      themeMode: ThemeMode.light,
+      scaffoldMessengerKey: scaffoldMessengerKey,
+      initialRoute: Routes.SPLASH,
+      getPages: AppPages.routes,
+      defaultTransition: Transition.fadeIn,
+      transitionDuration: const Duration(milliseconds: 250),
     );
   }
 }
