@@ -167,14 +167,16 @@ class _TopSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final visible = ctrl.isAmountVisible.value;
-    final name = ctrl.userName.value.split(' ').first;
-    final sym = ctrl.currencySymbol.value;
-    final balance = ctrl.totalBalance.value;
     final now = DateTime.now();
     final greeting = now.hour < 12 ? 'morning' : now.hour < 17 ? 'afternoon' : 'evening';
 
-    return SafeArea(
+    return Obx(() {
+      final visible = ctrl.isAmountVisible.value;
+      final name = ctrl.userName.value.split(' ').first;
+      final sym = ctrl.currencySymbol.value;
+      final balance = ctrl.totalBalance.value;
+
+      return SafeArea(
       bottom: false,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -417,6 +419,7 @@ class _TopSection extends StatelessWidget {
         ],
       ),
     );
+    });
   }
 
   String _fmt(double v, String sym) {

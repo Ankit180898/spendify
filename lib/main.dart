@@ -8,6 +8,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:spendify/config/app_theme.dart';
 import 'package:spendify/routes/app_pages.dart';
+import 'package:spendify/controller/theme_controller.dart';
 import 'package:spendify/services/connectivity_service.dart';
 import 'package:spendify/services/notification_service.dart';
 import 'package:spendify/services/widget_service.dart';
@@ -89,6 +90,7 @@ Future<void> main() async {
   await NotificationService.initialize();
   await WidgetService.init();
   Get.put(ConnectivityService(), permanent: true);
+  Get.put(ThemeController(), permanent: true);
   final supaUri = dotenv.dotenv.env['SUPABASE_URL'];
   final supaAnon = dotenv.dotenv.env['SUPABASE_ANONKEY'];
   await Supabase.initialize(

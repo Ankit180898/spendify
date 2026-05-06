@@ -51,12 +51,19 @@ class RecurringBill {
         createdAt: createdAt,
       );
 
+  static int _clampDay(int day, int year, int month) {
+    final lastDay = DateTime(year, month + 1, 0).day;
+    return day.clamp(1, lastDay);
+  }
+
   DateTime get nextDueDate {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    var candidate = DateTime(now.year, now.month, dueDay.clamp(1, 28));
+    var candidate = DateTime(now.year, now.month, _clampDay(dueDay, now.year, now.month));
     if (!candidate.isAfter(today.subtract(const Duration(days: 1)))) {
-      candidate = DateTime(now.year, now.month + 1, dueDay.clamp(1, 28));
+      final nextYear = now.month == 12 ? now.year + 1 : now.year;
+      final nextMonth = now.month == 12 ? 1 : now.month + 1;
+      candidate = DateTime(nextYear, nextMonth, _clampDay(dueDay, nextYear, nextMonth));
     }
     return candidate;
   }
