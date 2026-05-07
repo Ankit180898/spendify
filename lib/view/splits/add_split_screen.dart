@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:spendify/config/app_color.dart';
@@ -27,7 +28,6 @@ class _AddSplitScreenState extends State<AddSplitScreen> {
   String? _paidByUserId;
   bool _equalSplit = true;
 
-  // Custom split amounts per userId
   final Map<String, TextEditingController> _customAmtCtrls = {};
   late final Worker _membersWorker;
 
@@ -47,7 +47,6 @@ class _AddSplitScreenState extends State<AddSplitScreen> {
   void _syncMembers(List<GroupMember> members) {
     if (members.isEmpty) return;
     final myUid = supabaseC.auth.currentUser?.id;
-    // Auto-select payer the first time members load
     if (_paidByUserId == null) {
       final payer = members.any((m) => m.userId == myUid)
           ? myUid
@@ -58,7 +57,6 @@ class _AddSplitScreenState extends State<AddSplitScreen> {
         _paidByUserId = payer;
       }
     }
-    // Create amount controllers for any new members
     for (final m in members) {
       _customAmtCtrls.putIfAbsent(m.userId, () => TextEditingController());
     }
@@ -78,80 +76,121 @@ class _AddSplitScreenState extends State<AddSplitScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bg = isDark ? AppColor.darkBg : Colors.white;
-    final textPrimary = isDark ? AppColor.textPrimary : const Color(0xFF09090B);
-    final textMuted = isDark ? AppColor.textSecondary : const Color(0xFF71717A);
-    final cardBg = isDark ? AppColor.darkCard : const Color(0xFFF4F4F5);
-    final border = isDark ? AppColor.darkBorder : const Color(0xFFEEEEEE);
-
     return Scaffold(
-      backgroundColor: bg,
+      backgroundColor: AppColor.bg,
       appBar: AppBar(
-        backgroundColor: bg,
+        backgroundColor: AppColor.bg,
         elevation: 0,
+        scrolledUnderElevation: 0,
         leading: IconButton(
-          icon: PhosphorIcon(PhosphorIconsLight.caretLeft, color: textPrimary),
-          onPressed: () => Get.back(),
+          icon: const PhosphorIcon(
+            PhosphorIconsLight.caretLeft,
+            color: AppColor.textPrimary,
+            size: 20,
+          ),
+          onPressed: Get.back,
         ),
         title: Text(
           'Add expense',
-          style: TextStyle(
-            color: textPrimary,
+          style: GoogleFonts.urbanist(
+            color: AppColor.textPrimary,
             fontSize: 17,
             fontWeight: FontWeight.w700,
           ),
         ),
-        actions: [
-          IconButton(
-            tooltip: 'Scan bill QR',
-            icon: PhosphorIcon(PhosphorIconsLight.qrCode, color: textPrimary, size: 20),
-            onPressed: () async {
-              final result = await Get.to<BillScanResult>(
-                () => const BillScannerScreen(),
-                transition: Transition.cupertino,
-              );
-              if (result == null) return;
-              if (result.title != null && result.title!.isNotEmpty) {
-                _titleCtrl.text = result.title!;
-              }
-              if (result.amount != null && result.amount!.isNotEmpty) {
-                _amountCtrl.text = result.amount!;
-                setState(() {});
-              }
-              if (result.notes != null && result.notes!.isNotEmpty) {
-                _notesCtrl.text = result.notes!;
-              }
-            },
-          ),
-        ],
+        actions: const [],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),
-          child: Divider(height: 1, color: border),
+          child: Divider(height: 1, color: AppColor.border),
         ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(20, 20, 20, 40),
+        padding: const EdgeInsets.fromLTRB(20, 24, 20, 40),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ── Title ───────────────────────────────────────────────────────
+            // ── Scan bill ───────────────────────────────────────────────────
+            GestureDetector(
+              onTap: _scanBill,
+              child: Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: AppColor.primary.withValues(alpha: 0.05),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                      color: AppColor.primary.withValues(alpha: 0.14)),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: AppColor.primary,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Center(
+                        child: PhosphorIcon(
+                          PhosphorIconsLight.qrCode,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Scan bill QR code',
+                            style: GoogleFonts.urbanist(
+                              color: AppColor.textPrimary,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'Auto-fill amount from UPI or merchant QR',
+                            style: GoogleFonts.urbanist(
+                              color: AppColor.textSecondary,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const PhosphorIcon(
+                      PhosphorIconsLight.caretRight,
+                      size: 16,
+                      color: AppColor.textTertiary,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            // ── Description ─────────────────────────────────────────────────
             TextField(
               controller: _titleCtrl,
               textCapitalization: TextCapitalization.sentences,
               decoration: const InputDecoration(
                 labelText: 'Description',
-                hintText: 'e.g. Dinner, Hotel, Taxi...',
+                hintText: 'e.g. Dinner, Hotel, Taxi…',
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 14),
 
             // ── Amount ──────────────────────────────────────────────────────
             TextField(
               controller: _amountCtrl,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
               inputFormatters: [
-                FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
+                FilteringTextInputFormatter.allow(
+                    RegExp(r'^\d*\.?\d{0,2}')),
               ],
               onChanged: (_) => setState(() {}),
               decoration: const InputDecoration(
@@ -159,30 +198,43 @@ class _AddSplitScreenState extends State<AddSplitScreen> {
                 prefixText: '₹ ',
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
 
             // ── Date ────────────────────────────────────────────────────────
-            _SectionLabel(label: 'Date', textMuted: textMuted),
+            _Label('Date'),
             const SizedBox(height: 8),
             GestureDetector(
               onTap: () => _pickDate(context),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 16, vertical: 14),
                 decoration: BoxDecoration(
-                  color: cardBg,
+                  color: AppColor.surface,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: border),
+                  border: Border.all(color: AppColor.border),
                 ),
                 child: Row(
                   children: [
-                    PhosphorIcon(PhosphorIconsLight.calendarBlank, size: 16, color: textMuted),
+                    const PhosphorIcon(
+                      PhosphorIconsLight.calendarBlank,
+                      size: 16,
+                      color: AppColor.textSecondary,
+                    ),
                     const SizedBox(width: 10),
                     Text(
                       DateFormat('d MMMM yyyy').format(_date),
-                      style: TextStyle(color: textPrimary, fontSize: 14, fontWeight: FontWeight.w500),
+                      style: GoogleFonts.urbanist(
+                        color: AppColor.textPrimary,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                     const Spacer(),
-                    PhosphorIcon(PhosphorIconsLight.caretDown, size: 14, color: textMuted),
+                    const PhosphorIcon(
+                      PhosphorIconsLight.caretDown,
+                      size: 14,
+                      color: AppColor.textTertiary,
+                    ),
                   ],
                 ),
               ),
@@ -190,7 +242,7 @@ class _AddSplitScreenState extends State<AddSplitScreen> {
             const SizedBox(height: 20),
 
             // ── Category ────────────────────────────────────────────────────
-            _SectionLabel(label: 'Category', textMuted: textMuted),
+            _Label('Category'),
             const SizedBox(height: 10),
             SizedBox(
               height: 36,
@@ -204,21 +256,30 @@ class _AddSplitScreenState extends State<AddSplitScreen> {
                   return GestureDetector(
                     onTap: () => setState(() => _category = cat),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14),
+                      padding:
+                          const EdgeInsets.symmetric(horizontal: 14),
                       decoration: BoxDecoration(
-                        color: isSelected ? AppColor.primary : cardBg,
+                        color: isSelected
+                            ? AppColor.primary
+                            : AppColor.surface,
                         borderRadius: BorderRadius.circular(100),
                         border: Border.all(
-                          color: isSelected ? AppColor.primary : border,
+                          color: isSelected
+                              ? AppColor.primary
+                              : AppColor.border,
                         ),
                       ),
                       alignment: Alignment.center,
                       child: Text(
                         cat,
-                        style: TextStyle(
-                          color: isSelected ? Colors.white : textMuted,
+                        style: GoogleFonts.urbanist(
+                          color: isSelected
+                              ? Colors.white
+                              : AppColor.textSecondary,
                           fontSize: 13,
-                          fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                          fontWeight: isSelected
+                              ? FontWeight.w600
+                              : FontWeight.w400,
                         ),
                       ),
                     ),
@@ -229,12 +290,18 @@ class _AddSplitScreenState extends State<AddSplitScreen> {
             const SizedBox(height: 20),
 
             // ── Paid by ─────────────────────────────────────────────────────
-            _SectionLabel(label: 'Paid by', textMuted: textMuted),
+            _Label('Paid by'),
             const SizedBox(height: 10),
             Obx(() {
               final members = widget.ctrl.members;
               if (members.isEmpty) {
-                return Text('Loading members…', style: TextStyle(color: textMuted, fontSize: 13));
+                return Text(
+                  'Loading members…',
+                  style: GoogleFonts.urbanist(
+                    color: AppColor.textSecondary,
+                    fontSize: 13,
+                  ),
+                );
               }
               final myUid = supabaseC.auth.currentUser?.id;
               return Wrap(
@@ -242,22 +309,35 @@ class _AddSplitScreenState extends State<AddSplitScreen> {
                 runSpacing: 8,
                 children: members.map((m) {
                   final isSelected = m.userId == _paidByUserId;
-                  final label = m.userId == myUid ? 'You' : m.displayName;
+                  final label =
+                      m.userId == myUid ? 'You' : m.displayName;
                   return GestureDetector(
-                    onTap: () => setState(() => _paidByUserId = m.userId),
+                    onTap: () =>
+                        setState(() => _paidByUserId = m.userId),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 8),
                       decoration: BoxDecoration(
-                        color: isSelected ? AppColor.primary : cardBg,
+                        color: isSelected
+                            ? AppColor.primary
+                            : AppColor.surface,
                         borderRadius: BorderRadius.circular(100),
-                        border: Border.all(color: isSelected ? AppColor.primary : border),
+                        border: Border.all(
+                          color: isSelected
+                              ? AppColor.primary
+                              : AppColor.border,
+                        ),
                       ),
                       child: Text(
                         label,
-                        style: TextStyle(
-                          color: isSelected ? Colors.white : textMuted,
+                        style: GoogleFonts.urbanist(
+                          color: isSelected
+                              ? Colors.white
+                              : AppColor.textSecondary,
                           fontSize: 13,
-                          fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                          fontWeight: isSelected
+                              ? FontWeight.w600
+                              : FontWeight.w400,
                         ),
                       ),
                     ),
@@ -268,28 +348,26 @@ class _AddSplitScreenState extends State<AddSplitScreen> {
             const SizedBox(height: 20),
 
             // ── Split method ────────────────────────────────────────────────
-            _SectionLabel(label: 'Split method', textMuted: textMuted),
+            _Label('Split method'),
             const SizedBox(height: 10),
             Container(
+              padding: const EdgeInsets.all(4),
               decoration: BoxDecoration(
-                color: cardBg,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: border),
+                color: AppColor.surfaceVariant,
+                borderRadius: BorderRadius.circular(14),
               ),
               child: Row(
                 children: [
-                  _SplitMethodTab(
-                    label: 'Equal',
+                  _MethodTab(
+                    label: 'Equal split',
                     icon: PhosphorIconsLight.equals,
                     isActive: _equalSplit,
-                    isDark: isDark,
                     onTap: () => setState(() => _equalSplit = true),
                   ),
-                  _SplitMethodTab(
-                    label: 'Custom',
+                  _MethodTab(
+                    label: 'Custom amounts',
                     icon: PhosphorIconsLight.pencilSimple,
                     isActive: !_equalSplit,
-                    isDark: isDark,
                     onTap: () => setState(() => _equalSplit = false),
                   ),
                 ],
@@ -298,15 +376,21 @@ class _AddSplitScreenState extends State<AddSplitScreen> {
             const SizedBox(height: 16),
 
             // ── Per-member shares ────────────────────────────────────────────
-            _SectionLabel(label: 'Shares', textMuted: textMuted),
+            _Label('Who owes what'),
             const SizedBox(height: 10),
             Obx(() {
               final members = widget.ctrl.members;
               if (members.isEmpty) {
-                return Text('Loading members…', style: TextStyle(color: textMuted, fontSize: 13));
+                return Text(
+                  'Loading members…',
+                  style: GoogleFonts.urbanist(
+                    color: AppColor.textSecondary,
+                    fontSize: 13,
+                  ),
+                );
               }
               return Column(
-                children: _buildShareRows(members, textPrimary, textMuted, cardBg, border),
+                children: _buildShareRows(members),
               );
             }),
 
@@ -317,42 +401,39 @@ class _AddSplitScreenState extends State<AddSplitScreen> {
               maxLines: 2,
               decoration: const InputDecoration(
                 labelText: 'Notes (optional)',
-                hintText: 'Any extra details...',
+                hintText: 'Any extra details…',
               ),
             ),
             const SizedBox(height: 32),
 
             // ── Submit ──────────────────────────────────────────────────────
             Obx(() => SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: widget.ctrl.isSubmitting.value ? null : _submit,
-                child: widget.ctrl.isSubmitting.value
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                      )
-                    : const Text('Add expense'),
-              ),
-            )),
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed:
+                        widget.ctrl.isSubmitting.value ? null : _submit,
+                    child: widget.ctrl.isSubmitting.value
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Text('Add expense'),
+                  ),
+                )),
           ],
         ),
       ),
     );
   }
 
-  List<Widget> _buildShareRows(
-    List<GroupMember> members,
-    Color textPrimary,
-    Color textMuted,
-    Color cardBg,
-    Color border,
-  ) {
+  List<Widget> _buildShareRows(List<GroupMember> members) {
     final total = double.tryParse(_amountCtrl.text) ?? 0;
     final equalShare = members.isNotEmpty ? total / members.length : 0.0;
     final myUid = supabaseC.auth.currentUser?.id;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return members.map((m) {
       final isMe = m.userId == myUid;
@@ -360,25 +441,25 @@ class _AddSplitScreenState extends State<AddSplitScreen> {
 
       return Container(
         margin: const EdgeInsets.only(bottom: 8),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
-          color: cardBg,
+          color: AppColor.surface,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: border),
+          border: Border.all(color: AppColor.border),
         ),
         child: Row(
           children: [
             Container(
-              width: 32,
-              height: 32,
+              width: 34,
+              height: 34,
               decoration: BoxDecoration(
-                color: AppColor.primary.withValues(alpha: 0.12),
+                color: AppColor.primaryExtraSoft,
                 shape: BoxShape.circle,
               ),
               child: Center(
                 child: Text(
                   label.isNotEmpty ? label[0].toUpperCase() : '?',
-                  style: const TextStyle(
+                  style: GoogleFonts.urbanist(
                     color: AppColor.primary,
                     fontWeight: FontWeight.w700,
                     fontSize: 13,
@@ -386,12 +467,12 @@ class _AddSplitScreenState extends State<AddSplitScreen> {
                 ),
               ),
             ),
-            const SizedBox(width: 10),
+            const SizedBox(width: 12),
             Expanded(
               child: Text(
                 label,
-                style: TextStyle(
-                  color: textPrimary,
+                style: GoogleFonts.urbanist(
+                  color: AppColor.textPrimary,
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
                 ),
@@ -402,8 +483,8 @@ class _AddSplitScreenState extends State<AddSplitScreen> {
                 total > 0
                     ? '₹${NumberFormat('#,##0.00').format(equalShare)}'
                     : '—',
-                style: TextStyle(
-                  color: textMuted,
+                style: GoogleFonts.urbanist(
+                  color: AppColor.textSecondary,
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
                 ),
@@ -413,28 +494,32 @@ class _AddSplitScreenState extends State<AddSplitScreen> {
                 width: 90,
                 child: TextField(
                   controller: _customAmtCtrls[m.userId],
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true),
                   inputFormatters: [
-                    FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
+                    FilteringTextInputFormatter.allow(
+                        RegExp(r'^\d*\.?\d{0,2}')),
                   ],
                   textAlign: TextAlign.right,
-                  style: TextStyle(
-                    color: textPrimary,
+                  style: GoogleFonts.urbanist(
+                    color: AppColor.textPrimary,
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
                   ),
                   decoration: InputDecoration(
                     prefixText: '₹ ',
-                    prefixStyle: TextStyle(color: textMuted, fontSize: 13),
+                    prefixStyle: GoogleFonts.urbanist(
+                      color: AppColor.textSecondary,
+                      fontSize: 13,
+                    ),
                     isDense: true,
                     border: InputBorder.none,
                     enabledBorder: InputBorder.none,
-                    focusedBorder: UnderlineInputBorder(
-                      borderSide: BorderSide(
-                        color: isDark ? AppColor.darkBorderFocus : AppColor.lightBorderFocus,
-                      ),
+                    focusedBorder: const UnderlineInputBorder(
+                      borderSide: BorderSide(color: AppColor.borderFocus),
                     ),
-                    contentPadding: const EdgeInsets.symmetric(vertical: 4),
+                    contentPadding:
+                        const EdgeInsets.symmetric(vertical: 4),
                   ),
                 ),
               ),
@@ -461,6 +546,24 @@ class _AddSplitScreenState extends State<AddSplitScreen> {
       ),
     );
     if (picked != null) setState(() => _date = picked);
+  }
+
+  Future<void> _scanBill() async {
+    final result = await Get.to<BillScanResult>(
+      () => const BillScannerScreen(),
+      transition: Transition.cupertino,
+    );
+    if (result == null) return;
+    if (result.title != null && result.title!.isNotEmpty) {
+      _titleCtrl.text = result.title!;
+    }
+    if (result.amount != null && result.amount!.isNotEmpty) {
+      _amountCtrl.text = result.amount!;
+      setState(() {});
+    }
+    if (result.notes != null && result.notes!.isNotEmpty) {
+      _notesCtrl.text = result.notes!;
+    }
   }
 
   Future<void> _submit() async {
@@ -495,11 +598,11 @@ class _AddSplitScreenState extends State<AddSplitScreen> {
       shares = {};
       double customTotal = 0;
       for (final m in members) {
-        final v = double.tryParse(_customAmtCtrls[m.userId]?.text ?? '') ?? 0;
+        final v =
+            double.tryParse(_customAmtCtrls[m.userId]?.text ?? '') ?? 0;
         shares[m.userId] = v;
         customTotal += v;
       }
-      // Validate custom amounts sum
       if ((customTotal - total).abs() > 0.02) {
         _showError(
           'Custom amounts (₹${NumberFormat('#,##0.00').format(customTotal)}) '
@@ -532,32 +635,37 @@ class _AddSplitScreenState extends State<AddSplitScreen> {
   }
 }
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+// ── Section Label ─────────────────────────────────────────────────────────────
 
-class _SectionLabel extends StatelessWidget {
-  final String label;
-  final Color textMuted;
-  const _SectionLabel({required this.label, required this.textMuted});
+class _Label extends StatelessWidget {
+  final String text;
+  const _Label(this.text);
 
   @override
   Widget build(BuildContext context) {
-    return Text(label,
-        style: TextStyle(color: textMuted, fontSize: 12, fontWeight: FontWeight.w500));
+    return Text(
+      text,
+      style: GoogleFonts.urbanist(
+        color: AppColor.textPrimary,
+        fontSize: 13,
+        fontWeight: FontWeight.w600,
+      ),
+    );
   }
 }
 
-class _SplitMethodTab extends StatelessWidget {
+// ── Split Method Tab ──────────────────────────────────────────────────────────
+
+class _MethodTab extends StatelessWidget {
   final String label;
   final PhosphorIconData icon;
   final bool isActive;
-  final bool isDark;
   final VoidCallback onTap;
 
-  const _SplitMethodTab({
+  const _MethodTab({
     required this.label,
     required this.icon,
     required this.isActive,
-    required this.isDark,
     required this.onTap,
   });
 
@@ -565,25 +673,47 @@ class _SplitMethodTab extends StatelessWidget {
   Widget build(BuildContext context) {
     return Expanded(
       child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 11),
+        onTap: () {
+          HapticFeedback.lightImpact();
+          onTap();
+        },
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
-            color: isActive ? AppColor.primary : Colors.transparent,
-            borderRadius: BorderRadius.circular(11),
+            color: isActive ? AppColor.surface : Colors.transparent,
+            borderRadius: BorderRadius.circular(10),
+            boxShadow: isActive
+                ? [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.06),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    )
+                  ]
+                : null,
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              PhosphorIcon(icon, size: 14,
-                  color: isActive ? Colors.white : (isDark ? AppColor.textSecondary : const Color(0xFF71717A))),
+              PhosphorIcon(
+                icon,
+                size: 14,
+                color: isActive
+                    ? AppColor.textPrimary
+                    : AppColor.textSecondary,
+              ),
               const SizedBox(width: 6),
               Text(
                 label,
-                style: TextStyle(
-                  color: isActive ? Colors.white : (isDark ? AppColor.textSecondary : const Color(0xFF71717A)),
+                style: GoogleFonts.urbanist(
+                  color: isActive
+                      ? AppColor.textPrimary
+                      : AppColor.textSecondary,
                   fontSize: 13,
-                  fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
+                  fontWeight: isActive
+                      ? FontWeight.w600
+                      : FontWeight.w400,
                 ),
               ),
             ],

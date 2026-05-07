@@ -10,6 +10,54 @@ import 'package:spendify/view/wallet/add_transaction_screen.dart';
 import 'package:spendify/view/wallet/all_transaction_screen.dart';
 import 'package:spendify/view/wallet/transaction_list_item.dart';
 
+class _StaggeredItem extends StatefulWidget {
+  final int index;
+  final Widget child;
+  const _StaggeredItem({required this.index, required this.child});
+
+  @override
+  State<_StaggeredItem> createState() => _StaggeredItemState();
+}
+
+class _StaggeredItemState extends State<_StaggeredItem>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+  late final Animation<double> _opacity;
+  late final Animation<Offset> _slide;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+    final curved = CurvedAnimation(parent: _ctrl, curve: Curves.easeOut);
+    _opacity = Tween<double>(begin: 0, end: 1).animate(curved);
+    _slide = Tween<Offset>(
+      begin: const Offset(0, 0.12),
+      end: Offset.zero,
+    ).animate(curved);
+
+    Future.delayed(
+      Duration(milliseconds: (widget.index % 12) * 45),
+      () { if (mounted) _ctrl.forward(); },
+    );
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => FadeTransition(
+        opacity: _opacity,
+        child: SlideTransition(position: _slide, child: widget.child),
+      );
+}
+
 class _TransactionShimmer extends StatelessWidget {
   final bool isDark;
   const _TransactionShimmer({required this.isDark});
@@ -135,11 +183,14 @@ class TransactionsContent extends StatelessWidget {
                     physics: const NeverScrollableScrollPhysics(),
                     itemCount: txs.length,
                     separatorBuilder: (_, __) => const Divider(height: 1, color: AppColor.border, indent: 66, endIndent: 20),
-                    itemBuilder: (_, j) => TransactionListItem(
-                      key: ValueKey(txs[j]),
-                      transaction: txs,
+                    itemBuilder: (_, j) => _StaggeredItem(
                       index: j,
-                      categoryList: categoryList,
+                      child: TransactionListItem(
+                        key: ValueKey(txs[j]),
+                        transaction: txs,
+                        index: j,
+                        categoryList: categoryList,
+                      ),
                     ),
                   ),
                 ],

@@ -7,7 +7,7 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:spendify/config/app_color.dart';
 import 'package:spendify/controller/home_controller/home_controller.dart';
-import 'package:spendify/controller/theme_controller.dart';
+// import 'package:spendify/controller/theme_controller.dart';
 import 'package:spendify/controller/upi_capture_controller/upi_capture_controller.dart';
 import 'package:spendify/routes/app_pages.dart';
 import 'package:spendify/view/admin/admin_screen.dart';
@@ -20,7 +20,7 @@ class ProfileScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ctrl = Get.find<HomeController>();
-    final themeCtrl = ThemeController.to;
+    // final themeCtrl = ThemeController.to;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bg = isDark ? AppColor.darkBg : Colors.white;
     final textPrimary = isDark ? AppColor.textPrimary : const Color(0xFF09090B);
@@ -138,20 +138,21 @@ class ProfileScreen extends StatelessWidget {
               onTap: () => Get.to(() => const EditProfileScreen()),
             ),
 
-            Obx(() => _SettingRow(
-              icon: themeCtrl.isDarkMode ? PhosphorIconsLight.moon : PhosphorIconsLight.sun,
-              label: 'Appearance',
-              trailing: Switch(
-                value: themeCtrl.isDarkMode,
-                onChanged: (_) => themeCtrl.toggleTheme(),
-                activeTrackColor: AppColor.primary,
-                inactiveTrackColor: isDark ? AppColor.darkElevated : const Color(0xFFE4E4E7),
-                trackOutlineColor: WidgetStateProperty.all(Colors.transparent),
-              ),
-              textPrimary: textPrimary,
-              textMuted: textMuted,
-              divColor: divColor,
-            )),
+            // Appearance toggle removed — app is light mode only
+            // Obx(() => _SettingRow(
+            //   icon: themeCtrl.isDarkMode ? PhosphorIconsLight.moon : PhosphorIconsLight.sun,
+            //   label: 'Appearance',
+            //   trailing: Switch(
+            //     value: themeCtrl.isDarkMode,
+            //     onChanged: (_) => themeCtrl.toggleTheme(),
+            //     activeTrackColor: AppColor.primary,
+            //     inactiveTrackColor: isDark ? AppColor.darkElevated : const Color(0xFFE4E4E7),
+            //     trackOutlineColor: WidgetStateProperty.all(Colors.transparent),
+            //   ),
+            //   textPrimary: textPrimary,
+            //   textMuted: textMuted,
+            //   divColor: divColor,
+            // )),
 
             if (Platform.isAndroid)
               Obx(() {

@@ -37,10 +37,10 @@ class _BottomNavState extends State<BottomNav> {
   bool _dialVisible = false;
 
   final List<Widget> _screens = const [
-    HomeScreen(),
-    StatisticsScreen(),
-    GoalsScreen(),
-    ProfileScreen(),
+    RepaintBoundary(child: HomeScreen()),
+    RepaintBoundary(child: StatisticsScreen()),
+    RepaintBoundary(child: GoalsScreen()),
+    RepaintBoundary(child: ProfileScreen()),
   ];
 
   @override
@@ -365,18 +365,30 @@ class _NavItem extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-            decoration: BoxDecoration(
-              color: isActive ? AppColor.primaryExtraSoft : Colors.transparent,
-              borderRadius: BorderRadius.circular(AppDimens.radiusCircle),
-            ),
-            child: PhosphorIcon(
-              icon,
-              color: color,
-              size: AppDimens.iconMD,
-            ),
+          Stack(
+            alignment: Alignment.center,
+            children: [
+              AnimatedOpacity(
+                duration: const Duration(milliseconds: 130),
+                opacity: isActive ? 1.0 : 0.0,
+                child: Container(
+                  width: 56,
+                  height: 28,
+                  decoration: BoxDecoration(
+                    color: AppColor.primaryExtraSoft,
+                    borderRadius: BorderRadius.circular(AppDimens.radiusCircle),
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                child: PhosphorIcon(
+                  icon,
+                  color: color,
+                  size: AppDimens.iconMD,
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: AppDimens.spaceXXS),
           Text(label, style: AppTypography.label(color)),

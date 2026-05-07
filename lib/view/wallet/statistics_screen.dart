@@ -540,16 +540,30 @@ class _HeroSectionState extends State<_HeroSection> {
               onDaySelected: (d) => setState(() => _selectedDay = d),
             ),
           ),
-          // X-axis labels
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: ['1', '7', '14', '21', '${widget.daysInMonth}']
-                  .map((l) => Text(l,
-                      style: GoogleFonts.urbanist(color: AppColor.textTertiary, fontSize: 10)))
-                  .toList(),
-            ),
+          // X-axis labels — flex weights match day intervals so labels
+          // align with the corresponding points on the curve above.
+          Row(
+            children: [
+              Text('1',
+                  style: GoogleFonts.urbanist(
+                      color: AppColor.textTertiary, fontSize: 10)),
+              const Spacer(flex: 6),
+              Text('7',
+                  style: GoogleFonts.urbanist(
+                      color: AppColor.textTertiary, fontSize: 10)),
+              const Spacer(flex: 7),
+              Text('14',
+                  style: GoogleFonts.urbanist(
+                      color: AppColor.textTertiary, fontSize: 10)),
+              const Spacer(flex: 7),
+              Text('21',
+                  style: GoogleFonts.urbanist(
+                      color: AppColor.textTertiary, fontSize: 10)),
+              Spacer(flex: widget.daysInMonth - 21),
+              Text('${widget.daysInMonth}',
+                  style: GoogleFonts.urbanist(
+                      color: AppColor.textTertiary, fontSize: 10)),
+            ],
           ),
           // Tooltip
           if (tooltipText != null)

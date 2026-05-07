@@ -24,6 +24,7 @@ import 'package:spendify/view/home/components/transaction_list.dart';
 import 'package:spendify/view/wallet/add_transaction_screen.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:spendify/view/wallet/sms_import_screen.dart';
+import 'package:spendify/controller/groups_controller/groups_controller.dart';
 import 'package:spendify/view/splits/splits_screen.dart';
 import 'package:spendify/view/goals/goals_screen.dart';
 
@@ -135,6 +136,7 @@ class _HomeScreenState extends State<HomeScreen> {
             const SliverToBoxAdapter(child: _WeeklyDigestBanner()),
             const SliverToBoxAdapter(child: _BudgetAlertsBanner()),
             const SliverToBoxAdapter(child: _UrgentGoalsBanner()),
+            const SliverToBoxAdapter(child: _SplitsNudge()),
             const SliverToBoxAdapter(child: TransactionsContent(0)),
             const SliverToBoxAdapter(child: SizedBox(height: 120)),
           ],
@@ -332,6 +334,8 @@ class _TopSection extends StatelessWidget {
                     child: _StatBentoCell(
                       label: 'Income',
                       value: visible ? _fmt(income, sym) : '•••',
+                      rawValue: visible ? income : null,
+                      sym: sym,
                       icon: PhosphorIconsLight.arrowCircleDown,
                       iconColor: AppColor.income,
                       bg: AppColor.incomeSoft,
@@ -342,6 +346,8 @@ class _TopSection extends StatelessWidget {
                     child: _StatBentoCell(
                       label: 'Expenses',
                       value: visible ? _fmt(expense, sym) : '•••',
+                      rawValue: visible ? expense : null,
+                      sym: sym,
                       icon: PhosphorIconsLight.arrowCircleUp,
                       iconColor: AppColor.expense,
                       bg: AppColor.expenseSoft,
@@ -520,20 +526,25 @@ class _BalanceCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 6),
-                    AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 200),
-                      child: Align(
-                        alignment: Alignment.centerLeft,
-                        key: ValueKey(visible),
-                        child: Text(
-                          visible ? '$sym${fmt.format(balance)}' : '$sym ••••••',
-                          style: GoogleFonts.urbanist(
-                            fontSize: 30,
-                            fontWeight: FontWeight.w700,
-                            color: AppColor.textPrimary,
-                            letterSpacing: -1.2,
-                            height: 1.1,
-                            fontFeatures: const [FontFeature.tabularFigures()],
+                    TweenAnimationBuilder<double>(
+                      tween: Tween(begin: 0, end: balance),
+                      duration: const Duration(milliseconds: 1000),
+                      curve: Curves.easeOut,
+                      builder: (_, animated, __) => AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 200),
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          key: ValueKey(visible),
+                          child: Text(
+                            visible ? '$sym${fmt.format(animated)}' : '$sym ••••••',
+                            style: GoogleFonts.urbanist(
+                              fontSize: 30,
+                              fontWeight: FontWeight.w700,
+                              color: AppColor.textPrimary,
+                              letterSpacing: -1.2,
+                              height: 1.1,
+                              fontFeatures: const [FontFeature.tabularFigures()],
+                            ),
                           ),
                         ),
                       ),
@@ -613,6 +624,8 @@ class _BalanceCard extends StatelessWidget {
 class _StatBentoCell extends StatelessWidget {
   final String label;
   final String value;
+  final double? rawValue;
+  final String? sym;
   final PhosphorIconData icon;
   final Color iconColor;
   final Color bg;
@@ -623,6 +636,8 @@ class _StatBentoCell extends StatelessWidget {
     required this.icon,
     required this.iconColor,
     required this.bg,
+    this.rawValue,
+    this.sym,
   });
 
   @override
@@ -651,18 +666,46 @@ class _StatBentoCell extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 8),
-            Text(
-              value,
-              style: GoogleFonts.urbanist(
-                fontSize: 17,
-                fontWeight: FontWeight.w700,
-                color: AppColor.textPrimary,
-                letterSpacing: -0.5,
-                fontFeatures: const [FontFeature.tabularFigures()],
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
+            rawValue != null && sym != null
+                ? TweenAnimationBuilder<double>(
+                    tween: Tween(begin: 0, end: rawValue!),
+                    duration: const Duration(milliseconds: 900),
+                    curve: Curves.easeOut,
+                    builder: (_, v, __) {
+                      String disp;
+                      if (v >= 100000) {
+                        disp = '$sym${(v / 100000).toStringAsFixed(1)}L';
+                      } else if (v >= 1000) {
+                        disp = '$sym${(v / 1000).toStringAsFixed(1)}K';
+                      } else {
+                        disp = '$sym${NumberFormat('#,##0', 'en_IN').format(v)}';
+                      }
+                      return Text(
+                        disp,
+                        style: GoogleFonts.urbanist(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w700,
+                          color: AppColor.textPrimary,
+                          letterSpacing: -0.5,
+                          fontFeatures: const [FontFeature.tabularFigures()],
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      );
+                    },
+                  )
+                : Text(
+                    value,
+                    style: GoogleFonts.urbanist(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w700,
+                      color: AppColor.textPrimary,
+                      letterSpacing: -0.5,
+                      fontFeatures: const [FontFeature.tabularFigures()],
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
           ],
         ),
       );
@@ -1341,6 +1384,105 @@ class _WeeklyDigestBanner extends StatelessWidget {
                 ],
               ),
             ],
+          ),
+        ),
+      );
+    });
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Splits nudge — compact strip shown only when there are unsettled balances
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _SplitsNudge extends StatelessWidget {
+  const _SplitsNudge();
+
+  @override
+  Widget build(BuildContext context) {
+    final gc = Get.isRegistered<GroupsController>()
+        ? Get.find<GroupsController>()
+        : Get.put(GroupsController(), permanent: true);
+
+    return Obx(() {
+      final owed = gc.totalOwed.value;
+      final owedToMe = gc.totalOwedToMe.value;
+      final groups = gc.balanceGroupCount.value;
+
+      if (owed == 0 && owedToMe == 0) return const SizedBox.shrink();
+
+      final fmt = NumberFormat('#,##0', 'en_IN');
+
+      final bool showOwed = owed > 0;
+      final Color accent = showOwed ? AppColor.expense : AppColor.income;
+      final Color bgColor = showOwed
+          ? AppColor.expense.withValues(alpha: 0.07)
+          : AppColor.income.withValues(alpha: 0.07);
+      final Color borderColor = showOwed
+          ? AppColor.expense.withValues(alpha: 0.2)
+          : AppColor.income.withValues(alpha: 0.2);
+
+      String label;
+      if (owed > 0 && owedToMe > 0) {
+        label =
+            'You owe ₹${fmt.format(owed)}  ·  owed ₹${fmt.format(owedToMe)}';
+      } else if (owed > 0) {
+        label = 'You owe ₹${fmt.format(owed)} across $groups group${groups == 1 ? '' : 's'}';
+      } else {
+        label = 'You\'re owed ₹${fmt.format(owedToMe)} across $groups group${groups == 1 ? '' : 's'}';
+      }
+
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(20, 14, 20, 10),
+        child: GestureDetector(
+          onTap: () => Get.to(
+            () => const SplitsScreen(),
+            transition: Transition.cupertino,
+          ),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+            decoration: BoxDecoration(
+              color: bgColor,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: borderColor),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 30,
+                  height: 30,
+                  decoration: BoxDecoration(
+                    color: accent.withValues(alpha: 0.12),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Center(
+                    child: PhosphorIcon(
+                      showOwed
+                          ? PhosphorIconsLight.arrowUp
+                          : PhosphorIconsLight.arrowDown,
+                      size: 14,
+                      color: accent,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    label,
+                    style: GoogleFonts.urbanist(
+                      color: AppColor.textPrimary,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+                const PhosphorIcon(
+                  PhosphorIconsLight.caretRight,
+                  size: 14,
+                  color: AppColor.textTertiary,
+                ),
+              ],
+            ),
           ),
         ),
       );
