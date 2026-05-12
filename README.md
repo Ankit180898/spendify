@@ -1,5 +1,5 @@
 ## Spendify — Smart Expense Tracker
-![spendify_bg](https://github.com/user-attachments/assets/07e5c3c3-f463-4c25-8f2f-34820a92d602)
+<img width="1536" height="1024" alt="Image Editing Request May 12 2026" src="https://github.com/user-attachments/assets/ad28d703-ec85-4cf0-b0c9-7858652c2e97" />
 
 ## Introduction
 
