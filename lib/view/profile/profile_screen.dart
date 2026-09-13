@@ -1,11 +1,16 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:notification_listener_service/notification_listener_service.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:spendify/config/app_color.dart';
 import 'package:spendify/controller/home_controller/home_controller.dart';
-import 'package:spendify/controller/theme_controller.dart';
+// import 'package:spendify/controller/theme_controller.dart';
+import 'package:spendify/controller/upi_capture_controller/upi_capture_controller.dart';
 import 'package:spendify/routes/app_pages.dart';
+import 'package:spendify/view/admin/admin_screen.dart';
 import 'package:spendify/view/profile/edit_profile_screen.dart';
 import 'package:spendify/widgets/toast/custom_toast.dart';
 
@@ -15,7 +20,7 @@ class ProfileScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ctrl = Get.find<HomeController>();
-    final themeCtrl = ThemeController.to;
+    // final themeCtrl = ThemeController.to;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bg = isDark ? AppColor.darkBg : Colors.white;
     final textPrimary = isDark ? AppColor.textPrimary : const Color(0xFF09090B);
@@ -109,6 +114,19 @@ class ProfileScreen extends StatelessWidget {
               child: Text('Settings', style: TextStyle(color: textMuted, fontSize: 12, fontWeight: FontWeight.w500)),
             ),
 
+            Obx(() => ctrl.isAdmin.value
+              ? _SettingRow(
+                  icon: PhosphorIconsLight.shieldStar,
+                  label: 'Admin Panel',
+                  subtitle: 'View and reply to support tickets',
+                  trailing: PhosphorIcon(PhosphorIconsLight.caretRight, size: 18, color: textMuted),
+                  textPrimary: textPrimary,
+                  textMuted: textMuted,
+                  divColor: divColor,
+                  onTap: () => Get.to(() => const AdminScreen()),
+                )
+              : const SizedBox.shrink()),
+
             _SettingRow(
               icon: PhosphorIconsLight.sliders,
               label: 'Edit Preferences',
@@ -120,22 +138,45 @@ class ProfileScreen extends StatelessWidget {
               onTap: () => Get.to(() => const EditProfileScreen()),
             ),
 
-            Obx(() => _SettingRow(
-              icon: themeCtrl.isDarkMode ? PhosphorIconsLight.moon : PhosphorIconsLight.sun,
-              label: 'Appearance',
-              trailing: Switch(
-                value: themeCtrl.isDarkMode,
-                onChanged: (_) => themeCtrl.toggleTheme(),
-                activeThumbColor: Colors.white,
-                activeTrackColor: AppColor.primary,
-                inactiveThumbColor: Colors.white,
-                inactiveTrackColor: isDark ? AppColor.darkElevated : const Color(0xFFE4E4E7),
-                trackOutlineColor: WidgetStateProperty.all(Colors.transparent),
-              ),
-              textPrimary: textPrimary,
-              textMuted: textMuted,
-              divColor: divColor,
-            )),
+            // Appearance toggle removed — app is light mode only
+            // Obx(() => _SettingRow(
+            //   icon: themeCtrl.isDarkMode ? PhosphorIconsLight.moon : PhosphorIconsLight.sun,
+            //   label: 'Appearance',
+            //   trailing: Switch(
+            //     value: themeCtrl.isDarkMode,
+            //     onChanged: (_) => themeCtrl.toggleTheme(),
+            //     activeTrackColor: AppColor.primary,
+            //     inactiveTrackColor: isDark ? AppColor.darkElevated : const Color(0xFFE4E4E7),
+            //     trackOutlineColor: WidgetStateProperty.all(Colors.transparent),
+            //   ),
+            //   textPrimary: textPrimary,
+            //   textMuted: textMuted,
+            //   divColor: divColor,
+            // )),
+
+            if (Platform.isAndroid)
+              Obx(() {
+                final upiCtrl = Get.find<UpiCaptureController>();
+                return _SettingRow(
+                  icon: PhosphorIconsLight.bellRinging,
+                  label: 'UPI Auto-Capture',
+                  subtitle: 'Detect UPI payments from notifications',
+                  trailing: Switch(
+                    value: upiCtrl.isPermissionGranted.value,
+                    onChanged: (_) async {
+                      // Both enabling and disabling require going to system settings —
+                      // Android doesn't allow toggling notification access programmatically.
+                      await NotificationListenerService.requestPermission();
+                    },
+                    activeTrackColor: AppColor.primary,
+                    inactiveTrackColor: isDark ? AppColor.darkElevated : const Color(0xFFE4E4E7),
+                    trackOutlineColor: WidgetStateProperty.all(Colors.transparent),
+                  ),
+                  textPrimary: textPrimary,
+                  textMuted: textMuted,
+                  divColor: divColor,
+                );
+              }),
 
             _SettingRow(
               icon: PhosphorIconsLight.headset,
@@ -168,6 +209,20 @@ class ProfileScreen extends StatelessWidget {
               },
             ),
 
+            // ── Delete account ────────────────────────────
+            _SettingRow(
+              icon: PhosphorIconsLight.trash,
+              label: 'Delete Account',
+              subtitle: 'Permanently delete your account and data',
+              iconColor: AppColor.expense,
+              labelColor: AppColor.expense,
+              trailing: const PhosphorIcon(PhosphorIconsLight.caretRight, size: 18, color: AppColor.expense),
+              textPrimary: textPrimary,
+              textMuted: textMuted,
+              divColor: divColor,
+              onTap: () => _showDeleteAccountDialog(context, ctrl),
+            ),
+
             SizedBox(height: MediaQuery.of(context).padding.bottom + 100),
           ],
         ),
@@ -179,6 +234,46 @@ class ProfileScreen extends StatelessWidget {
     if (name.isEmpty) return '?';
     final p = name.trim().split(' ');
     return '${p.first.isNotEmpty ? p.first[0] : ''}${p.length > 1 && p.last.isNotEmpty ? p.last[0] : ''}'.toUpperCase();
+  }
+
+  void _showDeleteAccountDialog(BuildContext context, HomeController ctrl) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: isDark ? const Color(0xFF1C1C1E) : Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(
+          'Delete Account',
+          style: TextStyle(
+            color: isDark ? Colors.white : const Color(0xFF09090B),
+            fontWeight: FontWeight.w600,
+            fontSize: 17,
+          ),
+        ),
+        content: Text(
+          'This will permanently delete your account and all associated data including transactions, goals, and settings. This action cannot be undone.',
+          style: TextStyle(
+            color: isDark ? const Color(0xFF8E8E93) : const Color(0xFF71717A),
+            fontSize: 14,
+            height: 1.5,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('Cancel', style: TextStyle(color: isDark ? Colors.white70 : const Color(0xFF09090B))),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              await ctrl.deleteAccount();
+            },
+            child: const Text('Delete', style: TextStyle(color: AppColor.expense, fontWeight: FontWeight.w600)),
+          ),
+        ],
+      ),
+    );
   }
 }
 

@@ -136,7 +136,7 @@ class InsightsService {
     }
 
     // ── 3. Savings rate ────────────────────────────────────────────────────
-    if (thisIncome > 0) {
+    if (thisIncome > 0 && thisSpent > 0) {
       final rate = ((thisIncome - thisSpent) / thisIncome * 100).round();
       final savedAmt = thisIncome - thisSpent;
       if (rate >= 20) {
@@ -169,7 +169,7 @@ class InsightsService {
     }
 
     // ── 4. Budget projection ───────────────────────────────────────────────
-    if (monthlyBudget > 0 && now.day > 3) {
+    if (monthlyBudget > 0 && now.day > 3 && thisMonthExp.isNotEmpty) {
       final daysInMonth = DateTime(now.year, now.month + 1, 0).day;
       final dailyAvg = thisSpent / now.day;
       final projected = dailyAvg * daysInMonth;
@@ -259,7 +259,7 @@ class InsightsService {
           type: InsightType.positive,
           stat: '$streak days',
         ));
-      } else if (noSpendDays >= 3) {
+      } else if (noSpendDays >= 3 && thisMonthExp.isNotEmpty) {
         insights.add(Insight(
           emoji: '🌿',
           title: '$noSpendDays no-spend days this month',
@@ -267,7 +267,7 @@ class InsightsService {
           type: InsightType.positive,
           stat: '$noSpendDays days',
         ));
-      } else {
+      } else if (thisMonthExp.isNotEmpty || lastMonthExp.isNotEmpty) {
         final daysSince = now.difference(dates.first).inDays;
         if (daysSince >= 5) {
           insights.add(Insight(

@@ -25,7 +25,7 @@ if (keyPropertiesFile.exists()) {
 android {
     namespace = "com.sentientlabs.spendify"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+    ndkVersion = "28.2.13676358"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_1_8
@@ -53,7 +53,7 @@ android {
     defaultConfig {
         applicationId = "com.sentientlabs.spendify"
         minSdk = flutter.minSdkVersion
-        targetSdk = 35
+        targetSdk = flutter.targetSdkVersion
         versionCode = flutterVersionCode.toInt()
         versionName = flutterVersionName
     }

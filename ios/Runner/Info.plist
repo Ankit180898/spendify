@@ -13,6 +13,10 @@
 	</array>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>Spendify needs camera access to scan bill QR codes and barcodes.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Spendify needs photo library access to scan QR codes from saved bill images.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Spendify needs microphone access to let you log expenses by voice.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>

@@ -1,13 +1,21 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:showcaseview/showcaseview.dart';
 import 'package:spendify/config/app_color.dart';
+import 'package:spendify/config/app_theme.dart';
 import 'package:spendify/controller/home_controller/home_controller.dart';
 import 'package:spendify/controller/goals_controller/goals_controller.dart';
+import 'package:spendify/controller/health_score_controller/health_score_controller.dart';
 import 'package:spendify/controller/savings_controller/savings_controller.dart';
+import 'package:spendify/controller/weekly_digest_controller/weekly_digest_controller.dart';
+import 'package:spendify/view/health_score/health_score_screen.dart';
+import 'package:spendify/view/weekly_digest/weekly_digest_screen.dart';
 import 'package:spendify/controller/wallet_controller/wallet_controller.dart';
 import 'package:spendify/controller/walkthrough_controller.dart';
 import 'package:spendify/model/savings_goal_model.dart';
@@ -16,151 +24,282 @@ import 'package:spendify/view/home/components/transaction_list.dart';
 import 'package:spendify/view/wallet/add_transaction_screen.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:spendify/view/wallet/sms_import_screen.dart';
+import 'package:spendify/controller/groups_controller/groups_controller.dart';
+import 'package:spendify/view/splits/splits_screen.dart';
+import 'package:spendify/view/goals/goals_screen.dart';
 
-class HomeScreen extends StatelessWidget {
+// ─────────────────────────────────────────────────────────────────────────────
+// Time filter config
+// ─────────────────────────────────────────────────────────────────────────────
+enum _Period { today, week, month, year }
+
+extension _PeriodLabel on _Period {
+  String get label {
+    switch (this) {
+      case _Period.today:
+        return 'Today';
+      case _Period.week:
+        return 'This Week';
+      case _Period.month:
+        return 'This Month';
+      case _Period.year:
+        return 'This Year';
+    }
+  }
+}
+
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final ctrl = Get.isRegistered<HomeController>()
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  _Period _period = _Period.month;
+
+  HomeController get _ctrl {
+    final c = Get.isRegistered<HomeController>()
         ? Get.find<HomeController>()
         : Get.put(HomeController());
-    if (!Get.isRegistered<TransactionController>())
+    if (!Get.isRegistered<TransactionController>()) {
       Get.put(TransactionController());
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    }
+    return c;
+  }
 
-    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
+  DateTimeRange _range(_Period p) {
+    final now = DateTime.now();
+    switch (p) {
+      case _Period.today:
+        final s = DateTime(now.year, now.month, now.day);
+        return DateTimeRange(start: s, end: now);
+      case _Period.week:
+        final s = now.subtract(Duration(days: now.weekday - 1));
+        return DateTimeRange(
+          start: DateTime(s.year, s.month, s.day),
+          end: now,
+        );
+      case _Period.month:
+        return DateTimeRange(
+          start: DateTime(now.year, now.month, 1),
+          end: now,
+        );
+      case _Period.year:
+        return DateTimeRange(
+          start: DateTime(now.year, 1, 1),
+          end: now,
+        );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ctrl = _ctrl;
+
+    SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
-      statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+      statusBarIconBrightness: Brightness.dark,
     ));
 
     return Scaffold(
-      backgroundColor: isDark ? AppColor.darkBg : Colors.white,
-      body: CustomScrollView(
-        physics: const BouncingScrollPhysics(),
-        slivers: [
-          SliverToBoxAdapter(child: _Header(isDark: isDark, ctrl: ctrl)),
-          SliverToBoxAdapter(child: _MonthSummary(isDark: isDark, ctrl: ctrl)),
-          SliverToBoxAdapter(child: _InsightsStrip(isDark: isDark, ctrl: ctrl)),
-          SliverToBoxAdapter(child: _BudgetAlertsBanner(isDark: isDark)),
-          SliverToBoxAdapter(child: _UrgentGoalsBanner(isDark: isDark)),
-          const SliverToBoxAdapter(child: TransactionsContent(0)),
-          const SliverToBoxAdapter(child: SizedBox(height: 120)),
-        ],
-      ),
+      backgroundColor: AppColor.bg,
+      body: Obx(() {
+        final range = _range(_period);
+        final filtered = ctrl.allTransactions.where((t) {
+          final d = DateTime.tryParse(t['date'] ?? '');
+          if (d == null) return false;
+          return !d.isBefore(range.start) && !d.isAfter(range.end);
+        }).toList();
+
+        final income = filtered
+            .where((t) => t['type'] == 'income')
+            .fold(0.0, (s, t) => s + (t['amount'] as num).toDouble());
+        final expense = filtered
+            .where((t) => t['type'] == 'expense')
+            .fold(0.0, (s, t) => s + (t['amount'] as num).toDouble());
+
+        return CustomScrollView(
+          physics: const BouncingScrollPhysics(),
+          slivers: [
+            SliverToBoxAdapter(
+              child: _TopSection(
+                ctrl: ctrl,
+                period: _period,
+                onPeriodChange: (p) => setState(() => _period = p),
+                income: income,
+                expense: expense,
+                loading: ctrl.isOverviewLoading.value && ctrl.allTransactions.isEmpty,
+              ),
+            ),
+            SliverToBoxAdapter(child: _InsightsStrip(ctrl: ctrl)),
+            const SliverToBoxAdapter(child: _WeeklyDigestBanner()),
+            const SliverToBoxAdapter(child: _BudgetAlertsBanner()),
+            const SliverToBoxAdapter(child: _UrgentGoalsBanner()),
+            const SliverToBoxAdapter(child: _SplitsNudge()),
+            const SliverToBoxAdapter(child: TransactionsContent(0)),
+            const SliverToBoxAdapter(child: SizedBox(height: 120)),
+          ],
+        );
+      }),
     );
   }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Header — greeting, balance, visibility toggle
+// Top section — greeting, filter pills, bento grid, quick actions
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _Header extends StatelessWidget {
-  final bool isDark;
+class _TopSection extends StatelessWidget {
   final HomeController ctrl;
-  const _Header({required this.isDark, required this.ctrl});
+  final _Period period;
+  final ValueChanged<_Period> onPeriodChange;
+  final double income;
+  final double expense;
+  final bool loading;
+
+  const _TopSection({
+    required this.ctrl,
+    required this.period,
+    required this.onPeriodChange,
+    required this.income,
+    required this.expense,
+    required this.loading,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final textPrimary = isDark ? AppColor.textPrimary : const Color(0xFF09090B);
-    final textMuted = isDark ? AppColor.textSecondary : const Color(0xFF71717A);
-    final divColor = isDark ? AppColor.darkBorder : const Color(0xFFF4F4F5);
-    final fmt = NumberFormat('#,##0.##', 'en_IN');
     final now = DateTime.now();
-    final greeting = now.hour < 12
-        ? 'Good morning'
-        : now.hour < 17
-            ? 'Good afternoon'
-            : 'Good evening';
+    final greeting = now.hour < 12 ? 'morning' : now.hour < 17 ? 'afternoon' : 'evening';
 
-    return SafeArea(
+    return Obx(() {
+      final visible = ctrl.isAmountVisible.value;
+      final name = ctrl.userName.value.split(' ').first;
+      final sym = ctrl.currencySymbol.value;
+      final balance = ctrl.totalBalance.value;
+
+      return SafeArea(
       bottom: false,
-      child: Obx(() {
-        final name = ctrl.userName.value;
-        final first = name.split(' ').first;
-        final visible = ctrl.isAmountVisible.value;
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ── Top bar ──────────────────────────────────────────
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+            child: Row(
+              children: [
+                const Spacer(),
+                GestureDetector(
+                  onTap: () => Get.to(
+                    () => const SmsImportScreen(),
+                    transition: Transition.fadeIn,
+                  ),
+                  child: const _IconPill(icon: PhosphorIconsLight.chatCircleText),
+                ),
+                const SizedBox(width: 8),
+                GestureDetector(
+                  onTap: ctrl.toggleVisibility,
+                  child: _IconPill(
+                    icon: visible
+                        ? PhosphorIconsLight.eye
+                        : PhosphorIconsLight.eyeSlash,
+                  ),
+                ),
+              ],
+            ),
+          ),
 
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-              child: Row(
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        first.isEmpty ? greeting : '$greeting, $first',
-                        style: TextStyle(color: textMuted, fontSize: 13),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        'Your finances',
-                        style: TextStyle(
-                          color: textPrimary,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: -0.3,
-                        ),
-                      ),
-                    ],
+          // ── Greeting ──────────────────────────────────────────
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Good $greeting',
+                  style: GoogleFonts.urbanist(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w400,
+                    color: AppColor.textSecondary,
                   ),
-                  const Spacer(),
-                  // SMS scan button (Android only)
-                  GestureDetector(
-                    onTap: () => Get.to(() => const SmsImportScreen(),
-                        transition: Transition.fadeIn),
-                    child: Container(
-                      width: 36,
-                      height: 36,
+                ),
+                const SizedBox(height: 1),
+                Text(
+                  name.isNotEmpty ? '$name 👋' : 'Hello 👋',
+                  style: GoogleFonts.urbanist(
+                    fontSize: 26,
+                    fontWeight: FontWeight.w700,
+                    color: AppColor.textPrimary,
+                    letterSpacing: -0.8,
+                    height: 1.2,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  DateFormat('EEEE, MMM d').format(now),
+                  style: GoogleFonts.urbanist(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w400,
+                    color: AppColor.textTertiary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // ── Time filter pills ─────────────────────────────────
+          Padding(
+            padding: const EdgeInsets.only(top: 14),
+            child: SizedBox(
+              height: 34,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                children: _Period.values.map((p) {
+                  final active = p == period;
+                  return GestureDetector(
+                    onTap: () {
+                      HapticFeedback.selectionClick();
+                      onPeriodChange(p);
+                    },
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
                       margin: const EdgeInsets.only(right: 8),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 7),
                       decoration: BoxDecoration(
-                        color: isDark
-                            ? AppColor.darkCard
-                            : const Color(0xFFF4F4F5),
-                        shape: BoxShape.circle,
+                        color: active ? AppColor.primary : AppColor.surface,
+                        borderRadius: BorderRadius.circular(100),
+                        border: Border.all(
+                          color: active ? AppColor.primary : AppColor.border,
+                        ),
                       ),
-                      child: Center(
-                        child: PhosphorIcon(
-                          PhosphorIconsLight.chatCircleText,
-                          color: textMuted,
-                          size: 16,
+                      child: Text(
+                        p.label,
+                        style: TextStyle(
+                          color: active ? Colors.white : AppColor.textSecondary,
+                          fontSize: 12,
+                          fontWeight: active ? FontWeight.w600 : FontWeight.w400,
                         ),
                       ),
                     ),
-                  ),
-                  GestureDetector(
-                    onTap: ctrl.toggleVisibility,
-                    child: Container(
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        color: isDark
-                            ? AppColor.darkCard
-                            : const Color(0xFFF4F4F5),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Center(
-                        child: PhosphorIcon(
-                          visible
-                              ? PhosphorIconsLight.eye
-                              : PhosphorIconsLight.eyeSlash,
-                          color: textMuted,
-                          size: 16,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+                  );
+                }).toList(),
               ),
             ),
+          ),
+
+          const SizedBox(height: 14),
+
+          // ── Hero amount ───────────────────────────────────────
+          if (loading)
+            const _BentoShimmer()
+          else
             Showcase(
               key: Get.find<WalkthroughController>().balanceKey,
               title: 'Your financial overview',
               description:
-                  'See your total balance, income, and expenses at a glance. Tap the eye to hide amounts.',
+                  'See your total balance, income, and expenses. Tap the eye to hide amounts.',
               tooltipBackgroundColor: AppColor.primary,
               textColor: Colors.white,
               titleTextStyle: const TextStyle(
@@ -176,236 +315,24 @@ class _Header extends StatelessWidget {
               targetShapeBorder: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 28, 20, 0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Total balance',
-                        style: TextStyle(color: textMuted, fontSize: 12)),
-                    const SizedBox(height: 6),
-                    AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 200),
-                      child: Text(
-                        key: ValueKey(visible),
-                        visible
-                            ? '${ctrl.currencySymbol.value}${fmt.format(ctrl.totalBalance.value)}'
-                            : '${ctrl.currencySymbol.value}  ••••••',
-                        style: TextStyle(
-                          color: textPrimary,
-                          fontSize: 42,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: -2.0,
-                          height: 1.0,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+              child: _HeroAmount(
+                sym: sym,
+                balance: balance,
+                visible: visible,
+                income: income,
+                expense: expense,
+                transactions: ctrl.allTransactions.toList(),
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-              child: Row(
-                children: [
-                  _StatPill(
-                    label: 'Income',
-                    value: visible
-                        ? '${ctrl.currencySymbol.value}${_compact(ctrl.totalIncome.value)}'
-                        : '•••',
-                    color: AppColor.income,
-                    isDark: isDark,
-                  ),
-                  const SizedBox(width: 10),
-                  _StatPill(
-                    label: 'Expenses',
-                    value: visible
-                        ? '${ctrl.currencySymbol.value}${_compact(ctrl.totalExpense.value)}'
-                        : '•••',
-                    color: AppColor.expense,
-                    isDark: isDark,
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 24),
-            Divider(height: 1, color: divColor),
-          ],
-        );
-      }),
-    );
-  }
 
-  String _compact(double v) {
-    if (v >= 100000) return '${(v / 100000).toStringAsFixed(1)}L';
-    if (v >= 1000) return '${(v / 1000).toStringAsFixed(1)}K';
-    return NumberFormat('#,##0', 'en_IN').format(v);
-  }
-}
+          const SizedBox(height: 16),
 
-class _StatPill extends StatelessWidget {
-  final String label;
-  final String value;
-  final Color color;
-  final bool isDark;
-
-  const _StatPill({
-    required this.label,
-    required this.value,
-    required this.color,
-    required this.isDark,
-  });
-
-  @override
-  Widget build(BuildContext context) => Expanded(
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.06),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(label,
-                  style: TextStyle(
-                    color: color.withValues(alpha: 0.65),
-                    fontSize: 11,
-                    fontWeight: FontWeight.w500,
-                  )),
-              const SizedBox(height: 4),
-              Text(value,
-                  style: TextStyle(
-                    color: color,
-                    fontSize: 17,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: -0.5,
-                    fontFeatures: const [FontFeature.tabularFigures()],
-                  )),
-            ],
-          ),
-        ),
-      );
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Month summary
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _MonthSummary extends StatelessWidget {
-  final bool isDark;
-  final HomeController ctrl;
-  const _MonthSummary({required this.isDark, required this.ctrl});
-
-  @override
-  Widget build(BuildContext context) {
-    final textPrimary = isDark ? AppColor.textPrimary : const Color(0xFF09090B);
-    final textMuted = isDark ? AppColor.textSecondary : const Color(0xFF71717A);
-    final divColor = isDark ? AppColor.darkBorder : const Color(0xFFF4F4F5);
-    final monthName = DateFormat('MMMM').format(DateTime.now());
-
-    return Obx(() {
-      if (ctrl.isOverviewLoading.value && ctrl.allTransactions.isEmpty) {
-        return _MonthSummaryShimmer(isDark: isDark);
-      }
-      final now = DateTime.now();
-      final monthStart = DateTime(now.year, now.month, 1);
-      final thisMonthTx = ctrl.allTransactions.where((t) {
-        try {
-          return !DateTime.parse(t['date']).isBefore(monthStart);
-        } catch (_) {
-          return false;
-        }
-      }).toList();
-
-      final monthSpent = thisMonthTx
-          .where((t) => t['type'] == 'expense')
-          .fold(0.0, (s, t) => s + (t['amount'] as num).toDouble());
-      final monthIncome = thisMonthTx
-          .where((t) => t['type'] == 'income')
-          .fold(0.0, (s, t) => s + (t['amount'] as num).toDouble());
-      final saved = monthIncome - monthSpent;
-      final fmt = NumberFormat('#,##0', 'en_IN');
-
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-            child: Row(
-              children: [
-                Text('$monthName overview',
-                    style: TextStyle(
-                        color: textPrimary,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600)),
-                const Spacer(),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: isDark ? AppColor.darkCard : const Color(0xFFF4F4F5),
-                    borderRadius: BorderRadius.circular(100),
-                  ),
-                  child: Text(
-                    '${thisMonthTx.length} txns',
-                    style: TextStyle(color: textMuted, fontSize: 11),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 14),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Row(
-              children: [
-                _MiniStat(
-                  icon: PhosphorIconsLight.arrowUp,
-                  label: 'Earned',
-                  value:
-                      '${ctrl.currencySymbol.value}${fmt.format(monthIncome)}',
-                  color: AppColor.income,
-                  isDark: isDark,
-                ),
-                _MiniStat(
-                  icon: PhosphorIconsLight.arrowDown,
-                  label: 'Spent',
-                  value:
-                      '${ctrl.currencySymbol.value}${fmt.format(monthSpent)}',
-                  color: AppColor.expense,
-                  isDark: isDark,
-                ),
-                _MiniStat(
-                  icon: PhosphorIconsLight.piggyBank,
-                  label: saved >= 0 ? 'Saved' : 'Over',
-                  value:
-                      '${ctrl.currencySymbol.value}${fmt.format(saved.abs())}',
-                  color: saved >= 0 ? AppColor.income : AppColor.expense,
-                  isDark: isDark,
-                ),
-              ],
-            ),
-          ),
-          // ── Monthly budget bar ──────────────────────────────
-          if (ctrl.monthlyBudget.value > 0) ...[
-            const SizedBox(height: 14),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: _BudgetBar(
-                spent: monthSpent,
-                budget: ctrl.monthlyBudget.value,
-                sym: ctrl.currencySymbol.value,
-                isDark: isDark,
-              ),
-            ),
-          ],
-          const SizedBox(height: 20),
+          // ── Quick actions ─────────────────────────────────────
           Showcase(
             key: Get.find<WalkthroughController>().quickActionsKey,
             title: 'Log transactions fast',
             description:
-                'Tap to record an expense or income in seconds, with categories and notes.',
+                'Tap to record an expense or income in seconds.',
             tooltipBackgroundColor: AppColor.primary,
             textColor: Colors.white,
             titleTextStyle: const TextStyle(
@@ -424,259 +351,272 @@ class _MonthSummary extends StatelessWidget {
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
-                  Expanded(
-                    child: _QuickAction(
-                      label: 'Add expense',
-                      color: AppColor.expense,
-                      onTap: () => Get.to(() =>
-                          const AddTransactionScreen(initialType: 'expense')),
+                  _QuickAction(
+                    icon: PhosphorIconsLight.arrowCircleUp,
+                    label: 'Expense',
+                    accentColor: AppColor.expense,
+                    onTap: () => Get.to(
+                        () => const AddTransactionScreen(initialType: 'expense')),
+                  ),
+                  _QuickAction(
+                    icon: PhosphorIconsLight.arrowCircleDown,
+                    label: 'Income',
+                    accentColor: AppColor.income,
+                    onTap: () => Get.to(
+                        () => const AddTransactionScreen(initialType: 'income')),
+                  ),
+                  _QuickAction(
+                    icon: PhosphorIconsLight.usersThree,
+                    label: 'Split',
+                    accentColor: AppColor.catCar,
+                    onTap: () => Get.to(
+                      () => const SplitsScreen(),
+                      transition: Transition.cupertino,
                     ),
                   ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: _QuickAction(
-                      label: 'Add income',
-                      color: AppColor.income,
-                      onTap: () => Get.to(() =>
-                          const AddTransactionScreen(initialType: 'income')),
-                    ),
+                  _QuickAction(
+                    icon: PhosphorIconsLight.target,
+                    label: 'Goals',
+                    accentColor: AppColor.warning,
+                    onTap: () => showGoalsAddPicker(context),
                   ),
                 ],
               ),
             ),
           ),
+
           const SizedBox(height: 20),
-          Divider(height: 1, color: divColor),
+          const Divider(height: 1, color: AppColor.border),
         ],
-      );
+      ),
+    );
     });
   }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Month summary shimmer skeleton
+// Icon pill button (top bar)
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _MonthSummaryShimmer extends StatelessWidget {
-  final bool isDark;
-  const _MonthSummaryShimmer({required this.isDark});
+class _IconPill extends StatelessWidget {
+  final PhosphorIconData icon;
+  const _IconPill({required this.icon});
 
   @override
-  Widget build(BuildContext context) {
-    final base = isDark ? const Color(0xFF1E1E2E) : const Color(0xFFF4F4F5);
-    final highlight =
-        isDark ? const Color(0xFF2A2A3E) : const Color(0xFFE4E4E7);
-    return Shimmer.fromColors(
-      baseColor: base,
-      highlightColor: highlight,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Title row
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-            child: Row(
-              children: [
-                Container(
-                    height: 14,
-                    width: 120,
-                    decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(6))),
-                const Spacer(),
-                Container(
-                    height: 20,
-                    width: 52,
-                    decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(100))),
-              ],
-            ),
-          ),
-          const SizedBox(height: 14),
-          // 3 mini-stat boxes
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Row(
-              children: List.generate(
-                  3,
-                  (i) => Expanded(
-                        child: Padding(
-                          padding: EdgeInsets.only(right: i < 2 ? 12 : 0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Container(
-                                  height: 11,
-                                  width: 50,
-                                  decoration: BoxDecoration(
-                                      color: Colors.white,
-                                      borderRadius: BorderRadius.circular(5))),
-                              const SizedBox(height: 5),
-                              Container(
-                                  height: 13,
-                                  width: 64,
-                                  decoration: BoxDecoration(
-                                      color: Colors.white,
-                                      borderRadius: BorderRadius.circular(5))),
-                            ],
-                          ),
-                        ),
-                      )),
-            ),
-          ),
-          const SizedBox(height: 20),
-          // Quick action buttons
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Row(
-              children: [
-                Expanded(
-                    child: Container(
-                        height: 40,
-                        decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(10)))),
-                const SizedBox(width: 10),
-                Expanded(
-                    child: Container(
-                        height: 40,
-                        decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(10)))),
-              ],
-            ),
-          ),
-          const SizedBox(height: 20),
-        ],
-      ),
-    );
-  }
+  Widget build(BuildContext context) => Container(
+        width: 36,
+        height: 36,
+        decoration: BoxDecoration(
+          color: AppColor.surface,
+          shape: BoxShape.circle,
+          border: Border.all(color: AppColor.border),
+        ),
+        child: Center(
+          child: PhosphorIcon(icon, color: AppColor.textSecondary, size: 16),
+        ),
+      );
 }
 
-class _BudgetBar extends StatelessWidget {
-  final double spent;
-  final double budget;
-  final String sym;
-  final bool isDark;
+// ─────────────────────────────────────────────────────────────────────────────
+// Balance card — Vanilla background, large number
+// ─────────────────────────────────────────────────────────────────────────────
 
-  const _BudgetBar({
-    required this.spent,
-    required this.budget,
+class _HeroAmount extends StatelessWidget {
+  final String sym;
+  final double balance;
+  final bool visible;
+  final double income;
+  final double expense;
+  final List<Map<String, dynamic>> transactions;
+
+  const _HeroAmount({
     required this.sym,
-    required this.isDark,
+    required this.balance,
+    required this.visible,
+    required this.income,
+    required this.expense,
+    required this.transactions,
   });
+
+  List<double> _last7DayExpenses() {
+    final now = DateTime.now();
+    return List.generate(7, (i) {
+      final day = now.subtract(Duration(days: 6 - i));
+      return transactions
+          .where((t) {
+            if (t['type'] != 'expense') return false;
+            final d = DateTime.tryParse(t['date'] ?? '');
+            if (d == null) return false;
+            return d.year == day.year && d.month == day.month && d.day == day.day;
+          })
+          .fold(0.0, (s, t) => s + (t['amount'] as num).toDouble());
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
-    final pct = (spent / budget).clamp(0.0, 1.0);
-    final isOver = spent > budget;
-    final barColor = isOver
-        ? AppColor.expense
-        : pct >= 0.8
-            ? AppColor.warning
-            : AppColor.income;
-    final textPrimary =
-        isDark ? AppColor.textPrimary : AppColor.lightTextPrimary;
-    final textMuted =
-        isDark ? AppColor.textSecondary : AppColor.lightTextSecondary;
-    final trackColor = isDark ? AppColor.darkCard : const Color(0xFFF4F4F5);
-    final fmt = NumberFormat('#,##0', 'en_IN');
+    final fmt = NumberFormat('#,##0.##', 'en_IN');
+    final net = income - expense;
+    final isPositive = net >= 0;
+    final bars = _last7DayExpenses();
+    final maxBar = bars.reduce(math.max);
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        color: trackColor,
-        borderRadius: BorderRadius.circular(14),
-      ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Monthly Budget',
-                  style: TextStyle(
-                      color: textMuted,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500)),
-              const Spacer(),
-              Text(
-                isOver
-                    ? '$sym${fmt.format(spent - budget)} over'
-                    : '$sym${fmt.format(budget - spent)} left',
-                style: TextStyle(
-                    color: barColor, fontSize: 12, fontWeight: FontWeight.w600),
+              // ── Hero number — the one thing this screen leads with ──
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Balance',
+                      style: GoogleFonts.urbanist(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: AppColor.textSecondary,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    TweenAnimationBuilder<double>(
+                      tween: Tween(begin: 0, end: balance),
+                      duration: const Duration(milliseconds: 1000),
+                      curve: Curves.easeOut,
+                      builder: (_, animated, __) => AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 200),
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          key: ValueKey(visible),
+                          child: Text(
+                            visible ? '$sym${fmt.format(animated)}' : '$sym ••••••',
+                            style: GoogleFonts.urbanist(
+                              fontSize: 40,
+                              fontWeight: FontWeight.w800,
+                              color: AppColor.textPrimary,
+                              letterSpacing: -1.8,
+                              height: 1.05,
+                              fontFeatures: const [FontFeature.tabularFigures()],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        PhosphorIcon(
+                          isPositive ? PhosphorIconsLight.trendUp : PhosphorIconsLight.trendDown,
+                          size: 12,
+                          color: isPositive ? AppColor.income : AppColor.expense,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          visible
+                              ? '${isPositive ? '+' : '−'}${NumberFormat('#,##0', 'en_IN').format(net.abs())} this period'
+                              : '•••',
+                          style: GoogleFonts.urbanist(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: isPositive ? AppColor.income : AppColor.expense,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              // ── 7-day spend — a quiet sparkline, not a chart ──
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    '7-day spend',
+                    style: GoogleFonts.urbanist(
+                      fontSize: 9,
+                      fontWeight: FontWeight.w500,
+                      color: AppColor.textTertiary,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: List.generate(7, (i) {
+                      final isToday = i == 6;
+                      final h = maxBar > 0 ? 4.0 + (bars[i] / maxBar) * 20.0 : 4.0;
+                      return Padding(
+                        padding: const EdgeInsets.only(left: 3),
+                        child: Container(
+                          width: 4,
+                          height: h,
+                          decoration: BoxDecoration(
+                            color: isToday ? AppColor.textPrimary : AppColor.border,
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                      );
+                    }),
+                  ),
+                ],
               ),
             ],
           ),
-          const SizedBox(height: 8),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(100),
-            child: LinearProgressIndicator(
-              value: pct,
-              minHeight: 6,
-              backgroundColor:
-                  isDark ? AppColor.darkBorder : const Color(0xFFE4E4E7),
-              valueColor: AlwaysStoppedAnimation<Color>(barColor),
-            ),
-          ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 20),
+          // ── Income / Expense — demoted to a flat secondary row ──
           Row(
             children: [
-              Text('$sym${fmt.format(spent)} spent',
-                  style: TextStyle(color: textMuted, fontSize: 11)),
-              const Spacer(),
-              Text('of $sym${fmt.format(budget)}',
-                  style: TextStyle(
-                      color: textPrimary,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w500)),
+              Expanded(
+                child: _MinimalStat(label: 'Income', value: visible ? _fmt(income, sym) : '•••'),
+              ),
+              Container(width: 1, height: 28, color: AppColor.border),
+              const SizedBox(width: 16),
+              Expanded(
+                child: _MinimalStat(label: 'Expenses', value: visible ? _fmt(expense, sym) : '•••'),
+              ),
             ],
           ),
         ],
       ),
     );
   }
+
+  String _fmt(double v, String sym) {
+    if (v >= 100000) return '$sym${(v / 100000).toStringAsFixed(1)}L';
+    if (v >= 1000) return '$sym${(v / 1000).toStringAsFixed(1)}K';
+    return '$sym${NumberFormat('#,##0', 'en_IN').format(v)}';
+  }
 }
 
-class _MiniStat extends StatelessWidget {
-  final PhosphorIconData icon;
+class _MinimalStat extends StatelessWidget {
   final String label;
   final String value;
-  final Color color;
-  final bool isDark;
-
-  const _MiniStat({
-    required this.icon,
-    required this.label,
-    required this.value,
-    required this.color,
-    required this.isDark,
-  });
+  const _MinimalStat({required this.label, required this.value});
 
   @override
-  Widget build(BuildContext context) {
-    final textMuted = isDark ? AppColor.textSecondary : const Color(0xFF71717A);
-    final textPrimary = isDark ? AppColor.textPrimary : const Color(0xFF09090B);
-    return Expanded(
-      child: Column(
+  Widget build(BuildContext context) => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              PhosphorIcon(icon, size: 11, color: color),
-              const SizedBox(width: 4),
-              Text(label, style: TextStyle(color: textMuted, fontSize: 11)),
-            ],
+          Text(
+            label,
+            style: GoogleFonts.urbanist(
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
+              color: AppColor.textTertiary,
+            ),
           ),
-          const SizedBox(height: 3),
+          const SizedBox(height: 2),
           Text(
             value,
-            style: TextStyle(
-              color: textPrimary,
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
+            style: GoogleFonts.urbanist(
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+              color: AppColor.textPrimary,
               letterSpacing: -0.3,
               fontFeatures: const [FontFeature.tabularFigures()],
             ),
@@ -684,146 +624,151 @@ class _MiniStat extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
           ),
         ],
-      ),
-    );
-  }
+      );
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Quick action — dark circle + label
+// ─────────────────────────────────────────────────────────────────────────────
+
 class _QuickAction extends StatelessWidget {
+  final PhosphorIconData icon;
   final String label;
-  final Color color;
   final VoidCallback onTap;
+  final Color accentColor;
 
   const _QuickAction({
+    required this.icon,
     required this.label,
-    required this.color,
     required this.onTap,
+    this.accentColor = AppColor.primary,
   });
 
   @override
   Widget build(BuildContext context) => GestureDetector(
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 11),
-          decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.07),
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: color.withValues(alpha: 0.15)),
-          ),
-          child: Center(
-            child: Text(
-              label,
-              style: TextStyle(
-                color: color,
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
+        onTap: () {
+          HapticFeedback.lightImpact();
+          onTap();
+        },
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 52,
+              height: 52,
+              decoration: BoxDecoration(
+                color: accentColor.withValues(alpha: 0.10),
+                shape: BoxShape.circle,
+              ),
+              child: Center(
+                child: PhosphorIcon(icon, color: accentColor, size: 22),
               ),
             ),
+            const SizedBox(height: 6),
+            Text(
+              label,
+              style: GoogleFonts.urbanist(
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
+                color: AppColor.textSecondary,
+              ),
+            ),
+          ],
+        ),
+      );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Bento shimmer
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _BentoShimmer extends StatelessWidget {
+  const _BentoShimmer();
+
+  @override
+  Widget build(BuildContext context) => Shimmer.fromColors(
+        baseColor: AppColor.surfaceVariant,
+        highlightColor: AppColor.border,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 70,
+                height: 12,
+                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(4)),
+              ),
+              const SizedBox(height: 10),
+              Container(
+                width: 180,
+                height: 38,
+                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(6)),
+              ),
+              const SizedBox(height: 20),
+              Row(
+                children: [
+                  Expanded(
+                    child: Container(
+                      height: 34,
+                      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8)),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Container(
+                      height: 34,
+                      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8)),
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
         ),
       );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Insights shimmer skeleton
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _InsightsShimmer extends StatelessWidget {
-  final bool isDark;
-  const _InsightsShimmer({required this.isDark});
-
-  @override
-  Widget build(BuildContext context) {
-    final base = isDark ? const Color(0xFF1E1E2E) : const Color(0xFFF4F4F5);
-    final highlight =
-        isDark ? const Color(0xFF2A2A3E) : const Color(0xFFE4E4E7);
-    final divColor = isDark ? AppColor.darkBorder : const Color(0xFFF4F4F5);
-    return Shimmer.fromColors(
-      baseColor: base,
-      highlightColor: highlight,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
-            child: Container(
-                height: 14,
-                width: 70,
-                decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(6))),
-          ),
-          SizedBox(
-            height: 148,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              itemCount: 3,
-              separatorBuilder: (_, __) => const SizedBox(width: 10),
-              itemBuilder: (_, __) => Container(
-                width: 240,
-                decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16)),
-              ),
-            ),
-          ),
-          const SizedBox(height: 20),
-          Divider(height: 1, color: divColor),
-        ],
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Insights strip — horizontally scrollable insight cards
+// Insights strip
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _InsightsStrip extends StatelessWidget {
-  final bool isDark;
   final HomeController ctrl;
-  const _InsightsStrip({required this.isDark, required this.ctrl});
+  const _InsightsStrip({required this.ctrl});
 
-  void _showInsightSheet(BuildContext context, Insight insight, bool isDark) {
-    final bg = isDark ? AppColor.darkSurface : Colors.white;
-    final textPrimary = isDark ? AppColor.textPrimary : const Color(0xFF09090B);
-    final textMuted = isDark ? AppColor.textSecondary : const Color(0xFF71717A);
-    final accent = insight.accentColor;
-
+  void _showSheet(BuildContext context, Insight insight) {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       builder: (_) => Container(
         padding: const EdgeInsets.fromLTRB(20, 20, 20, 40),
-        decoration: BoxDecoration(
-          color: bg,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        decoration: const BoxDecoration(
+          color: AppColor.surface,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // drag handle
             Center(
               child: Container(
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: isDark ? AppColor.darkBorder : const Color(0xFFE0E0E0),
+                  color: AppColor.border,
                   borderRadius: BorderRadius.circular(100),
                 ),
               ),
             ),
             const SizedBox(height: 20),
-            // emoji + badge row
             Row(
               children: [
                 Container(
                   width: 44,
                   height: 44,
                   decoration: BoxDecoration(
-                    color: accent.withValues(alpha: 0.12),
+                    color: insight.accentColor.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Center(
@@ -833,38 +778,21 @@ class _InsightsStrip extends StatelessWidget {
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: Text(
-                    insight.title,
-                    style: TextStyle(
-                      color: textPrimary,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
+                  child: Text(insight.title,
+                      style: AppTypography.heading3(AppColor.textPrimary)),
                 ),
               ],
             ),
             const SizedBox(height: 16),
-            // full body text — no maxLines limit
-            Text(
-              insight.body,
-              style: TextStyle(
-                color: textMuted,
-                fontSize: 14,
-                height: 1.6,
-              ),
-            ),
+            Text(insight.body,
+                style: AppTypography.body(AppColor.textSecondary)),
             const SizedBox(height: 24),
-            // close button
             SizedBox(
               width: double.infinity,
               child: TextButton(
                 onPressed: () => Navigator.of(context).pop(),
                 child: Text('Got it',
-                    style: TextStyle(
-                      color: accent,
-                      fontWeight: FontWeight.w600,
-                    )),
+                    style: AppTypography.bodySemiBold(insight.accentColor)),
               ),
             ),
           ],
@@ -880,13 +808,28 @@ class _InsightsStrip extends StatelessWidget {
       savingsCtrl = Get.find<SavingsController>();
     } catch (_) {}
 
-    final textPrimary =
-        isDark ? AppColor.textPrimary : AppColor.lightTextPrimary;
-    final divColor = isDark ? AppColor.darkBorder : const Color(0xFFF4F4F5);
-
     return Obx(() {
       if (ctrl.isOverviewLoading.value && ctrl.allTransactions.isEmpty) {
-        return _InsightsShimmer(isDark: isDark);
+        return Shimmer.fromColors(
+          baseColor: AppColor.surfaceVariant,
+          highlightColor: AppColor.border,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+            child: Column(
+              children: List.generate(
+                2,
+                (i) => Container(
+                  margin: const EdgeInsets.only(bottom: 6),
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
       }
 
       final insights = InsightsService.compute(
@@ -896,179 +839,83 @@ class _InsightsStrip extends StatelessWidget {
         savingsGoals: savingsCtrl?.goals.toList() ?? [],
       );
 
+      if (insights.isEmpty) return const SizedBox.shrink();
+
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
-            child: Text('Insights',
-                style: TextStyle(
-                    color: textPrimary,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600)),
+            padding: const EdgeInsets.fromLTRB(20, 14, 20, 8),
+            child: Text(
+              'INSIGHTS',
+              style: GoogleFonts.urbanist(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: AppColor.textTertiary,
+                letterSpacing: 0.8,
+              ),
+            ),
           ),
           SizedBox(
-            height: 148,
+            height: 76,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 20),
               itemCount: insights.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 10),
-              itemBuilder: (_, i) => GestureDetector(
-                onTap: () => _showInsightSheet(context, insights[i], isDark),
-                child: _InsightCard(insight: insights[i], isDark: isDark),
-              ),
+              separatorBuilder: (_, __) => const SizedBox(width: 8),
+              itemBuilder: (context, i) {
+                final ins = insights[i];
+                return GestureDetector(
+                  onTap: () => _showSheet(context, ins),
+                  child: Container(
+                    width: 210,
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+                    decoration: BoxDecoration(
+                      color: ins.accentColor.withValues(alpha: 0.07),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: ins.accentColor.withValues(alpha: 0.18)),
+                    ),
+                    child: Row(
+                      children: [
+                        Text(ins.emoji, style: const TextStyle(fontSize: 22)),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            ins.title,
+                            style: GoogleFonts.urbanist(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                              color: AppColor.textPrimary,
+                              height: 1.4,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
             ),
           ),
-          const SizedBox(height: 20),
-          Divider(height: 1, color: divColor),
+          const SizedBox(height: 14),
+          const Divider(height: 1, color: AppColor.border),
         ],
       );
     });
   }
 }
 
-class _InsightCard extends StatelessWidget {
-  final Insight insight;
-  final bool isDark;
-  const _InsightCard({required this.insight, required this.isDark});
-
-  @override
-  Widget build(BuildContext context) {
-    final accent = insight.accentColor;
-    final cardBg = isDark ? AppColor.darkCard : const Color(0xFFF4F4F5);
-    final textPrimary =
-        isDark ? AppColor.textPrimary : AppColor.lightTextPrimary;
-    final textMuted =
-        isDark ? AppColor.textSecondary : AppColor.lightTextSecondary;
-
-    final typeLabel = switch (insight.type) {
-      InsightType.warning => 'Watch out',
-      InsightType.positive => 'Nice',
-      InsightType.info => 'Info',
-    };
-
-    return Container(
-      width: 240,
-      padding: const EdgeInsets.all(13),
-      decoration: BoxDecoration(
-        color: cardBg,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: accent.withValues(alpha: 0.3), width: 1.5),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 32,
-                height: 32,
-                decoration: BoxDecoration(
-                  color: accent.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(9),
-                ),
-                child: Center(
-                  child: Text(insight.emoji, style: const TextStyle(fontSize: 15)),
-                ),
-              ),
-              const Spacer(),
-              if (insight.stat != null)
-                Text(
-                  insight.stat!,
-                  style: TextStyle(
-                    color: accent,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: -0.3,
-                  ),
-                )
-              else
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: accent.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(100),
-                  ),
-                  child: Text(
-                    typeLabel,
-                    style: TextStyle(
-                        color: accent, fontSize: 10, fontWeight: FontWeight.w600),
-                  ),
-                ),
-            ],
-          ),
-          const SizedBox(height: 9),
-          Text(
-            insight.title,
-            style: TextStyle(
-              color: textPrimary,
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-              letterSpacing: -0.2,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          const SizedBox(height: 4),
-          Expanded(
-            child: Text(
-              insight.body,
-              style: TextStyle(
-                color: textMuted,
-                fontSize: 11,
-                height: 1.45,
-              ),
-              maxLines: 3,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          if (insight.progress != null) ...[
-            const SizedBox(height: 8),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(100),
-              child: LinearProgressIndicator(
-                value: insight.progress,
-                minHeight: 4,
-                backgroundColor: accent.withValues(alpha: 0.1),
-                valueColor: AlwaysStoppedAnimation<Color>(accent),
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
 // ─────────────────────────────────────────────────────────────────────────────
-// Budget limits banner — shows at-risk category limits (≥75% spent)
+// Budget alerts banner
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _BudgetAlertsBanner extends StatelessWidget {
-  final bool isDark;
-  const _BudgetAlertsBanner({required this.isDark});
+  const _BudgetAlertsBanner();
 
-  static const _catColors = {
-    'Food & Drinks': Color(0xFFEAB308),
-    'Groceries': Color(0xFF22C55E),
-    'Transport': Color(0xFF8B5CF6),
-    'Bills & Fees': Color(0xFFF97316),
-    'Health': Color(0xFFEF4444),
-    'Car': Color(0xFF6366F1),
-    'Shopping': Color(0xFFEC4899),
-    'Entertainment': Color(0xFF14B8A6),
-    'Investments': Color(0xFF3B82F6),
-    'Education': Color(0xFF8B5CF6),
-    'Travel': Color(0xFF06B6D4),
-    'Gifts': Color(0xFFFF7849),
-    'Subscriptions': Color(0xFFA855F7),
-    'Others': Color(0xFF71717A),
-    'All': AppColor.primary,
-  };
-
-  static PhosphorIconData _catIcon(String category) {
-    switch (category) {
+  static PhosphorIconData _catIcon(String cat) {
+    switch (cat) {
       case 'Food & Drinks':
         return PhosphorIconsLight.forkKnife;
       case 'Groceries':
@@ -1095,10 +942,8 @@ class _BudgetAlertsBanner extends StatelessWidget {
         return PhosphorIconsLight.receipt;
       case 'Gifts':
         return PhosphorIconsLight.gift;
-      case 'Others':
-        return PhosphorIconsLight.tag;
       default:
-        return PhosphorIconsLight.chartBar;
+        return PhosphorIconsLight.tag;
     }
   }
 
@@ -1111,11 +956,6 @@ class _BudgetAlertsBanner extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    final textPrimary = isDark ? AppColor.textPrimary : const Color(0xFF09090B);
-    final textMuted = isDark ? AppColor.textSecondary : const Color(0xFF71717A);
-    final cardBg = isDark ? AppColor.darkCard : const Color(0xFFF4F4F5);
-    final trackColor = isDark ? AppColor.darkBorder : const Color(0xFFE4E4E7);
-    final divColor = isDark ? AppColor.darkBorder : const Color(0xFFF4F4F5);
     final sym = Get.find<HomeController>().currencySymbol.value;
     final fmt = NumberFormat('#,##0', 'en_IN');
 
@@ -1127,7 +967,7 @@ class _BudgetAlertsBanner extends StatelessWidget {
         ..sort((a, b) {
           final pa = goalsCtrl.currentSpending(a) / a.limitAmount;
           final pb = goalsCtrl.currentSpending(b) / b.limitAmount;
-          return pb.compareTo(pa); // highest % first
+          return pb.compareTo(pa);
         });
 
       if (atRisk.isEmpty) return const SizedBox.shrink();
@@ -1136,12 +976,9 @@ class _BudgetAlertsBanner extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
+            padding: const EdgeInsets.fromLTRB(20, 14, 20, 10),
             child: Text('Budget Alerts',
-                style: TextStyle(
-                    color: textPrimary,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600)),
+                style: AppTypography.heading3(AppColor.textPrimary)),
           ),
           ...atRisk.map((g) {
             final spent = goalsCtrl.currentSpending(g);
@@ -1152,17 +989,18 @@ class _BudgetAlertsBanner extends StatelessWidget {
                 : pct >= 0.9
                     ? AppColor.warning
                     : AppColor.income;
-            final catColor = _catColors[g.category] ?? AppColor.primary;
+            final catColor = AppColor.categoryColor(g.category);
 
             return Padding(
               padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
               child: Container(
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: cardBg,
-                  borderRadius: BorderRadius.circular(14),
+                  color: AppColor.surface,
+                  borderRadius: BorderRadius.circular(AppDimens.radiusLG),
                   border: Border.all(
                       color: barColor.withValues(alpha: 0.35), width: 1.5),
+                  boxShadow: AppShadows.cardLight,
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -1170,45 +1008,36 @@ class _BudgetAlertsBanner extends StatelessWidget {
                     Row(
                       children: [
                         Container(
-                          width: 28,
-                          height: 28,
+                          width: 30,
+                          height: 30,
                           decoration: BoxDecoration(
                             color: catColor.withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Center(
-                            child: PhosphorIcon(
-                              _catIcon(g.category),
-                              size: 15,
-                              color: catColor,
-                            ),
+                            child: PhosphorIcon(_catIcon(g.category),
+                                size: 15, color: catColor),
                           ),
                         ),
                         const SizedBox(width: 10),
                         Expanded(
                           child: Text(
                             g.category == 'All' ? 'Total Spending' : g.category,
-                            style: TextStyle(
-                                color: textPrimary,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600),
+                            style: AppTypography.bodySemiBold(AppColor.textPrimary),
                           ),
                         ),
                         Container(
                           padding: const EdgeInsets.symmetric(
                               horizontal: 8, vertical: 3),
                           decoration: BoxDecoration(
-                            color: barColor.withValues(alpha: 0.1),
+                            color: barColor.withValues(alpha: 0.10),
                             borderRadius: BorderRadius.circular(100),
                           ),
                           child: Text(
                             isOver
                                 ? 'Over limit'
                                 : '${(pct * 100).toInt()}% used',
-                            style: TextStyle(
-                                color: barColor,
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600),
+                            style: AppTypography.captionSemiBold(barColor),
                           ),
                         ),
                       ],
@@ -1219,25 +1048,19 @@ class _BudgetAlertsBanner extends StatelessWidget {
                       child: LinearProgressIndicator(
                         value: pct,
                         minHeight: 5,
-                        backgroundColor: trackColor,
+                        backgroundColor: AppColor.border,
                         valueColor: AlwaysStoppedAnimation<Color>(barColor),
                       ),
                     ),
                     const SizedBox(height: 6),
                     Row(
                       children: [
-                        Text(
-                          '$sym${fmt.format(spent)} spent',
-                          style: TextStyle(color: textMuted, fontSize: 11),
-                        ),
+                        Text('$sym${fmt.format(spent)} spent',
+                            style: AppTypography.caption(AppColor.textSecondary)),
                         const Spacer(),
-                        Text(
-                          'of $sym${fmt.format(g.limitAmount)} ${g.period}',
-                          style: TextStyle(
-                              color: textPrimary,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w500),
-                        ),
+                        Text('of $sym${fmt.format(g.limitAmount)} ${g.period}',
+                            style: AppTypography.captionSemiBold(
+                                AppColor.textPrimary)),
                       ],
                     ),
                   ],
@@ -1246,7 +1069,7 @@ class _BudgetAlertsBanner extends StatelessWidget {
             );
           }),
           const SizedBox(height: 8),
-          Divider(height: 1, color: divColor),
+          const Divider(height: 1, color: AppColor.border),
         ],
       );
     });
@@ -1258,8 +1081,7 @@ class _BudgetAlertsBanner extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _UrgentGoalsBanner extends StatelessWidget {
-  final bool isDark;
-  const _UrgentGoalsBanner({required this.isDark});
+  const _UrgentGoalsBanner();
 
   @override
   Widget build(BuildContext context) {
@@ -1270,11 +1092,8 @@ class _UrgentGoalsBanner extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    final textPrimary = isDark ? AppColor.textPrimary : const Color(0xFF09090B);
-    final divColor = isDark ? AppColor.darkBorder : const Color(0xFFF4F4F5);
-
     return Obx(() {
-      final goals = savingsCtrl.goals.toList(); // trigger reactivity
+      final goals = savingsCtrl.goals.toList();
       final now = DateTime.now();
       final today = DateTime(now.year, now.month, now.day);
 
@@ -1283,8 +1102,7 @@ class _UrgentGoalsBanner extends StatelessWidget {
         if (g.savedAmount >= g.targetAmount) return false;
         final deadline = DateTime(
             g.targetDate!.year, g.targetDate!.month, g.targetDate!.day);
-        final daysLeft = deadline.difference(today).inDays;
-        return daysLeft >= 0 && daysLeft <= 7;
+        return deadline.difference(today).inDays.clamp(0, 999) <= 7;
       }).toList()
         ..sort((a, b) {
           final da = DateTime(
@@ -1300,16 +1118,13 @@ class _UrgentGoalsBanner extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
+            padding: const EdgeInsets.fromLTRB(20, 14, 20, 10),
             child: Text('Upcoming Deadlines',
-                style: TextStyle(
-                    color: textPrimary,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600)),
+                style: AppTypography.heading3(AppColor.textPrimary)),
           ),
-          ...urgent.map((g) => _UrgentGoalTile(goal: g, isDark: isDark)),
+          ...urgent.map((g) => _UrgentGoalTile(goal: g)),
           const SizedBox(height: 8),
-          Divider(height: 1, color: divColor),
+          const Divider(height: 1, color: AppColor.border),
         ],
       );
     });
@@ -1318,36 +1133,26 @@ class _UrgentGoalsBanner extends StatelessWidget {
 
 class _UrgentGoalTile extends StatelessWidget {
   final SavingsGoal goal;
-  final bool isDark;
-  const _UrgentGoalTile({required this.goal, required this.isDark});
+  const _UrgentGoalTile({required this.goal});
 
   @override
   Widget build(BuildContext context) {
-    final textPrimary = isDark ? AppColor.textPrimary : const Color(0xFF09090B);
-    final textMuted = isDark ? AppColor.textSecondary : const Color(0xFF71717A);
-    final cardBg = isDark ? AppColor.darkCard : const Color(0xFFF4F4F5);
-    final trackColor = isDark ? AppColor.darkBorder : const Color(0xFFE4E4E7);
     final sym = Get.find<HomeController>().currencySymbol.value;
     final fmt = NumberFormat('#,##0', 'en_IN');
-
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final deadline = DateTime(
         goal.targetDate!.year, goal.targetDate!.month, goal.targetDate!.day);
     final daysLeft = deadline.difference(today).inDays;
 
-    final urgencyColor = daysLeft == 0
-        ? AppColor.expense
-        : daysLeft == 1
-            ? AppColor.warning
-            : AppColor.primary;
-
-    final urgencyLabel = daysLeft == 0
-        ? 'Due today'
-        : daysLeft == 1
-            ? 'Due tomorrow'
-            : '$daysLeft days left';
-
+    final urgencyColor = daysLeft <= 0 ? AppColor.expense : daysLeft == 1 ? AppColor.warning : AppColor.primary;
+    final urgencyLabel = daysLeft < 0
+        ? 'Past due'
+        : daysLeft == 0
+            ? 'Due today'
+            : daysLeft == 1
+                ? 'Due tomorrow'
+                : '$daysLeft days left';
     final pct = (goal.savedAmount / goal.targetAmount).clamp(0.0, 1.0);
     final remaining = goal.targetAmount - goal.savedAmount;
 
@@ -1356,10 +1161,11 @@ class _UrgentGoalTile extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: cardBg,
-          borderRadius: BorderRadius.circular(14),
+          color: AppColor.surface,
+          borderRadius: BorderRadius.circular(AppDimens.radiusLG),
           border: Border.all(
               color: urgencyColor.withValues(alpha: 0.35), width: 1.5),
+          boxShadow: AppShadows.cardLight,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1370,23 +1176,17 @@ class _UrgentGoalTile extends StatelessWidget {
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(goal.name,
-                      style: TextStyle(
-                          color: textPrimary,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600)),
+                      style: AppTypography.bodySemiBold(AppColor.textPrimary)),
                 ),
                 Container(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
-                    color: urgencyColor.withValues(alpha: 0.1),
+                    color: urgencyColor.withValues(alpha: 0.10),
                     borderRadius: BorderRadius.circular(100),
                   ),
                   child: Text(urgencyLabel,
-                      style: TextStyle(
-                          color: urgencyColor,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600)),
+                      style: AppTypography.captionSemiBold(urgencyColor)),
                 ),
               ],
             ),
@@ -1396,7 +1196,7 @@ class _UrgentGoalTile extends StatelessWidget {
               child: LinearProgressIndicator(
                 value: pct,
                 minHeight: 5,
-                backgroundColor: trackColor,
+                backgroundColor: AppColor.border,
                 valueColor: AlwaysStoppedAnimation<Color>(urgencyColor),
               ),
             ),
@@ -1404,18 +1204,200 @@ class _UrgentGoalTile extends StatelessWidget {
             Row(
               children: [
                 Text('${(pct * 100).toInt()}% funded',
-                    style: TextStyle(color: textMuted, fontSize: 11)),
+                    style: AppTypography.caption(AppColor.textSecondary)),
                 const Spacer(),
                 Text('$sym${fmt.format(remaining)} to go',
-                    style: TextStyle(
-                        color: urgencyColor,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600)),
+                    style: AppTypography.captionSemiBold(urgencyColor)),
               ],
             ),
           ],
         ),
       ),
     );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Weekly Digest Banner
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _WeeklyDigestBanner extends StatelessWidget {
+  const _WeeklyDigestBanner();
+
+  @override
+  Widget build(BuildContext context) {
+    WeeklyDigestController? ctrl;
+    try {
+      ctrl = Get.find<WeeklyDigestController>();
+    } catch (_) {
+      return const SizedBox.shrink();
+    }
+
+    return Obx(() {
+      if (!ctrl!.shouldShowBanner) return const SizedBox.shrink();
+      final d = ctrl.digest.value!;
+      final sym = Get.find<HomeController>().currencySymbol.value;
+      final amt = d.totalSpent >= 1000
+          ? '$sym${(d.totalSpent / 1000).toStringAsFixed(1)}K'
+          : '$sym${d.totalSpent.toStringAsFixed(0)}';
+
+      return GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () => Get.to(() => WeeklyDigestScreen(digest: d),
+            transition: Transition.cupertino),
+        child: Container(
+          margin: const EdgeInsets.fromLTRB(20, 12, 20, 8),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          decoration: BoxDecoration(
+            color: AppColor.surface,
+            borderRadius: BorderRadius.circular(AppDimens.radiusLG),
+            border: Border.all(color: AppColor.border),
+            boxShadow: AppShadows.cardLight,
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: AppColor.primaryExtraSoft,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(PhosphorIconsLight.chartBar,
+                    color: AppColor.primary, size: 20),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Week ${d.weekNumber} digest is ready',
+                        style:
+                            AppTypography.bodySemiBold(AppColor.textPrimary)),
+                    const SizedBox(height: 2),
+                    Text('$amt spent · tap to see breakdown',
+                        style: AppTypography.caption(AppColor.textSecondary)),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(PhosphorIconsLight.arrowRight,
+                      color: AppColor.primary, size: 16),
+                  const SizedBox(width: 8),
+                  GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: ctrl.dismissBanner,
+                    child: const Icon(PhosphorIconsLight.x,
+                        color: AppColor.textTertiary, size: 16),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      );
+    });
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Splits nudge — compact strip shown only when there are unsettled balances
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _SplitsNudge extends StatelessWidget {
+  const _SplitsNudge();
+
+  @override
+  Widget build(BuildContext context) {
+    final gc = Get.isRegistered<GroupsController>()
+        ? Get.find<GroupsController>()
+        : Get.put(GroupsController(), permanent: true);
+
+    return Obx(() {
+      final owed = gc.totalOwed.value;
+      final owedToMe = gc.totalOwedToMe.value;
+      final groups = gc.balanceGroupCount.value;
+
+      if (owed == 0 && owedToMe == 0) return const SizedBox.shrink();
+
+      final fmt = NumberFormat('#,##0', 'en_IN');
+
+      final bool showOwed = owed > 0;
+      final Color accent = showOwed ? AppColor.expense : AppColor.income;
+      final Color bgColor = showOwed
+          ? AppColor.expense.withValues(alpha: 0.07)
+          : AppColor.income.withValues(alpha: 0.07);
+      final Color borderColor = showOwed
+          ? AppColor.expense.withValues(alpha: 0.2)
+          : AppColor.income.withValues(alpha: 0.2);
+
+      String label;
+      if (owed > 0 && owedToMe > 0) {
+        label =
+            'You owe ₹${fmt.format(owed)}  ·  owed ₹${fmt.format(owedToMe)}';
+      } else if (owed > 0) {
+        label = 'You owe ₹${fmt.format(owed)} across $groups group${groups == 1 ? '' : 's'}';
+      } else {
+        label = 'You\'re owed ₹${fmt.format(owedToMe)} across $groups group${groups == 1 ? '' : 's'}';
+      }
+
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(20, 14, 20, 10),
+        child: GestureDetector(
+          onTap: () => Get.to(
+            () => const SplitsScreen(),
+            transition: Transition.cupertino,
+          ),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+            decoration: BoxDecoration(
+              color: bgColor,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: borderColor),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 30,
+                  height: 30,
+                  decoration: BoxDecoration(
+                    color: accent.withValues(alpha: 0.12),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Center(
+                    child: PhosphorIcon(
+                      showOwed
+                          ? PhosphorIconsLight.arrowUp
+                          : PhosphorIconsLight.arrowDown,
+                      size: 14,
+                      color: accent,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    label,
+                    style: GoogleFonts.urbanist(
+                      color: AppColor.textPrimary,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+                const PhosphorIcon(
+                  PhosphorIconsLight.caretRight,
+                  size: 14,
+                  color: AppColor.textTertiary,
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    });
   }
 }
