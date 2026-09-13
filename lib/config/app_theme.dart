@@ -290,7 +290,14 @@ class AppTheme {
         iconTheme: const IconThemeData(color: AppColor.textPrimary),
         actionsIconTheme: const IconThemeData(color: AppColor.textSecondary),
         titleTextStyle: AppTypography.heading2(AppColor.textPrimary),
-        systemOverlayStyle: SystemUiOverlayStyle.dark,
+        systemOverlayStyle: const SystemUiOverlayStyle(
+          statusBarColor: Colors.transparent,
+          statusBarIconBrightness: Brightness.dark,
+          statusBarBrightness: Brightness.light,
+          systemNavigationBarColor: Colors.transparent,
+          systemNavigationBarIconBrightness: Brightness.dark,
+          systemNavigationBarContrastEnforced: false,
+        ),
       ),
       cardTheme: CardThemeData(
         color: AppColor.surface,

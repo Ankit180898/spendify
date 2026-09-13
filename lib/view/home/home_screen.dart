@@ -291,11 +291,10 @@ class _TopSection extends StatelessWidget {
 
           const SizedBox(height: 14),
 
-          // ── Bento grid ────────────────────────────────────────
+          // ── Hero amount ───────────────────────────────────────
           if (loading)
             const _BentoShimmer()
-          else ...[
-            // Balance card — full width, Vanilla
+          else
             Showcase(
               key: Get.find<WalkthroughController>().balanceKey,
               title: 'Your financial overview',
@@ -314,49 +313,17 @@ class _TopSection extends StatelessWidget {
                 height: 1.5,
               ),
               targetShapeBorder: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(24),
+                borderRadius: BorderRadius.circular(12),
               ),
-              child: _BalanceCard(
+              child: _HeroAmount(
                 sym: sym,
                 balance: balance,
                 visible: visible,
-                net: income - expense,
+                income: income,
+                expense: expense,
                 transactions: ctrl.allTransactions.toList(),
               ),
             ),
-            const SizedBox(height: 10),
-            // Income + Expense row
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: _StatBentoCell(
-                      label: 'Income',
-                      value: visible ? _fmt(income, sym) : '•••',
-                      rawValue: visible ? income : null,
-                      sym: sym,
-                      icon: PhosphorIconsLight.arrowCircleDown,
-                      iconColor: AppColor.income,
-                      bg: AppColor.incomeSoft,
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: _StatBentoCell(
-                      label: 'Expenses',
-                      value: visible ? _fmt(expense, sym) : '•••',
-                      rawValue: visible ? expense : null,
-                      sym: sym,
-                      icon: PhosphorIconsLight.arrowCircleUp,
-                      iconColor: AppColor.expense,
-                      bg: AppColor.expenseSoft,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
 
           const SizedBox(height: 16),
 
@@ -427,12 +394,6 @@ class _TopSection extends StatelessWidget {
     );
     });
   }
-
-  String _fmt(double v, String sym) {
-    if (v >= 100000) return '$sym${(v / 100000).toStringAsFixed(1)}L';
-    if (v >= 1000) return '$sym${(v / 1000).toStringAsFixed(1)}K';
-    return '$sym${NumberFormat('#,##0', 'en_IN').format(v)}';
-  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -462,18 +423,20 @@ class _IconPill extends StatelessWidget {
 // Balance card — Vanilla background, large number
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _BalanceCard extends StatelessWidget {
+class _HeroAmount extends StatelessWidget {
   final String sym;
   final double balance;
   final bool visible;
-  final double net;
+  final double income;
+  final double expense;
   final List<Map<String, dynamic>> transactions;
 
-  const _BalanceCard({
+  const _HeroAmount({
     required this.sym,
     required this.balance,
     required this.visible,
-    required this.net,
+    required this.income,
+    required this.expense,
     required this.transactions,
   });
 
@@ -495,37 +458,33 @@ class _BalanceCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final fmt = NumberFormat('#,##0.##', 'en_IN');
+    final net = income - expense;
     final isPositive = net >= 0;
     final bars = _last7DayExpenses();
     final maxBar = bars.reduce(math.max);
 
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20),
-      padding: const EdgeInsets.fromLTRB(20, 18, 20, 18),
-      decoration: BoxDecoration(
-        color: AppColor.accentYellow,
-        borderRadius: BorderRadius.circular(20),
-      ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // ── Hero number — the one thing this screen leads with ──
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Total Balance',
+                      'Balance',
                       style: GoogleFonts.urbanist(
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
-                        color: AppColor.textPrimary.withValues(alpha: 0.50),
-                        letterSpacing: 0.2,
+                        color: AppColor.textSecondary,
                       ),
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 4),
                     TweenAnimationBuilder<double>(
                       tween: Tween(begin: 0, end: balance),
                       duration: const Duration(milliseconds: 1000),
@@ -538,21 +497,42 @@ class _BalanceCard extends StatelessWidget {
                           child: Text(
                             visible ? '$sym${fmt.format(animated)}' : '$sym ••••••',
                             style: GoogleFonts.urbanist(
-                              fontSize: 30,
-                              fontWeight: FontWeight.w700,
+                              fontSize: 40,
+                              fontWeight: FontWeight.w800,
                               color: AppColor.textPrimary,
-                              letterSpacing: -1.2,
-                              height: 1.1,
+                              letterSpacing: -1.8,
+                              height: 1.05,
                               fontFeatures: const [FontFeature.tabularFigures()],
                             ),
                           ),
                         ),
                       ),
                     ),
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        PhosphorIcon(
+                          isPositive ? PhosphorIconsLight.trendUp : PhosphorIconsLight.trendDown,
+                          size: 12,
+                          color: isPositive ? AppColor.income : AppColor.expense,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          visible
+                              ? '${isPositive ? '+' : '−'}${NumberFormat('#,##0', 'en_IN').format(net.abs())} this period'
+                              : '•••',
+                          style: GoogleFonts.urbanist(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: isPositive ? AppColor.income : AppColor.expense,
+                          ),
+                        ),
+                      ],
+                    ),
                   ],
                 ),
               ),
-              // 7-day spending pulse
+              // ── 7-day spend — a quiet sparkline, not a chart ──
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
@@ -561,7 +541,7 @@ class _BalanceCard extends StatelessWidget {
                     style: GoogleFonts.urbanist(
                       fontSize: 9,
                       fontWeight: FontWeight.w500,
-                      color: AppColor.textPrimary.withValues(alpha: 0.35),
+                      color: AppColor.textTertiary,
                     ),
                   ),
                   const SizedBox(height: 6),
@@ -576,9 +556,7 @@ class _BalanceCard extends StatelessWidget {
                           width: 4,
                           height: h,
                           decoration: BoxDecoration(
-                            color: isToday
-                                ? AppColor.textPrimary.withValues(alpha: 0.75)
-                                : AppColor.textPrimary.withValues(alpha: 0.22),
+                            color: isToday ? AppColor.textPrimary : AppColor.border,
                             borderRadius: BorderRadius.circular(2),
                           ),
                         ),
@@ -589,25 +567,17 @@ class _BalanceCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 20),
+          // ── Income / Expense — demoted to a flat secondary row ──
           Row(
-            mainAxisSize: MainAxisSize.min,
             children: [
-              PhosphorIcon(
-                isPositive ? PhosphorIconsLight.trendUp : PhosphorIconsLight.trendDown,
-                size: 13,
-                color: isPositive ? AppColor.income : AppColor.expense,
+              Expanded(
+                child: _MinimalStat(label: 'Income', value: visible ? _fmt(income, sym) : '•••'),
               ),
-              const SizedBox(width: 5),
-              Text(
-                visible
-                    ? '${isPositive ? '+' : '−'}${NumberFormat('#,##0', 'en_IN').format(net.abs())} this period'
-                    : '•••',
-                style: GoogleFonts.urbanist(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: isPositive ? AppColor.income : AppColor.expense,
-                ),
+              Container(width: 1, height: 28, color: AppColor.border),
+              const SizedBox(width: 16),
+              Expanded(
+                child: _MinimalStat(label: 'Expenses', value: visible ? _fmt(expense, sym) : '•••'),
               ),
             ],
           ),
@@ -615,99 +585,45 @@ class _BalanceCard extends StatelessWidget {
       ),
     );
   }
+
+  String _fmt(double v, String sym) {
+    if (v >= 100000) return '$sym${(v / 100000).toStringAsFixed(1)}L';
+    if (v >= 1000) return '$sym${(v / 1000).toStringAsFixed(1)}K';
+    return '$sym${NumberFormat('#,##0', 'en_IN').format(v)}';
+  }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Stat bento cell — Income / Expense side by side
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _StatBentoCell extends StatelessWidget {
+class _MinimalStat extends StatelessWidget {
   final String label;
   final String value;
-  final double? rawValue;
-  final String? sym;
-  final PhosphorIconData icon;
-  final Color iconColor;
-  final Color bg;
-
-  const _StatBentoCell({
-    required this.label,
-    required this.value,
-    required this.icon,
-    required this.iconColor,
-    required this.bg,
-    this.rawValue,
-    this.sym,
-  });
+  const _MinimalStat({required this.label, required this.value});
 
   @override
-  Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: AppColor.surface,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColor.border),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                PhosphorIcon(icon, color: iconColor, size: 14),
-                const SizedBox(width: 5),
-                Text(
-                  label,
-                  style: GoogleFonts.urbanist(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    color: AppColor.textSecondary,
-                  ),
-                ),
-              ],
+  Widget build(BuildContext context) => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: GoogleFonts.urbanist(
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
+              color: AppColor.textTertiary,
             ),
-            const SizedBox(height: 8),
-            rawValue != null && sym != null
-                ? TweenAnimationBuilder<double>(
-                    tween: Tween(begin: 0, end: rawValue!),
-                    duration: const Duration(milliseconds: 900),
-                    curve: Curves.easeOut,
-                    builder: (_, v, __) {
-                      String disp;
-                      if (v >= 100000) {
-                        disp = '$sym${(v / 100000).toStringAsFixed(1)}L';
-                      } else if (v >= 1000) {
-                        disp = '$sym${(v / 1000).toStringAsFixed(1)}K';
-                      } else {
-                        disp = '$sym${NumberFormat('#,##0', 'en_IN').format(v)}';
-                      }
-                      return Text(
-                        disp,
-                        style: GoogleFonts.urbanist(
-                          fontSize: 17,
-                          fontWeight: FontWeight.w700,
-                          color: AppColor.textPrimary,
-                          letterSpacing: -0.5,
-                          fontFeatures: const [FontFeature.tabularFigures()],
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      );
-                    },
-                  )
-                : Text(
-                    value,
-                    style: GoogleFonts.urbanist(
-                      fontSize: 17,
-                      fontWeight: FontWeight.w700,
-                      color: AppColor.textPrimary,
-                      letterSpacing: -0.5,
-                      fontFeatures: const [FontFeature.tabularFigures()],
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            value,
+            style: GoogleFonts.urbanist(
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+              color: AppColor.textPrimary,
+              letterSpacing: -0.3,
+              fontFeatures: const [FontFeature.tabularFigures()],
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
       );
 }
 
@@ -773,44 +689,42 @@ class _BentoShimmer extends StatelessWidget {
   Widget build(BuildContext context) => Shimmer.fromColors(
         baseColor: AppColor.surfaceVariant,
         highlightColor: AppColor.border,
-        child: Column(
-          children: [
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 20),
-              height: 90,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 70,
+                height: 12,
+                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(4)),
               ),
-            ),
-            const SizedBox(height: 10),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Row(
+              const SizedBox(height: 10),
+              Container(
+                width: 180,
+                height: 38,
+                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(6)),
+              ),
+              const SizedBox(height: 20),
+              Row(
                 children: [
                   Expanded(
                     child: Container(
-                      height: 66,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                      ),
+                      height: 34,
+                      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8)),
                     ),
                   ),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: 16),
                   Expanded(
                     child: Container(
-                      height: 66,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                      ),
+                      height: 34,
+                      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8)),
                     ),
                   ),
                 ],
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       );
 }
@@ -1231,16 +1145,14 @@ class _UrgentGoalTile extends StatelessWidget {
         goal.targetDate!.year, goal.targetDate!.month, goal.targetDate!.day);
     final daysLeft = deadline.difference(today).inDays;
 
-    final urgencyColor = daysLeft == 0
-        ? AppColor.expense
-        : daysLeft == 1
-            ? AppColor.warning
-            : AppColor.primary;
-    final urgencyLabel = daysLeft == 0
-        ? 'Due today'
-        : daysLeft == 1
-            ? 'Due tomorrow'
-            : '$daysLeft days left';
+    final urgencyColor = daysLeft <= 0 ? AppColor.expense : daysLeft == 1 ? AppColor.warning : AppColor.primary;
+    final urgencyLabel = daysLeft < 0
+        ? 'Past due'
+        : daysLeft == 0
+            ? 'Due today'
+            : daysLeft == 1
+                ? 'Due tomorrow'
+                : '$daysLeft days left';
     final pct = (goal.savedAmount / goal.targetAmount).clamp(0.0, 1.0);
     final remaining = goal.targetAmount - goal.savedAmount;
 

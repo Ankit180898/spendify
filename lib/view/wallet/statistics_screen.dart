@@ -355,7 +355,6 @@ class _HeroSectionState extends State<_HeroSection> {
     final sym        = Get.find<HomeController>().currencySymbol.value;
     final isExpense  = widget.viewType == 'expense';
     final isPositive = widget.net >= 0;
-    final color      = widget.activeColor;
     final now        = DateTime.now();
     final cumPoints  = _cumulativePoints();
     final maxCum     = cumPoints.isNotEmpty ? cumPoints.reduce(math.max) : 1.0;
@@ -532,7 +531,7 @@ class _HeroSectionState extends State<_HeroSection> {
               maxCum: maxCum,
               dayMap: widget.dayMap,
               daysInMonth: widget.daysInMonth,
-              color: color,
+              color: AppColor.textPrimary,
               currentMonth: widget.month,
               todayDay: (widget.month.year == now.year && widget.month.month == now.month)
                   ? now.day : null,
@@ -571,7 +570,7 @@ class _HeroSectionState extends State<_HeroSection> {
               padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
               child: Text(
                 tooltipText,
-                style: GoogleFonts.urbanist(color: color, fontSize: 12, fontWeight: FontWeight.w600),
+                style: GoogleFonts.urbanist(color: AppColor.textPrimary, fontSize: 12, fontWeight: FontWeight.w600),
               ),
             ),
           const SizedBox(height: 24),
@@ -785,58 +784,30 @@ class _AreaPainter extends CustomPainter {
 
     final linePath = _smoothPath(pts);
 
-    // Gradient fill under the curve
-    final fillPath = Path.from(linePath)
-      ..lineTo(pts.last.dx, size.height)
-      ..lineTo(pts.first.dx, size.height)
-      ..close();
-
-    canvas.drawPath(
-      fillPath,
-      Paint()
-        ..shader = LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [color.withValues(alpha: 0.18), color.withValues(alpha: 0.0)],
-        ).createShader(Rect.fromLTWH(0, 0, size.width, size.height))
-        ..style = PaintingStyle.fill,
-    );
-
-    // Line
+    // Line — flat, monochrome stroke. No fill: a filled area reads as
+    // "decoration"; a bare line reads as "data".
     canvas.drawPath(
       linePath,
       Paint()
         ..color = color
-        ..strokeWidth = 2.0
+        ..strokeWidth = 1.5
         ..style = PaintingStyle.stroke
         ..strokeCap = StrokeCap.round
         ..strokeJoin = StrokeJoin.round,
     );
 
-    // Selected / today indicator
+    // Selected / today indicator — a faint dashed guide only, no marker dot.
     final showIdx = selectedDayIndex ?? todayDayIndex;
     if (showIdx != null && showIdx >= 0 && showIdx < pts.length) {
       final pt = pts[showIdx];
-
-      // Vertical dashed line
       final dashPaint = Paint()
-        ..color = color.withValues(alpha: 0.25)
+        ..color = color.withValues(alpha: 0.2)
         ..strokeWidth = 1.0;
       double dy = 0;
       while (dy < size.height) {
         canvas.drawLine(Offset(pt.dx, dy), Offset(pt.dx, math.min(dy + 4, size.height)), dashPaint);
         dy += 8;
       }
-
-      // Outer glow circle
-      canvas.drawCircle(pt, 8, Paint()..color = color.withValues(alpha: 0.15));
-      // White fill
-      canvas.drawCircle(pt, 5, Paint()..color = Colors.white);
-      // Colored border
-      canvas.drawCircle(pt, 5, Paint()
-        ..color = color
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 2.0);
     }
   }
 
