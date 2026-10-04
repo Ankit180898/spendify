@@ -2,25 +2,8 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>CFBundleURLTypes</key>
-	<array>
-		<dict>
-			<key>CFBundleURLSchemes</key>
-			<array>
-				<string>com.googleusercontent.apps.1022798183394-orrndlstq13q1o23cq1abn17h588erue</string>
-			</array>
-		</dict>
-	</array>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
-	<key>NSCameraUsageDescription</key>
-	<string>Spendify needs camera access to scan bill QR codes and barcodes.</string>
-	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Spendify needs photo library access to scan QR codes from saved bill images.</string>
-	<key>NSMicrophoneUsageDescription</key>
-	<string>Spendify needs microphone access to let you log expenses by voice.</string>
-	<key>NSSpeechRecognitionUsageDescription</key>
-	<string>Spendify uses speech recognition to convert your voice into expense entries.</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
@@ -39,10 +22,31 @@
 	<string>$(FLUTTER_BUILD_NAME)</string>
 	<key>CFBundleSignature</key>
 	<string>????</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.1022798183394-orrndlstq13q1o23cq1abn17h588erue</string>
+			</array>
+		</dict>
+	</array>
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
+	<key>GIDClientID</key>
+	<string>1022798183394-orrndlstq13q1o23cq1abn17h588erue.apps.googleusercontent.com</string>
+	<key>GIDServerClientID</key>
+	<string>1022798183394-tq8i6uqjn86e4l6df8ebp7pudgrefb18.apps.googleusercontent.com</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>Spendify needs camera access to scan bill QR codes and barcodes.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Spendify needs microphone access to let you log expenses by voice.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Spendify needs photo library access to scan QR codes from saved bill images.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Spendify uses speech recognition to convert your voice into expense entries.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
