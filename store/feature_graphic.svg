@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="500" viewBox="0 0 1024 500">
+<defs>
+<linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#A2877A"/><stop offset="0.55" stop-color="#86695B"/><stop offset="1" stop-color="#5F4639"/></linearGradient>
+<radialGradient id="glow" cx="0.78" cy="0.45" r="0.5"><stop offset="0" stop-color="#fff" stop-opacity="0.22"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
+<linearGradient id="cream" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFFBF6"/><stop offset="1" stop-color="#F0E4D8"/></linearGradient>
+</defs>
+<rect width="1024" height="500" fill="url(#bg)"/><rect width="1024" height="500" fill="url(#glow)"/>
+<!-- copy -->
+<text x="72" y="190" font-family="Avenir Next" font-weight="bold" font-size="64" fill="#FFFBF6" letter-spacing="-1.5">Spendify</text>
+<text x="72" y="252" font-family="Avenir Next" font-weight="600" font-size="30" fill="#F2E9E3">Money, made simple.</text>
+<text x="72" y="292" font-family="Avenir Next" font-weight="600" font-size="30" fill="#F2E9E3">And a little bit fun.</text>
+<g font-family="Avenir Next" font-weight="600" font-size="19" fill="#5F4639">
+  <rect x="72" y="330" width="142" height="40" rx="20" fill="#FFFBF6"/><text x="143" y="356" text-anchor="middle">Quick logging</text>
+  <rect x="224" y="330" width="148" height="40" rx="20" fill="#FFFBF6"/><text x="298" y="356" text-anchor="middle">Smart budgets</text>
+  <rect x="382" y="330" width="176" height="40" rx="20" fill="#FFFBF6"/><text x="470" y="356" text-anchor="middle">Streaks &amp; badges</text>
+</g>
+<!-- mascot -->
+<g transform="translate(800 250) scale(0.42) translate(-512 -520)">
+  <g transform="rotate(-7 512 520)">
+    <path d="M 300 250 Q 300 210 340 210 L 684 210 Q 724 210 724 250 L 724 790 L 671 830 L 618 790 L 565 830 L 512 790 L 459 830 L 406 790 L 353 830 L 300 790 Z" fill="#3E2C24" fill-opacity="0.25" transform="translate(14 28)"/>
+    <path d="M 300 250 Q 300 210 340 210 L 684 210 Q 724 210 724 250 L 724 790 L 671 830 L 618 790 L 565 830 L 512 790 L 459 830 L 406 790 L 353 830 L 300 790 Z" fill="url(#cream)"/>
+    <path d="M 370 300 L 560 300 M 370 352 L 480 352" stroke="#DCCBBB" stroke-width="22" stroke-linecap="round"/>
+    <circle cx="436" cy="500" r="36" fill="#3E2C24"/><circle cx="588" cy="500" r="36" fill="#3E2C24"/>
+    <circle cx="448" cy="488" r="11" fill="#fff"/><circle cx="600" cy="488" r="11" fill="#fff"/>
+    <circle cx="392" cy="574" r="34" fill="#E58A7A" fill-opacity="0.45"/><circle cx="632" cy="574" r="34" fill="#E58A7A" fill-opacity="0.45"/>
+    <path d="M 468 588 Q 512 636 556 588" fill="none" stroke="#3E2C24" stroke-width="22" stroke-linecap="round"/>
+    <path d="M 380 700 L 644 700" stroke="#DCCBBB" stroke-width="22" stroke-linecap="round" stroke-dasharray="1 44"/>
+  </g>
+  <g transform="translate(820 210)"><path d="M 0 -60 C 6 -20 20 -6 60 0 C 20 6 6 20 0 60 C -6 20 -20 6 -60 0 C -20 -6 -6 -20 0 -60 Z" fill="#F2C27B"/></g>
+  <g transform="translate(200 800) scale(0.5)"><path d="M 0 -60 C 6 -20 20 -6 60 0 C 20 6 6 20 0 60 C -6 20 -20 6 -60 0 C -20 -6 -6 -20 0 -60 Z" fill="#F2C27B"/></g>
+  <g transform="translate(900 640) scale(0.35)"><path d="M 0 -60 C 6 -20 20 -6 60 0 C 20 6 6 20 0 60 C -6 20 -20 6 -60 0 C -20 -6 -6 -20 0 -60 Z" fill="#F2C27B"/></g>
+</g>
+</svg>

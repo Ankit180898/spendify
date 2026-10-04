@@ -1,96 +1,97 @@
-## Spendify — Smart Expense Tracker
-![spendify_bg](https://github.com/user-attachments/assets/07e5c3c3-f463-4c25-8f2f-34820a92d602)
+<p align="center">
+  <img src="store/feature_graphic_1024x500.png" alt="Spendify — Money, made simple. And a little bit fun." width="100%" />
+</p>
+
+<p align="center">
+  <img src="store/play_store_icon_512.png" alt="Spendify app icon" width="96" />
+</p>
+
+<h1 align="center">Spendify</h1>
+<p align="center"><b>Money, made simple. And a little bit fun.</b><br/>
+A warm, gamified expense tracker built with Flutter &amp; Supabase.</p>
+
+<p align="center">
+  <a href="https://spendify-in.netlify.app"><b>👉 Join early access on Android — spendify-in.netlify.app</b></a>
+</p>
+
+---
+
+## Screenshots
+
+<p align="center">
+  <img src="store/play_screenshots/1_home.png" width="30%" alt="Home — see where your money goes" />
+  <img src="store/play_screenshots/2_add.png" width="30%" alt="Add — log money in seconds" />
+  <img src="store/play_screenshots/3_badges.png" width="30%" alt="Badges — build streaks, earn badges" />
+</p>
+<p align="center">
+  <img src="store/play_screenshots/4_goals.png" width="30%" alt="Goals — budgets and goals, sorted" />
+  <img src="store/play_screenshots/5_transactions.png" width="30%" alt="Transactions — every rupee, neatly organised" />
+  <img src="store/play_screenshots/6_bills.png" width="30%" alt="Bills — never miss a bill again" />
+</p>
+
+---
+
+## Get early access
+
+Spendify is in **internal testing on Android**. Leave your email at **[spendify-in.netlify.app](https://spendify-in.netlify.app)** — no account needed — and you'll get a Google Play invite link as spots open. Use the Gmail on your Play Store so the invite works first time.
+
+---
 
 ## Introduction
 
-Spendify is a full-featured personal finance app built with Flutter. It helps you track income and expenses, set budgets, manage savings goals, split bills with friends, and gain intelligent insights into your spending — all backed by Supabase and powered by a clean GetX architecture.
+Spendify is a personal finance app that people actually *want* to open. It tracks income and expenses, budgets, savings goals, bills and group splits — and rewards the habit of tracking with streaks, XP, levels and badges. Everything runs on Supabase with a GetX architecture, wrapped in a calm, warm cream-and-mocha design.
+
+---
+
+## What's new
+
+- **Warm redesign** — a cream & mocha design system with outlined cards, duotone icons and a frosted-glass quick-add menu, applied across Home, Goals, Splits, Transactions, the add screen, splash and onboarding.
+- **Gamification** — logging streaks, XP, levels (Rookie Tracker → Wealth Wizard) and 8 badges. It rewards **logging, never spending**: XP is capped per day and streaks count the day an entry was *created*, so imports can't fake them.
+- **Celebrations** — confetti, an animated badge, XP count-up and a pulsing streak flame after logging, creating goals/budgets/bills, savings milestones (25/50/75/100%) and paying bills.
+- **Bills that work** — overdue detection, correct quarterly/yearly cycles, a tick-to-pay button, auto-marking when you log a matching expense, and dismissed suggestions that stay dismissed.
+- **Honest insights** — budget projections that separate rent/one-offs from daily spend, fair month-over-month and weekend comparisons, and no misleading empty states.
+- **New look, new mascot** — a smiling receipt mascot as the app icon, splash and store art.
 
 ---
 
 ## Features
 
-### Expense & Income Tracking
-- Log expenses and income with category, amount, date, and description
-- Edit or delete any transaction
-- Filter and sort by date, category, or type
-- Paginated transaction history
+### Home
+- Period picker (today / week / month / year) and balance banner with a **budget ring** or 7-day spend sparkline
+- Income / spent cards and a "₹X left of ₹Y this month" budget line
+- **Streak & level card** with week dots, XP bar and badges
+- Quick actions, insights card and recent activity grouped by day
 
-### Voice Input
-- Hands-free expense logging using speech-to-text
-- Auto-detects amount, category, and transaction type from natural language
+### Add income / expense
+- Sliding Expense / Income switch, large animated amount and a custom number pad
+- Category grid ordered by **your most-used categories**; income has its own (Salary, Freelance, Refund…)
+- Today / Yesterday / pick-a-date menu and an inline note
+- Save button that tells you what's missing and previews the **XP & streak reward**
+- Voice input — speak "450 on Swiggy dinner" and it fills amount, category and note
 
-### SMS Import
-- Scans SMS messages from the last 30 days
-- Auto-extracts amounts, merchants, and categories from bank/UPI messages
-- Duplicate detection to prevent re-imports
-- Manual review before bulk import
+### Transactions
+- Search by name, category **or amount**; All · Expenses · Income switch; category chips
+- Summary of count, spent, earned and net across **all** matching entries
+- Grouped by day (Today, Yesterday, dates) with each day's total; week calendar filter
 
-### Budget Limits
-- Set spending limits per category (weekly or monthly)
-- Compact table view showing limit vs. current spending
-- Visual alerts when approaching or exceeding a limit
-- Gradient summary card showing total budget and remaining amount
+### Goals
+- **Budgets** — monthly budget ring with a safe-to-spend-per-day hint, plus per-category limits with On track / Near limit / Over status
+- **Savings** — goals with emoji progress rings, 25/50/75/100% milestones and a suggested weekly pace
+- **Bills** — month summary, calendar with brand logos, tick-to-pay list, auto-detected subscriptions
 
-### Savings Goals
-- Create goals with a name, target amount, emoji, and optional target date
-- Track progress with visual progress bars
-- Add contributions at any time via "Add money" button
-- Deadline countdown tracking
-
-### Group Splits
-- Create groups for shared expenses
-- Invite members via unique invite codes
-- Add split expenses with category and date
-- Automatic equal-split calculation
-- Track who paid and who owes
-- Mark settlements and track simplified debts
-- Real-time balance updates
-
-### Statistics & Analytics
-- Monthly income vs. expense trends
-- Tab-based view (expenses / income)
-- Spending breakdown by category
-- Top spending categories
-- Navigate across months with a date picker
-- Powered by Syncfusion charts
+### Splits
+- Groups with invite codes, equal or custom splits, who-owes-whom balances and settlements
 
 ### Insights
-- Spending spike alerts
-- Budget utilization analysis
-- Savings progress tracking
-- Income vs. expense comparison
-- Category-specific recommendations
+- Budget pace, spending vs the same days last month, top category, saving rate, logging gaps, no-spend days, biggest expense, weekend vs weekday and savings-goal deadlines
 
-### Notifications
-- Budget limit alerts (approaching & exceeded)
-- Savings goal deadline reminders
-- Weekly digest and monthly recap
-- Spend spike alerts
-- Group split notifications
-- Milestone celebrations
+### Import & notifications
+- SMS / UPI import with duplicate detection and review
+- Budget alerts, bill reminders, goal deadlines, weekly digest and spend-spike alerts
 
-### Home Dashboard
-- Personalized greeting (morning / afternoon / evening)
-- Total balance with visibility toggle
-- Monthly income/expense summary card
-- Insights strip with actionable tips
-- Budget alerts banner
-- Savings goal progress banner
-- Recent transactions list
-- Speed dial FAB for quick entry (expense, income, or split bill)
-
-### Profile & Settings
-- Edit name and occupation
-- Currency and budget preferences
-- Category customization
-- Dark / light mode toggle
-- Logout
-
-### Authentication
-- Email / password sign-up and login
-- Google OAuth
-- Apple Sign-In
-- Guided onboarding with currency selection, budget setup, and category preferences
+### Onboarding & auth
+- Google and Apple sign-in, plus email
+- 4-step onboarding: currency, occupation, monthly budget and favourite categories
 
 ---
 
@@ -99,15 +100,16 @@ Spendify is a full-featured personal finance app built with Flutter. It helps yo
 | Layer | Technology |
 |---|---|
 | Frontend | Flutter |
-| State Management | GetX |
-| Backend & Database | Supabase |
-| Authentication | Supabase Auth (Email, Google, Apple) |
+| State management | GetX |
+| Backend & database | Supabase |
+| Authentication | Supabase Auth (Google, Apple, email) |
 | Charts | Syncfusion Flutter Charts |
-| Voice Input | speech_to_text |
-| SMS Parsing | flutter_sms_inbox |
+| Icons | Phosphor (duotone) |
+| Voice input | speech_to_text |
+| SMS parsing | flutter_sms_inbox |
 | Notifications | flutter_local_notifications |
-| Home Widget | home_widget |
-| Connectivity | connectivity_plus |
+| Email | Brevo |
+| Home widget | home_widget |
 
 ---
 
@@ -115,22 +117,25 @@ Spendify is a full-featured personal finance app built with Flutter. It helps yo
 
 ```
 lib/
-├── controller/        # GetX controllers (state management)
+├── config/            # AppColor tokens & theme (light only)
+├── controller/        # GetX controllers
 ├── model/             # Data models
-├── services/          # Business logic (insights, voice, SMS, notifications)
+├── services/          # Insights, progress (XP/streaks/badges), voice, SMS, notifications
 ├── view/
 │   ├── auth/          # Login, register, forgot password
 │   ├── home/          # Home dashboard
-│   ├── wallet/        # Transactions, statistics, SMS import
-│   ├── goals/         # Budget limits & savings goals
+│   ├── wallet/        # Add transaction, transactions, statistics, SMS import
+│   ├── goals/         # Budgets, savings goals & bills
 │   ├── splits/        # Group expense splitting
 │   ├── profile/       # Profile & settings
 │   ├── onboarding/    # Onboarding flow
 │   └── landing/       # Splash & get started
-├── widgets/           # Reusable UI components
+├── widgets/           # Reusable UI, incl. celebration.dart (confetti & rewards)
 ├── routes/            # Named routes
-├── config/            # Theme & colors
-└── utils/             # Utility functions
+└── utils/             # Utilities
+
+assets/brand/          # SVG sources for the app icon & mascot
+store/                 # Play Store icon, feature graphic, screenshots & compose.py
 ```
 
 ---
@@ -140,30 +145,37 @@ lib/
 1. Clone the repository:
    ```bash
    git clone https://github.com/Ankit180898/spendify.git
-   ```
-2. Navigate to the project directory:
-   ```bash
    cd spendify
    ```
-3. Create a `.env` file with your Supabase credentials:
+2. Create a `.env` file in the project root:
    ```
    SUPABASE_URL=your_supabase_url
-   SUPABASE_ANON_KEY=your_anon_key
+   SUPABASE_ANONKEY=your_supabase_anon_key
+   BREVO_API_KEY=your_brevo_api_key
    ```
-4. Install dependencies:
+3. Install dependencies and run:
    ```bash
    flutter pub get
-   ```
-5. Run the app:
-   ```bash
    flutter run
    ```
+
+> iOS requires a deployment target of **15.0** or newer. Google Sign-In on iOS reads `GIDClientID` / `GIDServerClientID` from `ios/Runner/Info.plist`.
+
+---
+
+## Brand & store assets
+
+| Asset | Source | Regenerate |
+|---|---|---|
+| App icon (iOS, Android adaptive & themed) | `assets/brand/*.svg` | `rsvg-convert` the SVGs to `assets/`, then `dart run flutter_launcher_icons` |
+| Play Store icon & feature graphic | `store/` | Re-export from `assets/brand/icon.svg` / `store/feature_graphic.svg` |
+| Play Store screenshots | `store/raw/` (simulator captures) | `python3 store/compose.py` |
 
 ---
 
 ## Contributions
 
-Contributions are welcome! Fork the repository and open a pull request with your changes. For bugs or feature requests, please open an issue on GitHub.
+Contributions are welcome! Fork the repository and open a pull request. For bugs or feature requests, please open an issue on GitHub.
 
 ## License
 

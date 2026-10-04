@@ -54,3 +54,10 @@ app.*.map.json
 android/app/google-services.json
 ios/Runner/GoogleService-Info.plist
 .claude/
+
+# Landing page / waitlist site (deployed separately via Netlify)
+website/
+# Waitlist exports (contain emails)
+*.csv
+# Raw simulator captures (personal data) — only needed to regenerate store screenshots
+store/raw/
