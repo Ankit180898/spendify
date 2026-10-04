@@ -859,14 +859,17 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
               ),
 
               // ── Categories, date & note sit just above the button ─────
-              if (!noteActive) _buildCategories(),
+              // Offstage (not `if`) so the note field keeps its place in the
+              // tree — removing a sibling above it would rebuild the field,
+              // drop focus and close the keyboard straight away.
+              Offstage(offstage: noteActive, child: _buildCategories()),
               const SizedBox(height: 8),
               _buildDateAndNote(),
               const SizedBox(height: 4),
 
               _buildSaveButton(),
               // Custom numpad (hidden while typing a note)
-              if (!noteActive) _Numpad(onKey: _tapKey),
+              Offstage(offstage: noteActive, child: _Numpad(onKey: _tapKey)),
             ],
           ),
         ),
