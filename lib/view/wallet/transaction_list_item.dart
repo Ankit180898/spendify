@@ -25,10 +25,8 @@ class TransactionListItem extends StatelessWidget {
     final tx = transaction[index];
     final category = tx['category'] as String? ?? '';
     final isExpense = tx['type'] == 'expense';
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    final textPrimary = isDark ? AppColor.textPrimary : const Color(0xFF18181B);
-    final textMuted = isDark ? AppColor.textSecondary : const Color(0xFF71717A);
+    const textPrimary = AppColor.textPrimary;
+    const textMuted = AppColor.textSecondary;
     final amountColor = isExpense ? AppColor.expense : AppColor.income;
     final catColor = isExpense
         ? AppColor.categoryColor(category)

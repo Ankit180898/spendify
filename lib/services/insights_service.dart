@@ -1,20 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
+import 'package:spendify/config/app_color.dart';
 import 'package:spendify/model/savings_goal_model.dart';
 
 enum InsightType { warning, positive, info }
 
 class Insight {
-  final String emoji;
+  /// Phosphor icon data (any style).
+  final Object icon;
   final String title;
   final String body;
   final InsightType type;
+
   /// Optional short stat shown prominently on the card (e.g. "₹450/day")
   final String? stat;
-  /// Optional progress value 0.0–1.0 for mini bar on card
+
+  /// Optional progress value 0.0–1.0 for a mini bar in the detail sheet
   final double? progress;
 
   const Insight({
-    required this.emoji,
+    required this.icon,
     required this.title,
     required this.body,
     required this.type,
@@ -25,366 +30,397 @@ class Insight {
   Color get accentColor {
     switch (type) {
       case InsightType.warning:
-        return const Color(0xFFF97316);
+        return AppColor.warning;
       case InsightType.positive:
-        return const Color(0xFF22C55E);
+        return AppColor.income;
       case InsightType.info:
-        return const Color(0xFF6366F1);
+        return AppColor.primary;
     }
   }
 }
 
+/// Pure, synchronous insight engine.
+///
+/// Ground rules that keep the numbers honest:
+/// - Only transactions dated up to today count (future-dated entries are ignored).
+/// - Month-over-month comparisons use the same number of days, and only run
+///   when last month was actually tracked from (near) its start.
+/// - Budget projections separate large one-offs (rent, bills) from day-to-day
+///   spending, so a rent payment on the 1st doesn't project a 10× overspend.
+/// - Nothing fires on too little data (early in the month, or a handful of entries).
 class InsightsService {
-  /// Computes a list of insights from raw data. No external calls, no state.
+  static const int maxInsights = 5;
+
+  /// Categories that behave like fixed monthly costs rather than daily spend.
+  static const _fixedCategories = {
+    'bills & fees',
+    'bills',
+    'rent',
+    'subscriptions',
+    'investments',
+    'emi',
+    'loan',
+    'insurance',
+    'education',
+  };
+
   static List<Insight> compute({
     required List<Map<String, dynamic>> allTransactions,
     required double monthlyBudget,
     required String sym,
     required List<SavingsGoal> savingsGoals,
   }) {
-    final insights = <Insight>[];
     final now = DateTime.now();
-
-    final thisMonthStart = DateTime(now.year, now.month, 1);
+    final today = DateTime(now.year, now.month, now.day);
+    final endOfToday = today.add(const Duration(days: 1));
+    final monthStart = DateTime(now.year, now.month, 1);
     final lastMonthStart = DateTime(now.year, now.month - 1, 1);
+    final daysInMonth = DateTime(now.year, now.month + 1, 0).day;
+    final dayOfMonth = now.day;
+    final daysLeft = daysInMonth - dayOfMonth + 1; // including today
 
-    double amt(Map<String, dynamic> t) =>
-        (t['amount'] as num?)?.toDouble() ?? 0.0;
+    double amt(Map<String, dynamic> t) => (t['amount'] as num?)?.toDouble() ?? 0.0;
+    DateTime? dateOf(Map<String, dynamic> t) {
+      final raw = t['date'];
+      final d = raw is String ? DateTime.tryParse(raw) : null;
+      return d?.toLocal();
+    }
 
-    DateTime? parseDate(Map<String, dynamic> t) =>
-        DateTime.tryParse(t['date'] ?? '');
-
-    final thisMonthExp = allTransactions.where((t) {
-      final d = parseDate(t);
-      return d != null && !d.isBefore(thisMonthStart) && t['type'] == 'expense';
+    // Only past/present entries
+    final txs = allTransactions.where((t) {
+      final d = dateOf(t);
+      return d != null && d.isBefore(endOfToday);
     }).toList();
 
-    // Compare same number of days into last month — clamp to last month's actual length
-    // e.g. March 31 → clamp to Feb 28, not Feb 31 (which overflows to March 3)
-    final lastMonthDays = DateTime(now.year, now.month, 0).day;
-    final clampedDay = now.day.clamp(1, lastMonthDays);
-    final lastMonthSameDayEnd =
-        DateTime(now.year, now.month - 1, clampedDay, 23, 59, 59);
-    final lastMonthExp = allTransactions.where((t) {
-      final d = parseDate(t);
-      return d != null &&
-          !d.isBefore(lastMonthStart) &&
-          !d.isAfter(lastMonthSameDayEnd) &&
-          t['type'] == 'expense';
-    }).toList();
+    if (txs.isEmpty) {
+      return [
+        Insight(
+          icon: PhosphorIconsDuotone.sparkle,
+          title: 'Log a few transactions to unlock insights',
+          body: 'Once you\'ve logged some income and expenses, you\'ll see spending trends, budget pace and saving rate here.',
+          type: InsightType.info,
+        ),
+      ];
+    }
 
-    final thisMonthInc = allTransactions.where((t) {
-      final d = parseDate(t);
-      return d != null && !d.isBefore(thisMonthStart) && t['type'] == 'income';
-    }).toList();
+    final firstDate = txs.map(dateOf).whereType<DateTime>().reduce((a, b) => a.isBefore(b) ? a : b);
+    final trackingDays = today.difference(DateTime(firstDate.year, firstDate.month, firstDate.day)).inDays + 1;
 
-    final thisSpent = thisMonthExp.fold(0.0, (s, t) => s + amt(t));
-    final lastSpent = lastMonthExp.fold(0.0, (s, t) => s + amt(t));
-    final thisIncome = thisMonthInc.fold(0.0, (s, t) => s + amt(t));
+    bool inRange(Map<String, dynamic> t, DateTime from, DateTime to) {
+      final d = dateOf(t);
+      return d != null && !d.isBefore(from) && d.isBefore(to);
+    }
 
-    // ── 1. Spending vs last month ──────────────────────────────────────────
-    if (lastSpent > 0 && thisSpent > 0) {
-      final pct = ((thisSpent - lastSpent) / lastSpent * 100).round();
-      if (pct > 10) {
-        insights.add(Insight(
-          emoji: '📈',
-          title: 'Spending up $pct% vs last month',
-          body: 'You\'ve spent $sym${_fmt(thisSpent)} so far this month — $sym${_fmt(thisSpent - lastSpent)} more than at the same point last month. Check which category drove the increase.',
+    final monthExp = txs.where((t) => t['type'] == 'expense' && inRange(t, monthStart, endOfToday)).toList();
+    final monthInc = txs.where((t) => t['type'] == 'income' && inRange(t, monthStart, endOfToday)).toList();
+    final spent = monthExp.fold(0.0, (s, t) => s + amt(t));
+    final earned = monthInc.fold(0.0, (s, t) => s + amt(t));
+
+    // Same-length window last month (e.g. 1–4 Sep vs 1–4 Oct)
+    final lastMonthLen = DateTime(now.year, now.month, 0).day;
+    final lastWindowEnd = DateTime(now.year, now.month - 1, dayOfMonth.clamp(1, lastMonthLen))
+        .add(const Duration(days: 1));
+    final lastExp = txs.where((t) => t['type'] == 'expense' && inRange(t, lastMonthStart, lastWindowEnd)).toList();
+    final lastSpent = lastExp.fold(0.0, (s, t) => s + amt(t));
+    // Last month only counts if tracking began within its first 3 days
+    final lastMonthTracked = !firstDate.isAfter(lastMonthStart.add(const Duration(days: 3)));
+
+    final warnings = <Insight>[];
+    final positives = <Insight>[];
+    final infos = <Insight>[];
+
+    // ── 1. Budget pace ─────────────────────────────────────────────────────
+    if (monthlyBudget > 0 && monthExp.isNotEmpty) {
+      final remaining = monthlyBudget - spent;
+      final usedPct = (spent / monthlyBudget * 100).round();
+      final monthPct = (dayOfMonth / daysInMonth * 100).round();
+
+      if (remaining < 0) {
+        warnings.add(Insight(
+          icon: PhosphorIconsDuotone.warningCircle,
+          title: 'Over budget by $sym${_fmt(-remaining)}',
+          body: 'You\'ve spent $sym${_fmt(spent)} against a $sym${_fmt(monthlyBudget)} budget with $daysLeft ${daysLeft == 1 ? 'day' : 'days'} still to go this month.',
+          type: InsightType.warning,
+          stat: '$usedPct% used',
+          progress: 1,
+        ));
+      } else if (dayOfMonth >= 5) {
+        // Separate fixed/one-off costs from day-to-day spending
+        final oneOffThreshold = monthlyBudget * 0.2;
+        double fixed = 0, variable = 0;
+        for (final t in monthExp) {
+          final cat = ((t['category'] as String?) ?? '').toLowerCase();
+          if (_fixedCategories.contains(cat) || amt(t) >= oneOffThreshold) {
+            fixed += amt(t);
+          } else {
+            variable += amt(t);
+          }
+        }
+        final dailyVariable = variable / dayOfMonth;
+        final projected = fixed + dailyVariable * daysInMonth;
+        final safePerDay = remaining / daysLeft;
+
+        if (projected > monthlyBudget * 1.05) {
+          warnings.add(Insight(
+            icon: PhosphorIconsDuotone.trendUp,
+            title: 'On pace to overspend by $sym${_fmt(projected - monthlyBudget)}',
+            body: 'Day-to-day spending is averaging $sym${_fmt(dailyVariable)}/day. To stay within budget, keep it under $sym${_fmt(safePerDay)}/day for the rest of the month.',
+            type: InsightType.warning,
+            stat: '$sym${_fmt(safePerDay)}/day',
+            progress: (spent / monthlyBudget).clamp(0.0, 1.0),
+          ));
+        } else if (projected < monthlyBudget * 0.9 && dayOfMonth >= 10) {
+          positives.add(Insight(
+            icon: PhosphorIconsDuotone.shieldCheck,
+            title: 'On track to finish $sym${_fmt(monthlyBudget - projected)} under budget',
+            body: '$usedPct% of your budget used, $monthPct% of the month gone. You can spend about $sym${_fmt(safePerDay)}/day and still stay on budget.',
+            type: InsightType.positive,
+            stat: '$usedPct% used',
+            progress: (spent / monthlyBudget).clamp(0.0, 1.0),
+          ));
+        }
+      }
+    }
+
+    // ── 2. Spending vs same point last month ───────────────────────────────
+    if (lastMonthTracked && lastSpent > 0 && spent > 0 && dayOfMonth >= 5) {
+      final pct = ((spent - lastSpent) / lastSpent * 100).round();
+      if (pct >= 15) {
+        warnings.add(Insight(
+          icon: PhosphorIconsDuotone.arrowUpRight,
+          title: 'Spending is up $pct% on last month',
+          body: '$sym${_fmt(spent)} in the first $dayOfMonth days, vs $sym${_fmt(lastSpent)} over the same days last month.',
           type: InsightType.warning,
           stat: '+$pct%',
         ));
-      } else if (pct < -10) {
-        insights.add(Insight(
-          emoji: '📉',
-          title: 'Spending down ${pct.abs()}% vs last month',
-          body: 'You\'ve spent $sym${_fmt(thisSpent)} this month — $sym${_fmt(lastSpent - thisSpent)} less than the same point last month. Great discipline!',
+      } else if (pct <= -15) {
+        positives.add(Insight(
+          icon: PhosphorIconsDuotone.arrowDownRight,
+          title: 'Spending is down ${-pct}% on last month',
+          body: '$sym${_fmt(spent)} in the first $dayOfMonth days, vs $sym${_fmt(lastSpent)} over the same days last month — $sym${_fmt(lastSpent - spent)} saved.',
           type: InsightType.positive,
-          stat: '${pct.abs()}% less',
+          stat: '${-pct}% less',
         ));
       }
     }
 
-    // ── 2. Top spending category with MoM comparison ───────────────────────
-    if (thisMonthExp.isNotEmpty) {
-      final catTotals = <String, double>{};
-      for (final t in thisMonthExp) {
-        final cat = (t['category'] as String?) ?? 'Others';
-        catTotals[cat] = (catTotals[cat] ?? 0) + amt(t);
+    // ── 3. Top category ────────────────────────────────────────────────────
+    if (monthExp.length >= 3 && spent > 0) {
+      final byCat = <String, double>{};
+      for (final t in monthExp) {
+        final cat = (t['category'] as String?)?.trim();
+        final key = (cat == null || cat.isEmpty) ? 'Uncategorised' : cat;
+        byCat[key] = (byCat[key] ?? 0) + amt(t);
       }
-      final top = catTotals.entries.reduce((a, b) => a.value > b.value ? a : b);
-      final pct = thisSpent > 0 ? (top.value / thisSpent * 100).round() : 0;
-
-      // Check same category last month
-      final lastCatSpend = lastMonthExp
-          .where((t) => (t['category'] as String?) == top.key)
-          .fold(0.0, (s, t) => s + amt(t));
-      final catChange = lastCatSpend > 0
-          ? ((top.value - lastCatSpend) / lastCatSpend * 100).round()
-          : null;
-      final changeStr = catChange != null
-          ? (catChange > 0 ? ', up $catChange% vs last month' : ', down ${catChange.abs()}% vs last month')
-          : '';
-
-      insights.add(Insight(
-        emoji: '🏆',
-        title: '${top.key} is your top spend',
-        body: '$sym${_fmt(top.value)} on ${top.key} this month — $pct% of your total expenses$changeStr.',
-        type: catChange != null && catChange > 25 ? InsightType.warning : InsightType.info,
-        stat: '$pct% of spend',
-        progress: thisSpent > 0 ? (top.value / thisSpent).clamp(0.0, 1.0) : null,
-      ));
+      if (byCat.length >= 2) {
+        final top = byCat.entries.reduce((a, b) => a.value >= b.value ? a : b);
+        final share = (top.value / spent * 100).round();
+        var change = '';
+        if (lastMonthTracked) {
+          final lastCat = lastExp
+              .where((t) => ((t['category'] as String?)?.trim() ?? '') == top.key)
+              .fold(0.0, (s, t) => s + amt(t));
+          if (lastCat > 0) {
+            final c = ((top.value - lastCat) / lastCat * 100).round();
+            if (c.abs() >= 10) {
+              change = c > 0 ? ' That\'s up $c% on the same days last month.' : ' That\'s down ${-c}% on the same days last month.';
+            }
+          }
+        }
+        infos.add(Insight(
+          icon: PhosphorIconsDuotone.chartPieSlice,
+          title: '${top.key} is $share% of your spending',
+          body: '$sym${_fmt(top.value)} of $sym${_fmt(spent)} this month went to ${top.key}.$change',
+          type: InsightType.info,
+          stat: '$sym${_fmt(top.value)}',
+          progress: top.value / spent,
+        ));
+      }
     }
 
-    // ── 3. Savings rate ────────────────────────────────────────────────────
-    if (thisIncome > 0 && thisSpent > 0) {
-      final rate = ((thisIncome - thisSpent) / thisIncome * 100).round();
-      final savedAmt = thisIncome - thisSpent;
-      if (rate >= 20) {
-        insights.add(Insight(
-          emoji: '💰',
-          title: 'Saving $rate% of income',
-          body: 'You\'ve saved $sym${_fmt(savedAmt.abs())} of your $sym${_fmt(thisIncome)} income this month. The 50/30/20 rule recommends at least 20% — you\'re nailing it.',
+    // ── 4. Saving rate ─────────────────────────────────────────────────────
+    if (earned > 0) {
+      final saved = earned - spent;
+      final rate = (saved / earned * 100).round();
+      if (saved < 0 && dayOfMonth >= 7) {
+        warnings.add(Insight(
+          icon: PhosphorIconsDuotone.scales,
+          title: 'Spent $sym${_fmt(-saved)} more than you earned',
+          body: '$sym${_fmt(spent)} out vs $sym${_fmt(earned)} in this month. If more income is due, log it to keep this accurate.',
+          type: InsightType.warning,
+          stat: '−$sym${_fmt(-saved)}',
+        ));
+      } else if (rate >= 20 && spent > 0) {
+        positives.add(Insight(
+          icon: PhosphorIconsDuotone.piggyBank,
+          title: 'Keeping $rate% of your income so far',
+          body: '$sym${_fmt(saved)} of the $sym${_fmt(earned)} you earned this month is still unspent. Moving some into a savings goal locks it in.',
           type: InsightType.positive,
-          stat: '$rate% saved',
+          stat: '$rate% kept',
           progress: (rate / 100).clamp(0.0, 1.0),
         ));
-      } else if (rate < 0) {
-        insights.add(Insight(
-          emoji: '⚠️',
-          title: 'Spending more than you earned',
-          body: 'You\'ve spent $sym${_fmt(savedAmt.abs())} more than your income of $sym${_fmt(thisIncome)} this month. Try reducing discretionary spending.',
+      }
+    }
+
+    // ── 5. Logging gap ─────────────────────────────────────────────────────
+    final lastLogged = allTransactions
+        .map((t) {
+          final raw = t['created_at'] ?? t['date'];
+          return raw is String ? DateTime.tryParse(raw)?.toLocal() : null;
+        })
+        .whereType<DateTime>()
+        .where((d) => d.isBefore(endOfToday))
+        .fold<DateTime?>(null, (m, d) => m == null || d.isAfter(m) ? d : m);
+    if (lastLogged != null) {
+      final gap = today.difference(DateTime(lastLogged.year, lastLogged.month, lastLogged.day)).inDays;
+      if (gap >= 4) {
+        warnings.add(Insight(
+          icon: PhosphorIconsDuotone.pencilSimpleLine,
+          title: 'Nothing logged for $gap days',
+          body: 'Insights are only as good as your entries. Catch up on anything you\'ve spent since ${_shortDate(lastLogged)} — it only takes a minute.',
           type: InsightType.warning,
-          stat: '${rate.abs()}% over',
-        ));
-      } else {
-        insights.add(Insight(
-          emoji: '📊',
-          title: 'Saving $rate% of income',
-          body: 'You\'re saving $sym${_fmt(savedAmt)} of $sym${_fmt(thisIncome)} earned. Aim for 20% ($sym${_fmt(thisIncome * 0.2)}/month) for a healthier cushion.',
-          type: InsightType.info,
-          stat: '$rate% saved',
-          progress: (rate / 20).clamp(0.0, 1.0),
+          stat: '$gap days',
         ));
       }
     }
 
-    // ── 4. Budget projection ───────────────────────────────────────────────
-    if (monthlyBudget > 0 && now.day > 3 && thisMonthExp.isNotEmpty) {
-      final daysInMonth = DateTime(now.year, now.month + 1, 0).day;
-      final dailyAvg = thisSpent / now.day;
-      final projected = dailyAvg * daysInMonth;
-      final budgetUsedPct = (thisSpent / monthlyBudget * 100).round();
-      final monthPct = (now.day / daysInMonth * 100).round();
-
-      if (projected > monthlyBudget * 1.05) {
-        final over = projected - monthlyBudget;
-        insights.add(Insight(
-          emoji: '🚨',
-          title: 'On track to overspend',
-          body: 'You\'ve used $budgetUsedPct% of your budget in $monthPct% of the month. At $sym${_fmt(dailyAvg)}/day you\'ll exceed your budget by $sym${_fmt(over)}. Aim for $sym${_fmt((monthlyBudget - thisSpent) / (daysInMonth - now.day).clamp(1, 31))}/day from now.',
-          type: InsightType.warning,
-          stat: '$budgetUsedPct% used',
-          progress: (thisSpent / monthlyBudget).clamp(0.0, 1.0),
-        ));
-      } else if (projected < monthlyBudget * 0.85) {
-        final under = monthlyBudget - projected;
-        insights.add(Insight(
-          emoji: '✅',
-          title: 'Well within budget',
-          body: 'Only $budgetUsedPct% of budget used in $monthPct% of the month. You\'re projected to end $sym${_fmt(under)} under budget. Great pacing!',
-          type: InsightType.positive,
-          stat: '$budgetUsedPct% of budget',
-          progress: (thisSpent / monthlyBudget).clamp(0.0, 1.0),
-        ));
-      }
-    }
-
-    // ── 5. Daily spending pace ─────────────────────────────────────────────
-    if (thisMonthExp.isNotEmpty && now.day > 3) {
-      final dailyAvg = thisSpent / now.day;
-      final lastMonthDailyAvg = lastSpent > 0 ? lastSpent / now.day : 0.0;
-      if (lastMonthDailyAvg > 0) {
-        final paceChange = ((dailyAvg - lastMonthDailyAvg) / lastMonthDailyAvg * 100).round();
-        if (paceChange.abs() >= 20) {
-          insights.add(Insight(
-            emoji: paceChange > 0 ? '⚡' : '🐢',
-            title: paceChange > 0
-                ? 'Spending $paceChange% faster this month'
-                : 'Spending ${paceChange.abs()}% slower this month',
-            body: 'Daily average: $sym${_fmt(dailyAvg)}/day this month vs $sym${_fmt(lastMonthDailyAvg)}/day at the same point last month.',
-            type: paceChange > 30 ? InsightType.warning : InsightType.info,
-            stat: '$sym${_fmt(dailyAvg)}/day',
-          ));
-        }
-      }
-    }
-
-    // ── 6. Transaction logging streak ─────────────────────────────────────
-    if (allTransactions.isNotEmpty) {
-      final dates = allTransactions
-          .map((t) => parseDate(t))
+    // ── 6. No-spend days (only days you were actually tracking) ───────────
+    final countFrom = firstDate.isAfter(monthStart)
+        ? DateTime(firstDate.year, firstDate.month, firstDate.day)
+        : monthStart;
+    final pastDays = today.difference(countFrom).inDays; // excludes today
+    if (pastDays >= 7 && trackingDays >= 7) {
+      final spendDays = monthExp
+          .map(dateOf)
           .whereType<DateTime>()
           .map((d) => DateTime(d.year, d.month, d.day))
-          .toSet()
-          .toList()
-        ..sort((a, b) => b.compareTo(a));
-
-      final today = DateTime(now.year, now.month, now.day);
-      int streak = 0;
-      for (int i = 0; i < dates.length; i++) {
-        final expected = today.subtract(Duration(days: i));
-        if (dates[i] == expected) {
-          streak++;
-        } else {
-          break;
-        }
-      }
-
-      // No-spend days this month (exclude today — day isn't over yet)
-      final daysInMonthSoFar = (now.day - 1).clamp(0, 31);
-      final daysWithSpend = thisMonthExp
-          .map((t) => parseDate(t))
-          .whereType<DateTime>()
-          .map((d) => DateTime(d.year, d.month, d.day))
-          .where((d) => d != today) // exclude today to match daysInMonthSoFar
+          .where((d) => d.isBefore(today) && !d.isBefore(countFrom))
           .toSet()
           .length;
-      final noSpendDays = daysInMonthSoFar - daysWithSpend;
-
-      if (streak >= 3) {
-        insights.add(Insight(
-          emoji: '🔥',
-          title: '$streak-day logging streak',
-          body: 'You\'ve logged transactions for $streak days in a row. Consistent tracking gives you the most accurate insights.',
+      final noSpend = pastDays - spendDays;
+      if (noSpend >= 3) {
+        positives.add(Insight(
+          icon: PhosphorIconsDuotone.leaf,
+          title: '$noSpend no-spend ${noSpend == 1 ? 'day' : 'days'} this month',
+          body: 'Out of the last $pastDays days, $noSpend had no expenses at all. Quiet days add up.',
           type: InsightType.positive,
-          stat: '$streak days',
+          stat: '$noSpend days',
         ));
-      } else if (noSpendDays >= 3 && thisMonthExp.isNotEmpty) {
-        insights.add(Insight(
-          emoji: '🌿',
-          title: '$noSpendDays no-spend days this month',
-          body: 'You had $noSpendDays days with zero spending so far this month. Every no-spend day adds to your savings.',
-          type: InsightType.positive,
-          stat: '$noSpendDays days',
-        ));
-      } else if (thisMonthExp.isNotEmpty || lastMonthExp.isNotEmpty) {
-        final daysSince = now.difference(dates.first).inDays;
-        if (daysSince >= 5) {
-          insights.add(Insight(
-            emoji: '📝',
-            title: '$daysSince days without logging',
-            body: 'You haven\'t logged a transaction in $daysSince days. Missing entries can make your insights less accurate.',
-            type: InsightType.warning,
-            stat: '$daysSince days gap',
-          ));
-        }
       }
     }
 
-    // ── 7. Savings goal nudge ──────────────────────────────────────────────
-    final activeGoals =
-        savingsGoals.where((g) => g.savedAmount < g.targetAmount).toList();
-
-    for (final goal in activeGoals.take(2)) {
-      final remaining = goal.targetAmount - goal.savedAmount;
-      final goalPct = (goal.savedAmount / goal.targetAmount).clamp(0.0, 1.0);
-      if (goal.targetDate != null) {
-        final monthsLeft = ((goal.targetDate!.year - now.year) * 12 +
-                goal.targetDate!.month -
-                now.month)
-            .clamp(1, 999);
-        if (monthsLeft > 0) {
-          final needed = remaining / monthsLeft;
-          insights.add(Insight(
-            emoji: goal.emoji,
-            title: '${goal.name} — $monthsLeft mo left',
-            body: '${(goalPct * 100).round()}% funded. Save $sym${_fmt(needed)}/month to hit your goal on time. You need $sym${_fmt(remaining)} more.',
-            type: monthsLeft <= 2 ? InsightType.warning : InsightType.info,
-            stat: '$sym${_fmt(needed)}/mo needed',
-            progress: goalPct,
-          ));
-        }
-      } else {
-        final pct = (goal.savedAmount / goal.targetAmount * 100).round();
-        insights.add(Insight(
-          emoji: goal.emoji,
-          title: '${goal.name} at $pct%',
-          body: '$sym${_fmt(goal.savedAmount)} of $sym${_fmt(goal.targetAmount)} saved. Just $sym${_fmt(remaining)} more to reach your goal.',
+    // ── 7. Biggest single expense ──────────────────────────────────────────
+    if (monthExp.length >= 4) {
+      final biggest = monthExp.reduce((a, b) => amt(a) >= amt(b) ? a : b);
+      final big = amt(biggest);
+      final othersAvg = (spent - big) / (monthExp.length - 1);
+      if (othersAvg > 0 && big >= othersAvg * 3 && big >= 500) {
+        final d = dateOf(biggest);
+        final label = (biggest['description'] as String?)?.trim().isNotEmpty == true
+            ? biggest['description'] as String
+            : (biggest['category'] as String?) ?? 'One expense';
+        infos.add(Insight(
+          icon: PhosphorIconsDuotone.receipt,
+          title: 'Biggest expense: $label',
+          body: '$sym${_fmt(big)}${d != null ? ' on ${_shortDate(d)}' : ''} — ${(big / spent * 100).round()}% of this month\'s spending and ${(big / othersAvg).toStringAsFixed(1)}× your typical expense.',
           type: InsightType.info,
-          stat: '$pct% funded',
-          progress: goalPct,
+          stat: '$sym${_fmt(big)}',
         ));
       }
     }
 
-    // ── 8. Largest single transaction this month ───────────────────────────
-    if (thisMonthExp.isNotEmpty) {
-      final biggest = thisMonthExp.reduce((a, b) => amt(a) > amt(b) ? a : b);
-      final bigAmt = amt(biggest);
-      final avgTx = thisSpent / thisMonthExp.length;
-      if (bigAmt > avgTx * 2.5 && bigAmt > 500) {
-        final d = parseDate(biggest);
-        final dateStr = d != null
-            ? '${_weekday(d.weekday)}, ${d.day} ${_month(d.month)}'
-            : 'this month';
-        insights.add(Insight(
-          emoji: '👀',
-          title: 'Biggest spend: $sym${_fmt(bigAmt)}',
-          body: '${biggest['description'] ?? biggest['category'] ?? 'A transaction'} on $dateStr was your largest expense — ${((bigAmt / thisSpent) * 100).round()}% of total monthly spend.',
-          type: InsightType.info,
-          stat: '$sym${_fmt(bigAmt)}',
-        ));
+    // ── 8. Weekends vs weekdays (per day, so 2 vs 5 days is fair) ─────────
+    if (monthExp.length >= 8 && dayOfMonth >= 10) {
+      var weekendDays = 0, weekdayDays = 0;
+      for (var d = monthStart; d.isBefore(endOfToday); d = d.add(const Duration(days: 1))) {
+        d.weekday >= 6 ? weekendDays++ : weekdayDays++;
       }
-    }
-
-    // ── 9. Weekend vs weekday spending ────────────────────────────────────
-    if (thisMonthExp.length >= 5) {
-      final weekendSpend = thisMonthExp
-          .where((t) => [6, 7].contains(parseDate(t)?.weekday))
+      final weekendSpend = monthExp
+          .where((t) => (dateOf(t)?.weekday ?? 1) >= 6)
           .fold(0.0, (s, t) => s + amt(t));
-      final weekdaySpend = thisSpent - weekendSpend;
-      final weekendPct = thisSpent > 0 ? (weekendSpend / thisSpent * 100).round() : 0;
-      if (weekendPct > 50) {
-        insights.add(Insight(
-          emoji: '🎉',
-          title: '$weekendPct% of spending on weekends',
-          body: 'You spend $sym${_fmt(weekendSpend)} on weekends vs $sym${_fmt(weekdaySpend)} on weekdays. Weekend outings and dining tend to add up fast.',
+      final weekdaySpend = spent - weekendSpend;
+      if (weekendDays > 0 && weekdayDays > 0 && weekdaySpend > 0) {
+        final perWeekend = weekendSpend / weekendDays;
+        final perWeekday = weekdaySpend / weekdayDays;
+        final ratio = perWeekend / perWeekday;
+        if (ratio >= 1.5) {
+          infos.add(Insight(
+            icon: PhosphorIconsDuotone.calendarStar,
+            title: 'Weekends cost ${ratio.toStringAsFixed(1)}× more per day',
+            body: 'About $sym${_fmt(perWeekend)} per weekend day vs $sym${_fmt(perWeekday)} on weekdays this month.',
+            type: InsightType.info,
+            stat: '${ratio.toStringAsFixed(1)}×',
+          ));
+        }
+      }
+    }
+
+    // ── 9. Savings goals with deadlines ───────────────────────────────────
+    final dated = savingsGoals
+        .where((g) => g.targetDate != null && g.savedAmount < g.targetAmount && g.targetAmount > 0)
+        .toList()
+      ..sort((a, b) => a.targetDate!.compareTo(b.targetDate!));
+    for (final g in dated.take(2)) {
+      final remaining = g.targetAmount - g.savedAmount;
+      final pct = g.savedAmount / g.targetAmount;
+      final deadline = DateTime(g.targetDate!.year, g.targetDate!.month, g.targetDate!.day);
+      final days = deadline.difference(today).inDays;
+      if (days < 0) {
+        warnings.add(Insight(
+          icon: PhosphorIconsDuotone.target,
+          title: '${g.name} passed its deadline',
+          body: '${(pct * 100).round()}% funded with $sym${_fmt(remaining)} still to go. Pick a new date or top it up to finish.',
+          type: InsightType.warning,
+          stat: '${(pct * 100).round()}%',
+          progress: pct,
+        ));
+      } else if (days <= 31) {
+        final perWeek = remaining / ((days / 7).ceil().clamp(1, 5));
+        warnings.add(Insight(
+          icon: PhosphorIconsDuotone.target,
+          title: '${g.name}: $sym${_fmt(remaining)} to go in $days ${days == 1 ? 'day' : 'days'}',
+          body: 'Put aside about $sym${_fmt(perWeek)} a week to reach it by ${_shortDate(deadline)}.',
+          type: InsightType.warning,
+          stat: '$sym${_fmt(perWeek)}/wk',
+          progress: pct,
+        ));
+      } else {
+        final months = days / 30.44;
+        infos.add(Insight(
+          icon: PhosphorIconsDuotone.target,
+          title: '${g.name}: save $sym${_fmt(remaining / months)} a month',
+          body: '${(pct * 100).round()}% funded. That pace gets you the remaining $sym${_fmt(remaining)} by ${_shortDate(deadline)}.',
           type: InsightType.info,
-          stat: '$weekendPct% weekends',
-          progress: weekendPct / 100,
+          stat: '${(pct * 100).round()}%',
+          progress: pct,
         ));
       }
     }
 
-    // ── 10. No data fallback ───────────────────────────────────────────────
-    if (insights.isEmpty) {
-      insights.add(const Insight(
-        emoji: '👋',
-        title: 'Start logging transactions',
-        body: 'Once you log a few transactions, personalised insights will appear here — spending trends, budget pace, saving rate and more.',
-        type: InsightType.info,
+    final all = [...warnings, ...positives, ...infos];
+
+    if (all.isEmpty) {
+      all.add(Insight(
+        icon: monthExp.isEmpty ? PhosphorIconsDuotone.sun : PhosphorIconsDuotone.checkCircle,
+        title: monthExp.isEmpty ? 'A fresh month' : 'Nothing unusual this month',
+        body: monthExp.isEmpty
+            ? 'No expenses logged yet this month. Insights appear as soon as there\'s something to compare.'
+            : 'Your spending looks steady. Keep logging and we\'ll flag anything worth a look.',
+        type: monthExp.isEmpty ? InsightType.info : InsightType.positive,
       ));
     }
 
-    // Warnings first, then positives, then info
-    insights.sort((a, b) {
-      const order = {
-        InsightType.warning: 0,
-        InsightType.positive: 1,
-        InsightType.info: 2,
-      };
-      return order[a.type]!.compareTo(order[b.type]!);
-    });
-
-    return insights;
+    return all.take(maxInsights).toList();
   }
 
   static String _fmt(double v) {
-    if (v >= 100000) return '${(v / 100000).toStringAsFixed(1)}L';
-    if (v >= 1000) return '${(v / 1000).toStringAsFixed(1)}K';
-    return v.toStringAsFixed(0);
+    final a = v.abs();
+    if (a >= 10000000) return '${(a / 10000000).toStringAsFixed(1)}Cr';
+    if (a >= 100000) return '${(a / 100000).toStringAsFixed(1)}L';
+    if (a >= 1000) return '${(a / 1000).toStringAsFixed(1)}K';
+    return a.toStringAsFixed(0);
   }
 
-  static String _weekday(int w) => const ['', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][w];
-  static String _month(int m) => const ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][m];
+  static String _shortDate(DateTime d) =>
+      '${d.day} ${const ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][d.month]}';
 }

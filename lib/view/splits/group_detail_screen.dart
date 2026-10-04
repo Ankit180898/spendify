@@ -16,24 +16,24 @@ import 'package:spendify/widgets/toast/custom_toast.dart';
 // Maps an emoji to a distinctive accent color for the group theme.
 Color _emojiAccent(String emoji) {
   const map = {
-    '🧳': Color(0xFF4BAFD6), // travel blue
-    '🏖️': Color(0xFFF5A623), // beach amber
-    '🏠': Color(0xFF6B5BFF), // home purple
-    '🍽️': Color(0xFFFF5370), // food red
-    '🚗': Color(0xFF26D0A0), // car teal
-    '🎉': Color(0xFFFF4081), // party pink
-    '🏕️': Color(0xFF43A047), // camping green
-    '⚽': Color(0xFF26D0A0), // sport teal
-    '🎬': Color(0xFF7E57C2), // cinema purple
-    '🛒': Color(0xFFF5A623), // shopping amber
-    '💼': Color(0xFF546E7A), // work slate
-    '🌍': Color(0xFF00C896), // globe green
-    '✈️': Color(0xFF4BAFD6), // flight blue
-    '🍕': Color(0xFFFF5370), // pizza red
-    '🎵': Color(0xFF7E57C2), // music purple
-    '🏋️': Color(0xFF26D0A0), // gym teal
+    '🧳': Color(0xFF6E8CA8), // travel blue
+    '🏖️': Color(0xFFD99A4E), // beach amber
+    '🏠': Color(0xFF9A7BB5), // home purple
+    '🍽️': Color(0xFFCB5F55), // food red
+    '🚗': Color(0xFF5E8F8A), // car teal
+    '🎉': Color(0xFFC46A86), // party pink
+    '🏕️': Color(0xFF6B8F5A), // camping green
+    '⚽': Color(0xFF5E8F8A), // sport teal
+    '🎬': Color(0xFF8C6FA8), // cinema purple
+    '🛒': Color(0xFFD99A4E), // shopping amber
+    '💼': Color(0xFF7A6E66), // work slate
+    '🌍': Color(0xFF4F9A74), // globe green
+    '✈️': Color(0xFF6E8CA8), // flight blue
+    '🍕': Color(0xFFCB5F55), // pizza red
+    '🎵': Color(0xFF8C6FA8), // music purple
+    '🏋️': Color(0xFF5E8F8A), // gym teal
   };
-  return map[emoji] ?? const Color(0xFF6B5BFF);
+  return map[emoji] ?? const Color(0xFF9A7BB5);
 }
 
 class GroupDetailScreen extends StatefulWidget {
@@ -403,11 +403,11 @@ class _MemberAvatarRow extends StatelessWidget {
   const _MemberAvatarRow({required this.members});
 
   static const _colors = [
-    Color(0xFF6B5BFF),
-    Color(0xFF00C896),
-    Color(0xFFF5A623),
-    Color(0xFFFF5370),
-    Color(0xFF4BAFD6),
+    Color(0xFF9A7BB5),
+    Color(0xFF4F9A74),
+    Color(0xFFD99A4E),
+    Color(0xFFCB5F55),
+    Color(0xFF6E8CA8),
   ];
 
   @override

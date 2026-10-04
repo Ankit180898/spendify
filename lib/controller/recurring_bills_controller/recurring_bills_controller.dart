@@ -14,6 +14,10 @@ class RecurringBillsController extends GetxController {
   final suggestions = <RecurringBillSuggestion>[].obs;
   final isLoading = false.obs;
 
+  /// Lower-cased merchant names the user said "not a bill" to — kept so the
+  /// same suggestion doesn't reappear on every refresh.
+  final _dismissedNames = <String>{};
+
   @override
   void onInit() {
     super.onInit();
@@ -30,11 +34,15 @@ class RecurringBillsController extends GetxController {
           .from('recurring_bills')
           .select()
           .eq('user_id', uid)
-          .eq('is_dismissed', false)
           .order('due_day');
 
-      bills.value =
-          (data as List).map((e) => RecurringBill.fromJson(e as Map<String, dynamic>)).toList();
+      final all = (data as List)
+          .map((e) => RecurringBill.fromJson(e as Map<String, dynamic>))
+          .toList();
+      _dismissedNames
+        ..clear()
+        ..addAll(all.where((b) => b.isDismissed).map((b) => b.merchantName.toLowerCase()));
+      bills.value = all.where((b) => !b.isDismissed).toList();
 
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(
@@ -60,15 +68,18 @@ class RecurringBillsController extends GetxController {
   void _detectSuggestions() {
     final hc = Get.find<HomeController>();
     final detected = RecurringBillDetectionService.detect(hc.allTransactions);
-    final confirmedNames = bills.map((b) => b.merchantName.toLowerCase()).toSet();
+    final known = {
+      ...bills.map((b) => b.merchantName.toLowerCase()),
+      ..._dismissedNames,
+    };
     suggestions.value = detected
-        .where((s) => !confirmedNames.contains(s.merchantName.toLowerCase()))
+        .where((s) => !known.contains(s.merchantName.toLowerCase()))
         .toList();
   }
 
-  Future<void> confirmSuggestion(RecurringBillSuggestion suggestion) async {
+  Future<bool> confirmSuggestion(RecurringBillSuggestion suggestion) async {
     final uid = supabaseC.auth.currentUser?.id;
-    if (uid == null) return;
+    if (uid == null) return false;
     try {
       final data = await supabaseC
           .from('recurring_bills')
@@ -96,8 +107,10 @@ class RecurringBillsController extends GetxController {
         dueDay: bill.dueDay,
         currencySymbol: Get.find<HomeController>().currencySymbol.value,
       );
+      return true;
     } catch (e) {
       debugPrint('RecurringBillsController.confirmSuggestion error: $e');
+      return false;
     }
   }
 
@@ -114,20 +127,22 @@ class RecurringBillsController extends GetxController {
         'is_active': false,
         'is_dismissed': true,
       });
-      suggestions.removeWhere((s) => s.merchantName == suggestion.merchantName);
+      _dismissedNames.add(suggestion.merchantName.toLowerCase());
+      suggestions.removeWhere((s) =>
+          s.merchantName.toLowerCase() == suggestion.merchantName.toLowerCase());
     } catch (e) {
       debugPrint('RecurringBillsController.dismissSuggestion error: $e');
     }
   }
 
-  Future<void> addBillManually({
+  Future<bool> addBillManually({
     required String merchantName,
     required double amount,
     required String frequency,
     required int dueDay,
   }) async {
     final uid = supabaseC.auth.currentUser?.id;
-    if (uid == null) return;
+    if (uid == null) return false;
     try {
       final data = await supabaseC
           .from('recurring_bills')
@@ -153,52 +168,87 @@ class RecurringBillsController extends GetxController {
         dueDay: bill.dueDay,
         currencySymbol: Get.find<HomeController>().currencySymbol.value,
       );
+      return true;
     } catch (e) {
       debugPrint('RecurringBillsController.addBillManually error: $e');
+      return false;
     }
   }
 
-  Future<void> deleteBill(String billId) async {
+  /// Removes locally first so a swiped row disappears immediately; restores
+  /// it if the delete fails.
+  Future<bool> deleteBill(String billId) async {
+    final idx = bills.indexWhere((b) => b.id == billId);
+    if (idx == -1) return false;
+    final removed = bills.removeAt(idx);
     try {
       await supabaseC.from('recurring_bills').delete().eq('id', billId);
       await NotificationService.cancelBillReminder(billId);
-      bills.removeWhere((b) => b.id == billId);
+      return true;
     } catch (e) {
       debugPrint('RecurringBillsController.deleteBill error: $e');
+      bills.insert(idx.clamp(0, bills.length), removed);
+      return false;
     }
   }
 
-  // Called from UpiCaptureController after a transaction is saved
-  Future<void> autoMarkPaid(String merchantName) async {
+  /// Marks the cycle due on [due] as paid, or un-marks it (falling back to
+  /// the previous cycle) when [paid] is false.
+  Future<bool> setPaid(RecurringBill bill, DateTime due, {bool paid = true}) async {
+    final idx = bills.indexWhere((b) => b.id == bill.id);
+    if (idx == -1) return false;
+    final settled = paid
+        ? due
+        : bill.dueDateIn(due.year, due.month - bill.monthsPerCycle);
+    try {
+      await supabaseC
+          .from('recurring_bills')
+          .update({'last_paid_at': settled.toIso8601String()})
+          .eq('id', bill.id);
+      bills[idx] = bill.withLastPaidAt(settled);
+      return true;
+    } catch (e) {
+      debugPrint('RecurringBillsController.setPaid error: $e');
+      return false;
+    }
+  }
+
+  /// Called after an expense is saved (manual entry or UPI capture). Marks
+  /// any unpaid bill whose name matches the transaction title as paid.
+  /// Returns the bills that were marked.
+  Future<List<RecurringBill>> autoMarkPaid(String merchantName) async {
+    final marked = <RecurringBill>[];
     final uid = supabaseC.auth.currentUser?.id;
-    if (uid == null) return;
-    final normalized = merchantName.toLowerCase();
+    final normalized = merchantName.toLowerCase().trim();
+    if (uid == null || normalized.length < 3) return marked;
 
     final matching = bills.where((b) {
-      final bName = b.merchantName.toLowerCase();
+      final bName = b.merchantName.toLowerCase().trim();
+      if (bName.length < 3) return false;
       return bName.contains(normalized) || normalized.contains(bName);
     }).toList();
 
-    if (matching.isEmpty) return;
+    if (matching.isEmpty) return marked;
 
-    final now = DateTime.now();
     for (final bill in matching) {
-      if (bill.isPaidThisCycle) continue;
+      final due = bill.payableDueDate;
+      if (due == null) continue;
       try {
         await supabaseC
             .from('recurring_bills')
-            .update({'last_paid_at': now.toIso8601String()})
+            .update({'last_paid_at': due.toIso8601String()})
             .eq('id', bill.id);
 
         final idx = bills.indexWhere((b) => b.id == bill.id);
         if (idx != -1) {
-          bills.removeAt(idx);
-          bills.insert(idx, bill.copyWith(lastPaidAt: now));
+          bills[idx] = bill.withLastPaidAt(due);
+          marked.add(bills[idx]);
         }
       } catch (e) {
         debugPrint('RecurringBillsController.autoMarkPaid error: $e');
       }
     }
+    return marked;
   }
 
   void _rescheduleBillNotifications() {

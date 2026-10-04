@@ -2,32 +2,34 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:spendify/config/app_color.dart';
 import 'package:spendify/controller/groups_controller/groups_controller.dart';
+import 'package:spendify/controller/home_controller/home_controller.dart';
 import 'package:spendify/model/group_model.dart';
 import 'package:spendify/view/splits/group_detail_screen.dart';
 
 Color _groupAccent(String emoji) {
   const map = {
-    '🧳': Color(0xFF4BAFD6),
-    '🏖️': Color(0xFFF5A623),
-    '🏠': Color(0xFF6B5BFF),
-    '🍽️': Color(0xFFFF5370),
-    '🚗': Color(0xFF26D0A0),
-    '🎉': Color(0xFFFF4081),
-    '🏕️': Color(0xFF43A047),
-    '⚽': Color(0xFF26D0A0),
-    '🎬': Color(0xFF7E57C2),
-    '🛒': Color(0xFFF5A623),
-    '💼': Color(0xFF546E7A),
-    '🌍': Color(0xFF00C896),
-    '✈️': Color(0xFF4BAFD6),
-    '🍕': Color(0xFFFF5370),
-    '🎵': Color(0xFF7E57C2),
-    '🏋️': Color(0xFF26D0A0),
+    '🧳': Color(0xFF6E8CA8),
+    '🏖️': Color(0xFFD99A4E),
+    '🏠': Color(0xFF9A7BB5),
+    '🍽️': Color(0xFFCB5F55),
+    '🚗': Color(0xFF5E8F8A),
+    '🎉': Color(0xFFC46A86),
+    '🏕️': Color(0xFF6B8F5A),
+    '⚽': Color(0xFF5E8F8A),
+    '🎬': Color(0xFF8C6FA8),
+    '🛒': Color(0xFFD99A4E),
+    '💼': Color(0xFF7A6E66),
+    '🌍': Color(0xFF4F9A74),
+    '✈️': Color(0xFF6E8CA8),
+    '🍕': Color(0xFFCB5F55),
+    '🎵': Color(0xFF8C6FA8),
+    '🏋️': Color(0xFF5E8F8A),
   };
-  return map[emoji] ?? const Color(0xFF6B5BFF);
+  return map[emoji] ?? const Color(0xFF9A7BB5);
 }
 
 class SplitsScreen extends StatelessWidget {
@@ -38,72 +40,113 @@ class SplitsScreen extends StatelessWidget {
     final ctrl = Get.isRegistered<GroupsController>()
         ? Get.find<GroupsController>()
         : Get.put(GroupsController(), permanent: true);
+    final canPop = Navigator.of(context).canPop();
 
     return Scaffold(
       backgroundColor: AppColor.bg,
-      appBar: AppBar(
-        backgroundColor: AppColor.bg,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        leading: Navigator.of(context).canPop()
-            ? IconButton(
-                icon: const PhosphorIcon(
-                  PhosphorIconsLight.arrowLeft,
-                  color: AppColor.textPrimary,
-                  size: 20,
-                ),
-                onPressed: Get.back,
-              )
-            : null,
-        title: Text(
-          'Splits',
-          style: GoogleFonts.urbanist(
-            color: AppColor.textPrimary,
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        actions: [
-          _AppBarBtn(
-            label: 'Join',
-            onTap: () => _showJoinSheet(context, ctrl),
-          ),
-          const SizedBox(width: 8),
-          _AppBarBtn(
-            label: 'New group',
-            filled: true,
-            onTap: () => _showCreateSheet(context, ctrl),
-          ),
-          const SizedBox(width: 16),
-        ],
-        bottom: const PreferredSize(
-          preferredSize: Size.fromHeight(1),
-          child: Divider(height: 1, color: AppColor.border),
-        ),
-      ),
       body: SafeArea(
         bottom: false,
-        child: Obx(() {
-          if (ctrl.isLoading.value) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (ctrl.groups.isEmpty) {
-            return _EmptyState(
-              onCreate: () => _showCreateSheet(context, ctrl),
-              onJoin: () => _showJoinSheet(context, ctrl),
-            );
-          }
-          return RefreshIndicator(
-            onRefresh: ctrl.fetchGroups,
-            color: AppColor.primary,
-            child: ListView.separated(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 120),
-              itemCount: ctrl.groups.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 10),
-              itemBuilder: (_, i) => _GroupCard(group: ctrl.groups[i]),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // ── Header ───────────────────────────────────────────────
+            Padding(
+              padding: EdgeInsets.fromLTRB(canPop ? 6 : 20, 10, 16, 0),
+              child: Row(
+                children: [
+                  if (canPop)
+                    IconButton(
+                      onPressed: Get.back,
+                      icon: const PhosphorIcon(PhosphorIconsLight.arrowLeft,
+                          color: AppColor.textPrimary, size: 22),
+                    ),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Splits',
+                          style: GoogleFonts.urbanist(
+                            fontSize: 26,
+                            fontWeight: FontWeight.w700,
+                            color: AppColor.textPrimary,
+                            letterSpacing: -0.6,
+                          ),
+                        ),
+                        Text(
+                          'Share costs, settle up, stay friends',
+                          style: GoogleFonts.urbanist(fontSize: 13, color: AppColor.textSecondary),
+                        ),
+                      ],
+                    ),
+                  ),
+                  _AppBarBtn(label: 'Join', onTap: () => _showJoinSheet(context, ctrl)),
+                  const SizedBox(width: 8),
+                  _AppBarBtn(
+                    label: 'New',
+                    icon: PhosphorIconsBold.plus,
+                    filled: true,
+                    onTap: () => _showCreateSheet(context, ctrl),
+                  ),
+                ],
+              ),
             ),
-          );
-        }),
+            const SizedBox(height: 16),
+            Expanded(
+              child: Obx(() {
+                if (ctrl.isLoading.value && ctrl.groups.isEmpty) {
+                  return const Center(child: CircularProgressIndicator(color: AppColor.primary));
+                }
+                if (ctrl.groups.isEmpty) {
+                  return _EmptyState(
+                    onCreate: () => _showCreateSheet(context, ctrl),
+                    onJoin: () => _showJoinSheet(context, ctrl),
+                  );
+                }
+                return RefreshIndicator(
+                  onRefresh: () async {
+                    await ctrl.fetchGroups();
+                    await ctrl.fetchBalanceSummary();
+                  },
+                  color: AppColor.primary,
+                  child: ListView(
+                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 120),
+                    children: [
+                      _BalanceSummary(ctrl: ctrl),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(0, 24, 0, 10),
+                        child: Row(
+                          children: [
+                            Text(
+                              'Your groups',
+                              style: GoogleFonts.urbanist(
+                                fontSize: 17,
+                                fontWeight: FontWeight.w600,
+                                color: AppColor.heading,
+                              ),
+                            ),
+                            const Spacer(),
+                            Text(
+                              '${ctrl.groups.length}',
+                              style: GoogleFonts.urbanist(
+                                fontSize: 12,
+                                color: AppColor.textTertiary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      for (var i = 0; i < ctrl.groups.length; i++) ...[
+                        _GroupCard(group: ctrl.groups[i], index: i),
+                        const SizedBox(height: 10),
+                      ],
+                    ],
+                  ),
+                );
+              }),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -127,17 +170,177 @@ class SplitsScreen extends StatelessWidget {
   }
 }
 
+// ── Balance summary ────────────────────────────────────────────────────────────
+
+class _BalanceSummary extends StatelessWidget {
+  final GroupsController ctrl;
+  const _BalanceSummary({required this.ctrl});
+
+  @override
+  Widget build(BuildContext context) {
+    final fmt = NumberFormat('#,##0', 'en_IN');
+    final sym = Get.isRegistered<HomeController>()
+        ? Get.find<HomeController>().currencySymbol.value
+        : '₹';
+
+    return Obx(() {
+      final owe = ctrl.totalOwed.value;
+      final owed = ctrl.totalOwedToMe.value;
+      final net = owed - owe;
+      final settled = owe == 0 && owed == 0;
+
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppColor.bannerBg,
+          borderRadius: BorderRadius.circular(18),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        settled ? 'All settled up' : net >= 0 ? 'Overall, you\'re owed' : 'Overall, you owe',
+                        style: GoogleFonts.urbanist(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                          color: AppColor.textSecondary,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        settled ? 'Nice and even' : '$sym${fmt.format(net.abs())}',
+                        style: GoogleFonts.urbanist(
+                          fontSize: 28,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: -0.8,
+                          color: settled
+                              ? AppColor.textPrimary
+                              : net >= 0
+                                  ? AppColor.income
+                                  : AppColor.expense,
+                          fontFeatures: const [FontFeature.tabularFigures()],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  width: 52,
+                  height: 52,
+                  decoration: BoxDecoration(
+                    color: AppColor.surface.withValues(alpha: 0.75),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Center(
+                    child: PhosphorIcon(
+                      settled ? PhosphorIconsDuotone.handshake : PhosphorIconsDuotone.usersThree,
+                      size: 26,
+                      color: settled ? AppColor.income : AppColor.primary,
+                      duotoneSecondaryOpacity: 0.3,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            if (!settled) ...[
+              const SizedBox(height: 14),
+              Row(
+                children: [
+                  Expanded(
+                    child: _OweTile(
+                      label: 'You owe',
+                      value: '$sym${fmt.format(owe)}',
+                      icon: PhosphorIconsDuotone.arrowUpRight,
+                      color: AppColor.expense,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: _OweTile(
+                      label: 'You\'re owed',
+                      value: '$sym${fmt.format(owed)}',
+                      icon: PhosphorIconsDuotone.arrowDownLeft,
+                      color: AppColor.income,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ],
+        ),
+      );
+    });
+  }
+}
+
+class _OweTile extends StatelessWidget {
+  final String label;
+  final String value;
+  final Object icon;
+  final Color color;
+  const _OweTile({required this.label, required this.value, required this.icon, required this.color});
+
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: AppColor.surface,
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 28,
+              height: 28,
+              decoration: BoxDecoration(color: color.withValues(alpha: 0.12), shape: BoxShape.circle),
+              child: Center(
+                child: PhosphorIcon(icon, size: 14, color: color, duotoneSecondaryOpacity: 0.3),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(label, style: GoogleFonts.urbanist(fontSize: 11, color: AppColor.textTertiary)),
+                  Text(
+                    value,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.urbanist(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: AppColor.textPrimary,
+                      fontFeatures: const [FontFeature.tabularFigures()],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+}
+
 // ── App Bar Button ─────────────────────────────────────────────────────────────
 
 class _AppBarBtn extends StatelessWidget {
   final String label;
   final bool filled;
+  final PhosphorIconData? icon;
   final VoidCallback onTap;
 
   const _AppBarBtn({
     required this.label,
     required this.onTap,
     this.filled = false,
+    this.icon,
   });
 
   @override
@@ -148,19 +351,28 @@ class _AppBarBtn extends StatelessWidget {
         onTap();
       },
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
         decoration: BoxDecoration(
-          color: filled ? AppColor.primary : Colors.transparent,
+          color: filled ? AppColor.primary : AppColor.surface,
           borderRadius: BorderRadius.circular(100),
-          border: filled ? null : Border.all(color: AppColor.border),
+          border: filled ? null : Border.all(color: AppColor.borderStrong),
         ),
-        child: Text(
-          label,
-          style: GoogleFonts.urbanist(
-            color: filled ? Colors.white : AppColor.textSecondary,
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-          ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (icon != null) ...[
+              PhosphorIcon(icon!, size: 13, color: filled ? Colors.white : AppColor.textPrimary),
+              const SizedBox(width: 5),
+            ],
+            Text(
+              label,
+              style: GoogleFonts.urbanist(
+                color: filled ? Colors.white : AppColor.textPrimary,
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -169,77 +381,109 @@ class _AppBarBtn extends StatelessWidget {
 
 // ── Group Card ─────────────────────────────────────────────────────────────────
 
-class _GroupCard extends StatelessWidget {
+class _GroupCard extends StatefulWidget {
   final GroupModel group;
-  const _GroupCard({required this.group});
+  final int index;
+  const _GroupCard({required this.group, this.index = 0});
+
+  @override
+  State<_GroupCard> createState() => _GroupCardState();
+}
+
+class _GroupCardState extends State<_GroupCard> {
+  bool _down = false;
 
   @override
   Widget build(BuildContext context) {
+    final group = widget.group;
     final accent = _groupAccent(group.emoji);
-    return GestureDetector(
-      onTap: () {
-        HapticFeedback.lightImpact();
-        Get.to(() => GroupDetailScreen(group: group));
-      },
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: AppColor.surface,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: accent.withValues(alpha: 0.2)),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: accent.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Center(
-                child: Text(
-                  group.emoji,
-                  style: const TextStyle(fontSize: 22),
-                ),
-              ),
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: 1),
+      duration: Duration(milliseconds: 300 + widget.index * 60),
+      curve: Curves.easeOutCubic,
+      builder: (_, t, child) => Opacity(
+        opacity: t,
+        child: Transform.translate(offset: Offset(0, 12 * (1 - t)), child: child),
+      ),
+      child: GestureDetector(
+        onTapDown: (_) => setState(() => _down = true),
+        onTapCancel: () => setState(() => _down = false),
+        onTapUp: (_) => setState(() => _down = false),
+        onTap: () {
+          HapticFeedback.lightImpact();
+          Get.to(() => GroupDetailScreen(group: group), transition: Transition.cupertino);
+        },
+        child: AnimatedScale(
+          scale: _down ? 0.98 : 1,
+          duration: const Duration(milliseconds: 120),
+          child: Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: AppColor.surface,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: AppColor.borderStrong),
             ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    group.name,
-                    style: GoogleFonts.urbanist(
-                      color: AppColor.textPrimary,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                    ),
+            child: Row(
+              children: [
+                Container(
+                  width: 52,
+                  height: 52,
+                  decoration: BoxDecoration(
+                    color: accent.withValues(alpha: 0.12),
+                    shape: BoxShape.circle,
+                    border: Border.all(color: accent.withValues(alpha: 0.25)),
                   ),
-                  const SizedBox(height: 6),
-                  Row(
+                  child: Center(
+                    child: Text(group.emoji, style: const TextStyle(fontSize: 24)),
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _MemberAvatarStack(members: group.members),
-                      const SizedBox(width: 8),
                       Text(
-                        '${group.members.length} member${group.members.length == 1 ? '' : 's'}',
+                        group.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: GoogleFonts.urbanist(
-                          color: AppColor.textSecondary,
-                          fontSize: 12,
+                          color: AppColor.textPrimary,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
                         ),
+                      ),
+                      const SizedBox(height: 6),
+                      Row(
+                        children: [
+                          _MemberAvatarStack(members: group.members),
+                          const SizedBox(width: 8),
+                          Text(
+                            '${group.members.length} member${group.members.length == 1 ? '' : 's'}',
+                            style: GoogleFonts.urbanist(
+                              color: AppColor.textSecondary,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
-                ],
-              ),
+                ),
+                Container(
+                  width: 32,
+                  height: 32,
+                  decoration: const BoxDecoration(
+                    color: AppColor.primaryExtraSoft,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Center(
+                    child: PhosphorIcon(PhosphorIconsBold.caretRight,
+                        size: 13, color: AppColor.primary),
+                  ),
+                ),
+              ],
             ),
-            const PhosphorIcon(
-              PhosphorIconsLight.caretRight,
-              size: 16,
-              color: AppColor.textTertiary,
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -253,16 +497,16 @@ class _MemberAvatarStack extends StatelessWidget {
   const _MemberAvatarStack({required this.members});
 
   static const _colors = [
-    Color(0xFF6B5BFF),
-    Color(0xFF00C896),
-    Color(0xFFF5A623),
-    Color(0xFFFF5370),
+    Color(0xFF86695B),
+    Color(0xFF4F9A74),
+    Color(0xFFD99A4E),
+    Color(0xFF6E8CA8),
   ];
 
   @override
   Widget build(BuildContext context) {
-    const size = 20.0;
-    const shift = 13.0;
+    const size = 22.0;
+    const shift = 14.0;
     final shown = members.take(4).toList();
     final count = shown.length;
     if (count == 0) return const SizedBox.shrink();
@@ -289,7 +533,7 @@ class _MemberAvatarStack extends StatelessWidget {
                         ? shown[i].displayName[0].toUpperCase()
                         : '?',
                     style: GoogleFonts.urbanist(
-                      fontSize: 8,
+                      fontSize: 9,
                       fontWeight: FontWeight.w700,
                       color: Colors.white,
                     ),
@@ -312,75 +556,83 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 40),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 72,
-              height: 72,
-              decoration: const BoxDecoration(
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(32, 40, 32, 120),
+      child: Column(
+        children: [
+          TweenAnimationBuilder<double>(
+            tween: Tween(begin: 0.6, end: 1),
+            duration: const Duration(milliseconds: 700),
+            curve: Curves.elasticOut,
+            builder: (_, s, child) => Transform.scale(scale: s, child: child),
+            child: Container(
+              width: 96,
+              height: 96,
+              decoration: BoxDecoration(
                 color: AppColor.primaryExtraSoft,
                 shape: BoxShape.circle,
+                border: Border.all(color: AppColor.borderStrong, width: 1.5),
               ),
               child: const Center(
                 child: PhosphorIcon(
-                  PhosphorIconsLight.usersThree,
-                  size: 32,
+                  PhosphorIconsDuotone.usersThree,
+                  size: 44,
                   color: AppColor.primary,
+                  duotoneSecondaryOpacity: 0.3,
                 ),
               ),
             ),
-            const SizedBox(height: 20),
-            Text(
-              'No groups yet',
-              style: GoogleFonts.urbanist(
-                color: AppColor.textPrimary,
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
+          ),
+          const SizedBox(height: 20),
+          Text(
+            'Split costs with friends',
+            style: GoogleFonts.urbanist(
+              color: AppColor.textPrimary,
+              fontSize: 19,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Make a group for a trip, your flat or a dinner — add what you paid and Spendify works out who owes whom.',
+            style: GoogleFonts.urbanist(
+              color: AppColor.textSecondary,
+              fontSize: 14,
+              height: 1.5,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 28),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: onCreate,
+              icon: const PhosphorIcon(PhosphorIconsBold.plus, size: 15, color: Colors.white),
+              label: const Text('Create a group'),
+              style: ElevatedButton.styleFrom(
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
               ),
             ),
-            const SizedBox(height: 8),
-            Text(
-              'Create a group for your trip, flat, or friends — then split expenses together.',
-              style: GoogleFonts.urbanist(
-                color: AppColor.textSecondary,
-                fontSize: 14,
-                height: 1.5,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 28),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: onCreate,
-                child: const Text('Create a group'),
-              ),
-            ),
-            const SizedBox(height: 10),
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton(
-                onPressed: onJoin,
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColor.primary,
-                  side: const BorderSide(color: AppColor.border),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(100),
-                  ),
-                  padding: const EdgeInsets.symmetric(vertical: 14),
+          ),
+          const SizedBox(height: 10),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton(
+              onPressed: onJoin,
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColor.textPrimary,
+                side: const BorderSide(color: AppColor.borderStrong),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(100),
                 ),
-                child: Text(
-                  'Join with a code',
-                  style: GoogleFonts.urbanist(fontWeight: FontWeight.w600),
-                ),
+              ),
+              child: Text(
+                'Join with a code',
+                style: GoogleFonts.urbanist(fontWeight: FontWeight.w700),
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

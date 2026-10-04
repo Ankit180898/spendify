@@ -3,6 +3,7 @@ import 'dart:ui' show ImageFilter;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:showcaseview/showcaseview.dart';
 import 'package:spendify/config/app_color.dart';
@@ -418,7 +419,6 @@ class _AddSpeedDial extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bottomPad = MediaQuery.of(context).padding.bottom;
-    const scrim = Color(0x66000000);
     final baseBottom = bottomPad + 18;
 
     return Stack(
@@ -426,12 +426,29 @@ class _AddSpeedDial extends StatelessWidget {
         GestureDetector(
           onTap: onClose,
           behavior: HitTestBehavior.opaque,
-          child: AnimatedOpacity(
-            duration: const Duration(milliseconds: 200),
-            opacity: open ? 1.0 : 0.0,
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 6, sigmaY: 6),
-              child: Container(color: scrim),
+          // Frosted glass: heavy blur under a milky cream tint that's a
+          // little denser toward the bottom, where the actions sit.
+          child: TweenAnimationBuilder<double>(
+            tween: Tween(begin: 0, end: open ? 1 : 0),
+            duration: const Duration(milliseconds: 280),
+            curve: Curves.easeOutCubic,
+            builder: (_, t, __) => BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 14 * t, sigmaY: 14 * t),
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      AppColor.surface.withValues(alpha: 0.15 * t),
+                      AppColor.bg.withValues(alpha: 0.30 * t),
+                      AppColor.bannerBg.withValues(alpha: 0.55 * t),
+                    ],
+                    stops: const [0, 0.55, 1],
+                  ),
+                ),
+                child: const SizedBox.expand(),
+              ),
             ),
           ),
         ),
@@ -451,7 +468,7 @@ class _AddSpeedDial extends StatelessWidget {
                   dx: -92,
                   dy: -64,
                   child: _DialAction(
-                    icon: PhosphorIconsLight.receipt,
+                    icon: PhosphorIconsDuotone.receipt,
                     label: 'Expense',
                     color: AppColor.expense,
                     onTap: onExpense,
@@ -463,7 +480,7 @@ class _AddSpeedDial extends StatelessWidget {
                   dx: 0,
                   dy: -118,
                   child: _DialAction(
-                    icon: PhosphorIconsLight.usersThree,
+                    icon: PhosphorIconsDuotone.usersThree,
                     label: 'Split bill',
                     color: AppColor.primary,
                     onTap: onSplitBill,
@@ -475,7 +492,7 @@ class _AddSpeedDial extends StatelessWidget {
                   dx: 92,
                   dy: -64,
                   child: _DialAction(
-                    icon: PhosphorIconsLight.money,
+                    icon: PhosphorIconsDuotone.handCoins,
                     label: 'Income',
                     color: AppColor.income,
                     onTap: onIncome,
@@ -575,7 +592,7 @@ class _RadialSlotState extends State<_RadialSlot>
 }
 
 class _DialAction extends StatelessWidget {
-  final PhosphorIconData icon;
+  final Object icon; // Phosphor duotone icon
   final String label;
   final Color color;
   final VoidCallback onTap;
@@ -613,19 +630,32 @@ class _DialAction extends StatelessWidget {
               ],
             ),
             child: Center(
-              child: PhosphorIcon(icon, color: Colors.white, size: 24),
+              child: PhosphorIcon(icon,
+                  color: Colors.white, size: 26, duotoneSecondaryOpacity: 0.35),
             ),
           ),
           const SizedBox(height: 8),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
             decoration: BoxDecoration(
-              color: AppColor.primary,
+              color: AppColor.surface.withValues(alpha: 0.85),
               borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: AppColor.borderStrong.withValues(alpha: 0.7)),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColor.primary.withValues(alpha: 0.10),
+                  blurRadius: 10,
+                  offset: const Offset(0, 3),
+                ),
+              ],
             ),
             child: Text(
               label,
-              style: AppTypography.label(Colors.white),
+              style: GoogleFonts.urbanist(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: AppColor.textPrimary,
+              ),
             ),
           ),
         ],

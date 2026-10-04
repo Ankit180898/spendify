@@ -4,86 +4,89 @@ class AppColor {
   AppColor._();
 
   // ── FOUNDATION ────────────────────────────────────────────────────────────
-  static const Color bg = Color(0xFFF6F5FA);            // Ghost White
+  static const Color bg = Color(0xFFF8F6F3);            // Warm cream
   static const Color surface = Color(0xFFFFFFFF);        // Pure white
-  static const Color surfaceVariant = Color(0xFFF0EEF5); // Lifted surface
-  static const Color border = Color(0xFFE6E2DC);
-  static const Color borderFocus = Color(0xFF212121);
+  static const Color surfaceVariant = Color(0xFFF3EEE9); // Warm lifted surface
+  static const Color border = Color(0xFFE6DDD5);
+  static const Color borderStrong = Color(0xFFD3C7BE);  // Outlined cards
+  static const Color borderFocus = Color(0xFF86695B);
 
   // ── PRIMARY ───────────────────────────────────────────────────────────────
-  static const Color primary = Color(0xFF212121);        // Eerie Black
-  static const Color primarySoft = Color(0xFFD8DFE9);    // Alice Blue
-  static const Color primaryExtraSoft = Color(0xFFEEF1F7);
+  static const Color primary = Color(0xFF86695B);        // Mocha
+  static const Color primarySoft = Color(0xFFEADFD7);    // Latte
+  static const Color primaryExtraSoft = Color(0xFFF4EDE7);
+  static const Color heading = Color(0xFF8E7A6E);        // Taupe section titles
+  static const Color bannerBg = Color(0xFFF2E9E3);       // Promo banner blush
 
   // ── ACCENT PALETTE ────────────────────────────────────────────────────────
-  static const Color accentYellow = Color(0xFFEFF0A3);   // Vanilla
-  static const Color accentBlue = Color(0xFFD8DFE9);     // Alice Blue
-  static const Color accentGreen = Color(0xFFCFDECA);    // Honeydew
+  static const Color accentYellow = Color(0xFFF6E8C9);   // Butter
+  static const Color accentBlue = Color(0xFFE6E0F0);     // Lavender
+  static const Color accentGreen = Color(0xFFDCE6D3);    // Sage
 
   // ── SEMANTIC ──────────────────────────────────────────────────────────────
-  static const Color income = Color(0xFF00C896);
-  static const Color incomeSoft = Color(0xFFCFDECA);     // Honeydew
-  static const Color expense = Color(0xFFFF5370);
-  static const Color expenseSoft = Color(0xFFFFE8EC);
-  static const Color warning = Color(0xFFF5A623);
-  static const Color warningSoft = Color(0xFFFFF4E0);
+  static const Color income = Color(0xFF4F9A74);         // Sage green
+  static const Color incomeSoft = Color(0xFFDCE9DF);
+  static const Color expense = Color(0xFFCB5F55);        // Terracotta
+  static const Color expenseSoft = Color(0xFFF7E3E0);
+  static const Color warning = Color(0xFFD99A4E);
+  static const Color warningSoft = Color(0xFFF8EBD9);
 
   // ── TYPOGRAPHY ────────────────────────────────────────────────────────────
-  static const Color textPrimary = Color(0xFF212121);    // Eerie Black
-  static const Color textSecondary = Color(0xFF6B6860);
-  static const Color textTertiary = Color(0xFF9E9C96);
+  static const Color textPrimary = Color(0xFF2E2622);    // Espresso
+  static const Color textSecondary = Color(0xFF75685F);
+  static const Color textTertiary = Color(0xFFA79A91);
 
   // ── CATEGORY COLOURS ─────────────────────────────────────────────────────
-  static const Color catInvestments = Color(0xFF6B5BFF);
-  static const Color catHealth = Color(0xFF00C896);
-  static const Color catBills = Color(0xFFFF5370);
-  static const Color catFood = Color(0xFFF5A623);
-  static const Color catCar = Color(0xFF4BAFD6);
-  static const Color catGroceries = Color(0xFF26D0A0);
-  static const Color catGifts = Color(0xFFFF4081);
-  static const Color catTransport = Color(0xFF7986CB);
+  static const Color catInvestments = Color(0xFF8C6FA8);
+  static const Color catHealth = Color(0xFF4F9A74);
+  static const Color catBills = Color(0xFFCB5F55);
+  static const Color catFood = Color(0xFFD99A4E);
+  static const Color catCar = Color(0xFF6E8CA8);
+  static const Color catGroceries = Color(0xFF5E8F8A);
+  static const Color catGifts = Color(0xFFC46A86);
+  static const Color catTransport = Color(0xFF7C82B0);
 
   // ── GRADIENTS ─────────────────────────────────────────────────────────────
   static const LinearGradient balanceCardGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [Color(0xFF2D2D2D), Color(0xFF1A1A1A)],
+    colors: [Color(0xFF9A7E70), Color(0xFF6F5649)],
   );
 
   static const LinearGradient primaryGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [Color(0xFF212121), Color(0xFF404040)],
+    colors: [Color(0xFF86695B), Color(0xFFA48A7C)],
   );
 
   static const LinearGradient incomeGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [Color(0xFF00C896), Color(0xFF009E78)],
+    colors: [Color(0xFF5FAA84), Color(0xFF3F8462)],
   );
 
   static const LinearGradient expenseGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [Color(0xFFFF5370), Color(0xFFD63050)],
+    colors: [Color(0xFFD9766C), Color(0xFFB24E45)],
   );
 
   static const LinearGradient accentGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [Color(0xFF212121), Color(0xFF00C896)],
+    colors: [Color(0xFF86695B), Color(0xFF4F9A74)],
   );
 
   // ── CATEGORY COLOUR LOOKUP ────────────────────────────────────────────────
   static const List<Color> _customPalette = [
-    Color(0xFF4BAFD6),
-    Color(0xFF6B5BFF),
-    Color(0xFFF5A623),
-    Color(0xFFFF5370),
-    Color(0xFF00C896),
-    Color(0xFF69F0AE),
-    Color(0xFFAA44FF),
-    Color(0xFFFF6E40),
+    Color(0xFF6E8CA8),
+    Color(0xFF8C6FA8),
+    Color(0xFFD99A4E),
+    Color(0xFFCB5F55),
+    Color(0xFF4F9A74),
+    Color(0xFF5E8F8A),
+    Color(0xFF9A7BB5),
+    Color(0xFFB9775A),
   ];
 
   static Color categoryColor(String category) {
