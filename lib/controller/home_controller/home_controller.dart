@@ -138,7 +138,6 @@ class HomeController extends GetxController {
     } finally {
       await prefs.remove('name');
       await prefs.remove('email');
-      await prefs.remove('walkthrough_shown_v1');
       await prefs.remove('cached_bills');
       Get.offAllNamed(Routes.LOGIN);
     }
@@ -161,7 +160,6 @@ class HomeController extends GetxController {
       await NotificationService.cancelAllNotifications();
       await prefs.remove('name');
       await prefs.remove('email');
-      await prefs.remove('walkthrough_shown_v1');
       await prefs.remove('upi_perm_prompted');
       await prefs.remove('cached_bills');
     }

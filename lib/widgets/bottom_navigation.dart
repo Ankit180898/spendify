@@ -5,7 +5,6 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
-import 'package:showcaseview/showcaseview.dart';
 import 'package:spendify/config/app_color.dart';
 import 'package:spendify/config/app_theme.dart';
 import 'package:spendify/controller/goals_controller/goals_controller.dart';
@@ -15,7 +14,6 @@ import 'package:spendify/controller/savings_controller/savings_controller.dart';
 import 'package:spendify/controller/weekly_digest_controller/weekly_digest_controller.dart';
 import 'package:spendify/controller/recurring_bills_controller/recurring_bills_controller.dart';
 import 'package:spendify/controller/upi_capture_controller/upi_capture_controller.dart';
-import 'package:spendify/controller/walkthrough_controller.dart';
 import 'package:spendify/view/goals/goals_screen.dart';
 import 'package:spendify/view/home/home_screen.dart';
 import 'package:spendify/view/profile/profile_screen.dart';
@@ -33,7 +31,6 @@ class BottomNav extends StatefulWidget {
 
 class _BottomNavState extends State<BottomNav> {
   int _current = 0;
-  bool _showcaseTriggered = false;
   bool _dialOpen = false;
   bool _dialVisible = false;
 
@@ -49,16 +46,23 @@ class _BottomNavState extends State<BottomNav> {
     super.initState();
     if (!Get.isRegistered<GoalsController>()) Get.put(GoalsController());
     if (!Get.isRegistered<SavingsController>()) Get.put(SavingsController());
-    if (!Get.isRegistered<HealthScoreController>()) Get.put(HealthScoreController());
-    if (!Get.isRegistered<WeeklyDigestController>()) Get.put(WeeklyDigestController());
-    if (!Get.isRegistered<GroupsController>()) Get.put(GroupsController(), permanent: true);
-    if (!Get.isRegistered<WalkthroughController>()) Get.put(WalkthroughController());
+    if (!Get.isRegistered<HealthScoreController>())
+      Get.put(HealthScoreController());
+    if (!Get.isRegistered<WeeklyDigestController>())
+      Get.put(WeeklyDigestController());
+    if (!Get.isRegistered<GroupsController>())
+      Get.put(GroupsController(), permanent: true);
     if (!Get.isRegistered<RecurringBillsController>()) {
       Get.put(RecurringBillsController(), permanent: true);
     }
     if (Platform.isAndroid) {
-      if (!Get.isRegistered<UpiCaptureController>()) Get.put(UpiCaptureController(), permanent: true);
+      if (!Get.isRegistered<UpiCaptureController>())
+        Get.put(UpiCaptureController(), permanent: true);
     }
+    // Offer UPI auto-capture once the home screen is up (previously shown
+    // after the first-run walkthrough, which has been removed).
+    WidgetsBinding.instance
+        .addPostFrameCallback((_) => _maybeShowUpiPermission());
   }
 
   void _toggleDial(BuildContext context) {
@@ -109,64 +113,43 @@ class _BottomNavState extends State<BottomNav> {
     final ctrl = Get.find<UpiCaptureController>();
     final should = await ctrl.shouldPromptPermission();
     if (!should) return;
-    await Future.delayed(const Duration(milliseconds: 500));
+    await Future.delayed(const Duration(milliseconds: 800));
     if (!mounted) return;
     Get.to(() => const UpiPermissionScreen(), transition: Transition.cupertino);
   }
 
-  void _maybeStartShowcase(BuildContext ctx) {
-    if (_showcaseTriggered) return;
-    _showcaseTriggered = true;
-    final showcaseState = ShowCaseWidget.of(ctx);
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      if (!mounted) return;
-      final ctrl = Get.find<WalkthroughController>();
-      if (await ctrl.shouldShow()) {
-        if (mounted) showcaseState.startShowCase(ctrl.orderedKeys);
-        ctrl.markShown();
-      }
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
-    return ShowCaseWidget(
-      blurValue: 2,
-      onFinish: () => _maybeShowUpiPermission(),
-      builder: (showcaseCtx) {
-        _maybeStartShowcase(showcaseCtx);
-        return Scaffold(
-          extendBody: true,
-          body: Stack(
-            children: [
-              GestureDetector(
-                onTap: _closeDial,
-                behavior: HitTestBehavior.translucent,
-                child: IndexedStack(index: _current, children: _screens),
+    return Scaffold(
+      extendBody: true,
+      body: Stack(
+        children: [
+          GestureDetector(
+            onTap: _closeDial,
+            behavior: HitTestBehavior.translucent,
+            child: IndexedStack(index: _current, children: _screens),
+          ),
+          if (_dialVisible)
+            Positioned.fill(
+              child: _AddSpeedDial(
+                open: _dialOpen,
+                onClose: _closeDial,
+                onExpense: _addExpense,
+                onIncome: _addIncome,
+                onSplitBill: _addSplitBill,
               ),
-              if (_dialVisible)
-                Positioned.fill(
-                  child: _AddSpeedDial(
-                    open: _dialOpen,
-                    onClose: _closeDial,
-                    onExpense: _addExpense,
-                    onIncome: _addIncome,
-                    onSplitBill: _addSplitBill,
-                  ),
-                ),
-            ],
-          ),
-          bottomNavigationBar: _NavBar(
-            current: _current,
-            onTap: (i) {
-              _closeDial();
-              setState(() => _current = i);
-            },
-            onAdd: () => _toggleDial(context),
-            dialOpen: _dialOpen,
-          ),
-        );
-      },
+            ),
+        ],
+      ),
+      bottomNavigationBar: _NavBar(
+        current: _current,
+        onTap: (i) {
+          _closeDial();
+          setState(() => _current = i);
+        },
+        onAdd: () => _toggleDial(context),
+        dialOpen: _dialOpen,
+      ),
     );
   }
 }
@@ -188,8 +171,6 @@ class _NavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final wCtrl = Get.find<WalkthroughController>();
-
     return Container(
       decoration: const BoxDecoration(
         color: AppColor.surface,
@@ -210,116 +191,62 @@ class _NavBar extends StatelessWidget {
                 ),
               ),
               Expanded(
-                child: Showcase(
-                  key: wCtrl.statsNavKey,
-                  title: 'Smart insights',
-                  description: 'Charts and spending breakdowns to understand where your money goes.',
-                  targetShapeBorder: const CircleBorder(),
-                  tooltipBackgroundColor: AppColor.primary,
-                  textColor: Colors.white,
-                  titleTextStyle: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                  ),
-                  descTextStyle: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.85),
-                    fontSize: 13,
-                    height: 1.5,
-                  ),
-                  child: _NavItem(
-                    icon: PhosphorIconsLight.chartBar,
-                    label: 'Stats',
-                    isActive: current == 1,
-                    onTap: () => onTap(1),
-                  ),
+                child: _NavItem(
+                  icon: PhosphorIconsLight.chartBar,
+                  label: 'Stats',
+                  isActive: current == 1,
+                  onTap: () => onTap(1),
                 ),
               ),
-              Showcase(
-                key: wCtrl.addBtnKey,
-                title: 'Log a transaction',
-                description: 'Tap + anytime to record an expense or income instantly.',
-                targetShapeBorder: const CircleBorder(),
-                tooltipBackgroundColor: AppColor.primary,
-                textColor: Colors.white,
-                titleTextStyle: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppDimens.spaceLG,
+                  vertical: AppDimens.spaceSM,
                 ),
-                descTextStyle: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.85),
-                  fontSize: 13,
-                  height: 1.5,
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppDimens.spaceLG,
-                    vertical: AppDimens.spaceSM,
-                  ),
-                  child: GestureDetector(
-                    onTap: onAdd,
-                    child: AnimatedContainer(
+                child: GestureDetector(
+                  onTap: onAdd,
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 220),
+                    curve: Curves.easeOutCubic,
+                    width: 50,
+                    height: 50,
+                    decoration: BoxDecoration(
+                      color: AppColor.primary,
+                      shape: BoxShape.circle,
+                      boxShadow: dialOpen
+                          ? [
+                              BoxShadow(
+                                color: AppColor.primary.withValues(alpha: 0.40),
+                                blurRadius: 20,
+                                spreadRadius: 2,
+                              ),
+                            ]
+                          : [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.15),
+                                blurRadius: 8,
+                                offset: const Offset(0, 3),
+                              ),
+                            ],
+                    ),
+                    child: AnimatedRotation(
                       duration: const Duration(milliseconds: 220),
-                      curve: Curves.easeOutCubic,
-                      width: 50,
-                      height: 50,
-                      decoration: BoxDecoration(
-                        color: AppColor.primary,
-                        shape: BoxShape.circle,
-                        boxShadow: dialOpen
-                            ? [
-                                BoxShadow(
-                                  color: AppColor.primary.withValues(alpha: 0.40),
-                                  blurRadius: 20,
-                                  spreadRadius: 2,
-                                ),
-                              ]
-                            : [
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.15),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 3),
-                                ),
-                              ],
-                      ),
-                      child: AnimatedRotation(
-                        duration: const Duration(milliseconds: 220),
-                        turns: dialOpen ? 0.125 : 0.0,
-                        child: const PhosphorIcon(
-                          PhosphorIconsLight.plus,
-                          color: Colors.white,
-                          size: 22,
-                        ),
+                      turns: dialOpen ? 0.125 : 0.0,
+                      child: const PhosphorIcon(
+                        PhosphorIconsLight.plus,
+                        color: Colors.white,
+                        size: 22,
                       ),
                     ),
                   ),
                 ),
               ),
               Expanded(
-                child: Showcase(
-                  key: wCtrl.goalsNavKey,
-                  title: 'Budgets & goals',
-                  description: 'Set category spending limits and track your savings goals.',
-                  targetShapeBorder: const CircleBorder(),
-                  tooltipBackgroundColor: AppColor.primary,
-                  textColor: Colors.white,
-                  titleTextStyle: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                  ),
-                  descTextStyle: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.85),
-                    fontSize: 13,
-                    height: 1.5,
-                  ),
-                  child: _NavItem(
-                    icon: PhosphorIconsLight.wallet,
-                    label: 'Goals',
-                    isActive: current == 2,
-                    onTap: () => onTap(2),
-                  ),
+                child: _NavItem(
+                  icon: PhosphorIconsLight.wallet,
+                  label: 'Goals',
+                  isActive: current == 2,
+                  onTap: () => onTap(2),
                 ),
               ),
               Expanded(
@@ -382,7 +309,8 @@ class _NavItem extends StatelessWidget {
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                 child: PhosphorIcon(
                   icon,
                   color: color,
@@ -640,7 +568,8 @@ class _DialAction extends StatelessWidget {
             decoration: BoxDecoration(
               color: AppColor.surface.withValues(alpha: 0.85),
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: AppColor.borderStrong.withValues(alpha: 0.7)),
+              border: Border.all(
+                  color: AppColor.borderStrong.withValues(alpha: 0.7)),
               boxShadow: [
                 BoxShadow(
                   color: AppColor.primary.withValues(alpha: 0.10),

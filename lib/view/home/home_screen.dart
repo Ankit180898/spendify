@@ -4,7 +4,6 @@ import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:intl/intl.dart';
-import 'package:showcaseview/showcaseview.dart';
 import 'package:spendify/config/app_color.dart';
 import 'package:spendify/config/app_theme.dart';
 import 'package:spendify/controller/home_controller/home_controller.dart';
@@ -13,7 +12,6 @@ import 'package:spendify/controller/savings_controller/savings_controller.dart';
 import 'package:spendify/controller/weekly_digest_controller/weekly_digest_controller.dart';
 import 'package:spendify/view/weekly_digest/weekly_digest_screen.dart';
 import 'package:spendify/controller/wallet_controller/wallet_controller.dart';
-import 'package:spendify/controller/walkthrough_controller.dart';
 import 'package:spendify/model/savings_goal_model.dart';
 import 'package:spendify/services/insights_service.dart';
 import 'package:spendify/services/progress_service.dart';
@@ -314,27 +312,7 @@ class _TopSection extends StatelessWidget {
             if (loading)
               const _BentoShimmer()
             else
-              Showcase(
-                key: Get.find<WalkthroughController>().balanceKey,
-                title: 'Your financial overview',
-                description:
-                    'See your total balance, income, and expenses. Tap the eye to hide amounts.',
-                tooltipBackgroundColor: AppColor.primary,
-                textColor: Colors.white,
-                titleTextStyle: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                ),
-                descTextStyle: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.85),
-                  fontSize: 13,
-                  height: 1.5,
-                ),
-                targetShapeBorder: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(18),
-                ),
-                child: _BalanceBanner(
+              _BalanceBanner(
                   greeting: name.isNotEmpty ? 'Good $greeting, $name' : 'Good $greeting',
                   periodLabel: period.label,
                   sym: sym,
@@ -346,7 +324,6 @@ class _TopSection extends StatelessWidget {
                   budget: budget,
                   last7: last7,
                 ),
-              ),
 
             // ── Streak & level ───────────────────────────────────────
             if (!loading) _ProgressCard(progress: progress),
@@ -356,26 +333,7 @@ class _TopSection extends StatelessWidget {
               padding: EdgeInsets.fromLTRB(20, 28, 20, 14),
               child: _SectionTitle('Quick actions'),
             ),
-            Showcase(
-              key: Get.find<WalkthroughController>().quickActionsKey,
-              title: 'Log transactions fast',
-              description: 'Tap to record an expense or income in seconds.',
-              tooltipBackgroundColor: AppColor.primary,
-              textColor: Colors.white,
-              titleTextStyle: const TextStyle(
-                color: Colors.white,
-                fontSize: 15,
-                fontWeight: FontWeight.w700,
-              ),
-              descTextStyle: TextStyle(
-                color: Colors.white.withValues(alpha: 0.85),
-                fontSize: 13,
-                height: 1.5,
-              ),
-              targetShapeBorder: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: _ActionGrid(
+            _ActionGrid(
                 actions: [
                   _ActionItem(PhosphorIconsDuotone.arrowCircleUp, AppColor.expense, 'Expense',
                       () => Get.to(() => const AddTransactionScreen(initialType: 'expense'))),
@@ -387,7 +345,6 @@ class _TopSection extends StatelessWidget {
                       () => showGoalsAddPicker(context)),
                 ],
               ),
-            ),
           ],
         ),
       );
