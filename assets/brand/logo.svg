@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024"><defs>
+<linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#A2877A"/><stop offset="0.55" stop-color="#86695B"/><stop offset="1" stop-color="#5F4639"/></linearGradient>
+<radialGradient id="glow" cx="0.28" cy="0.2" r="0.75"><stop offset="0" stop-color="#fff" stop-opacity="0.2"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
+<linearGradient id="cream" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFFBF6"/><stop offset="1" stop-color="#F0E4D8"/></linearGradient>
+</defs><rect width="1024" height="1024" rx="232" fill="url(#bg)"/><rect width="1024" height="1024" rx="232" fill="url(#glow)"/><g transform="rotate(-7 512 520)"><path d="M 300 250 Q 300 210 340 210 L 684 210 Q 724 210 724 250 L 724 790 L 671 830 L 618 790 L 565 830 L 512 790 L 459 830 L 406 790 L 353 830 L 300 790 Z" fill="#3E2C24" fill-opacity="0.22" transform="translate(10 22)"/><path d="M 300 250 Q 300 210 340 210 L 684 210 Q 724 210 724 250 L 724 790 L 671 830 L 618 790 L 565 830 L 512 790 L 459 830 L 406 790 L 353 830 L 300 790 Z" fill="url(#cream)"/><path d="M 370 300 L 560 300 M 370 352 L 480 352" stroke="#DCCBBB" stroke-width="22" stroke-linecap="round"/>
+  <circle cx="436" cy="500" r="36" fill="#3E2C24"/><circle cx="588" cy="500" r="36" fill="#3E2C24"/>
+  <circle cx="448" cy="488" r="11" fill="#fff"/><circle cx="600" cy="488" r="11" fill="#fff"/>
+  <circle cx="392" cy="574" r="34" fill="#E58A7A" fill-opacity="0.45"/><circle cx="632" cy="574" r="34" fill="#E58A7A" fill-opacity="0.45"/>
+  <path d="M 468 588 Q 512 636 556 588" fill="none" stroke="#3E2C24" stroke-width="22" stroke-linecap="round"/>
+  <path d="M 380 700 L 644 700" stroke="#DCCBBB" stroke-width="22" stroke-linecap="round" stroke-dasharray="1 44"/></g>
+<g transform="translate(800 230)"><path d="M 0 -60 C 6 -20 20 -6 60 0 C 20 6 6 20 0 60 C -6 20 -20 6 -60 0 C -20 -6 -6 -20 0 -60 Z" fill="#F2C27B"/></g><g transform="translate(236 812) scale(0.45)"><path d="M 0 -60 C 6 -20 20 -6 60 0 C 20 6 6 20 0 60 C -6 20 -20 6 -60 0 C -20 -6 -6 -20 0 -60 Z" fill="#F2C27B"/></g></svg>

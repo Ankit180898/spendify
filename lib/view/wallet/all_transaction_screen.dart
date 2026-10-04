@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:spendify/config/app_color.dart';
+import 'package:spendify/config/app_theme.dart';
 import 'package:spendify/controller/all_transaction/all_transaction_controller.dart';
 import 'package:spendify/utils/utils.dart';
+import 'package:spendify/view/wallet/add_transaction_screen.dart';
 import 'package:spendify/view/wallet/transaction_list_item.dart';
 
 class AllTransactionsScreen extends StatefulWidget {
@@ -64,100 +68,124 @@ class _AllTransactionsScreenState extends State<AllTransactionsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bg = isDark ? AppColor.darkBg : Colors.white;
-    final textPrimary = isDark ? AppColor.textPrimary : const Color(0xFF09090B);
-    final divColor = isDark ? AppColor.darkBorder : const Color(0xFFF4F4F5);
-
     return Scaffold(
-      backgroundColor: bg,
-      appBar: AppBar(
-        backgroundColor: bg,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        leading: IconButton(
-          icon: PhosphorIcon(PhosphorIconsLight.arrowLeft, color: textPrimary, size: 20),
-          onPressed: Get.back,
-        ),
-        title: Text('Transactions',
-            style: TextStyle(color: textPrimary, fontSize: 17, fontWeight: FontWeight.w600)),
-        actions: [
-          Obx(() {
-            final hasDay = controller.selectedDay.value != null;
-            return IconButton(
-              onPressed: () {
-                setState(() => _calendarVisible = !_calendarVisible);
-                if (!_calendarVisible) controller.clearDayFilter();
-              },
-              icon: PhosphorIcon(
-                _calendarVisible ? PhosphorIconsLight.calendarX : PhosphorIconsLight.calendarDots,
-                color: hasDay ? AppColor.primary : textPrimary,
-                size: 20,
+      backgroundColor: AppColor.bg,
+      body: SafeArea(
+        bottom: false,
+        child: Column(
+          children: [
+            // ── Header ───────────────────────────────────────────────
+            Padding(
+              padding: const EdgeInsets.fromLTRB(6, 8, 12, 0),
+              child: Row(
+                children: [
+                  IconButton(
+                    onPressed: Get.back,
+                    icon: const PhosphorIcon(PhosphorIconsLight.arrowLeft,
+                        color: AppColor.textPrimary, size: 22),
+                  ),
+                  Expanded(
+                    child: Text(
+                      widget.initialMonth != null
+                          ? DateFormat('MMMM yyyy').format(widget.initialMonth!)
+                          : 'Transactions',
+                      style: GoogleFonts.urbanist(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w700,
+                        color: AppColor.textPrimary,
+                        letterSpacing: -0.5,
+                      ),
+                    ),
+                  ),
+                  Obx(() {
+                    final hasDay = controller.selectedDay.value != null;
+                    final active = _calendarVisible || hasDay;
+                    return GestureDetector(
+                      onTap: () {
+                        HapticFeedback.selectionClick();
+                        setState(() => _calendarVisible = !_calendarVisible);
+                        if (!_calendarVisible) controller.clearDayFilter();
+                      },
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: active ? AppColor.primary : AppColor.surface,
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                              color: active ? AppColor.primary : AppColor.borderStrong),
+                        ),
+                        child: Center(
+                          child: PhosphorIcon(
+                            PhosphorIconsLight.calendarDots,
+                            size: 19,
+                            color: active ? Colors.white : AppColor.textPrimary,
+                          ),
+                        ),
+                      ),
+                    );
+                  }),
+                ],
               ),
-            );
-          }),
-        ],
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1),
-          child: Divider(height: 1, color: divColor),
+            ),
+            _buildSearchBar(),
+            _TypeSwitch(controller: controller),
+            AnimatedSize(
+              duration: const Duration(milliseconds: 250),
+              curve: Curves.easeOutCubic,
+              child: _calendarVisible ? _buildCalendar() : _buildCategoryChips(),
+            ),
+            Expanded(child: _buildList()),
+          ],
         ),
-      ),
-      body: Column(
-        children: [
-          _buildSearchBar(isDark),
-          if (_calendarVisible) _buildCalendar(isDark),
-          if (!_calendarVisible) _buildCategoryChips(isDark),
-          Expanded(child: _buildList(isDark)),
-        ],
       ),
     );
   }
 
-  Widget _buildCalendar(bool isDark) {
+  Widget _buildCalendar() {
     final txDays = <DateTime>{};
     for (final t in controller.homeController.allTransactions) {
       final d = DateTime.tryParse(t['date'] ?? '');
       if (d != null) txDays.add(DateTime(d.year, d.month, d.day));
     }
-    return Obx(() => _WeekStrip(
-      txDays: txDays,
-      selectedDay: controller.selectedDay.value,
-      onDaySelected: controller.filterByDay,
-      onClear: controller.clearDayFilter,
-      isDark: isDark,
-    ));
+    return Obx(() => Padding(
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+          child: _WeekStrip(
+            txDays: txDays,
+            selectedDay: controller.selectedDay.value,
+            onDaySelected: controller.filterByDay,
+            onClear: controller.clearDayFilter,
+          ),
+        ));
   }
 
-  Widget _buildSearchBar(bool isDark) {
-    final inputBg = isDark ? AppColor.darkCard : const Color(0xFFF4F4F5);
-    final textMuted = isDark ? AppColor.textSecondary : const Color(0xFF71717A);
-    final textPrimary = isDark ? AppColor.textPrimary : const Color(0xFF09090B);
-    final border = isDark ? AppColor.darkBorder : const Color(0xFFE4E4E7);
-
+  Widget _buildSearchBar() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 4),
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
       child: Obx(() {
         final hasText = controller.searchQuery.value.isNotEmpty;
         return TextField(
           controller: _searchController,
           onChanged: controller.search,
-          style: TextStyle(color: textPrimary, fontSize: 14),
+          style: GoogleFonts.urbanist(color: AppColor.textPrimary, fontSize: 15),
           cursorColor: AppColor.primary,
+          textInputAction: TextInputAction.search,
           decoration: InputDecoration(
-            hintText: 'Search transactions…',
-            hintStyle: TextStyle(color: textMuted, fontSize: 14),
+            hintText: 'Search by name, category or amount',
+            hintStyle: GoogleFonts.urbanist(color: AppColor.textTertiary, fontSize: 14),
             filled: true,
-            fillColor: inputBg,
-            prefixIcon: Padding(
-              padding: const EdgeInsets.only(left: 14, right: 10),
+            fillColor: AppColor.surface,
+            prefixIcon: const Padding(
+              padding: EdgeInsets.only(left: 14, right: 10),
               child: PhosphorIcon(PhosphorIconsLight.magnifyingGlass,
-                  color: textMuted, size: 17),
+                  color: AppColor.textSecondary, size: 18),
             ),
             prefixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
             suffixIcon: hasText
                 ? IconButton(
-                    icon: PhosphorIcon(PhosphorIconsLight.xCircle,
-                        color: textMuted, size: 17),
+                    icon: const PhosphorIcon(PhosphorIconsFill.xCircle,
+                        color: AppColor.textTertiary, size: 18),
                     onPressed: () {
                       _searchController.clear();
                       controller.search('');
@@ -166,35 +194,32 @@ class _AllTransactionsScreenState extends State<AllTransactionsScreen> {
                 : null,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
-              borderSide: BorderSide(color: border),
+              borderSide: const BorderSide(color: AppColor.borderStrong),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
-              borderSide: BorderSide(color: border),
+              borderSide: const BorderSide(color: AppColor.borderStrong),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
               borderSide: const BorderSide(color: AppColor.primary, width: 1.5),
             ),
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
           ),
         );
       }),
     );
   }
 
-  Widget _buildCategoryChips(bool isDark) {
-    final textMuted = isDark ? AppColor.textSecondary : const Color(0xFF71717A);
-    final chipBg = isDark ? AppColor.darkCard : const Color(0xFFF4F4F5);
-
+  Widget _buildCategoryChips() {
     return Obx(() {
       final selectedChip = controller.selectedChip.value;
       final cats = controller.uniqueCategories;
+      if (cats.isEmpty) return const SizedBox(height: 4);
       return Padding(
-        padding: const EdgeInsets.only(top: 14, bottom: 4),
+        padding: const EdgeInsets.only(top: 12),
         child: SizedBox(
-          height: 34,
+          height: 36,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -203,8 +228,10 @@ class _AllTransactionsScreenState extends State<AllTransactionsScreen> {
             itemBuilder: (_, i) {
               final cat = cats[i];
               final isSelected = selectedChip == cat;
+              final color = AppColor.categoryColor(cat);
               return GestureDetector(
                 onTap: () {
+                  HapticFeedback.selectionClick();
                   if (isSelected) {
                     controller.selectedChip.value = '';
                     controller.isSelected.value = false;
@@ -215,18 +242,34 @@ class _AllTransactionsScreenState extends State<AllTransactionsScreen> {
                 },
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 180),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
+                  padding: const EdgeInsets.fromLTRB(10, 0, 14, 0),
                   decoration: BoxDecoration(
-                    color: isSelected ? AppColor.primary : chipBg,
+                    color: isSelected ? AppColor.primary : AppColor.surface,
                     borderRadius: BorderRadius.circular(100),
+                    border: Border.all(
+                        color: isSelected ? AppColor.primary : AppColor.borderStrong),
                   ),
-                  child: Text(
-                    cat,
-                    style: TextStyle(
-                      color: isSelected ? Colors.white : textMuted,
-                      fontSize: 12,
-                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                    ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 8,
+                        height: 8,
+                        decoration: BoxDecoration(
+                          color: isSelected ? Colors.white : color,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 7),
+                      Text(
+                        cat,
+                        style: GoogleFonts.urbanist(
+                          color: isSelected ? Colors.white : AppColor.textPrimary,
+                          fontSize: 13,
+                          fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               );
@@ -237,100 +280,387 @@ class _AllTransactionsScreenState extends State<AllTransactionsScreen> {
     });
   }
 
-  Widget _buildList(bool isDark) {
-    final textMuted = isDark ? AppColor.textSecondary : const Color(0xFF71717A);
-    final textDim = isDark ? AppColor.textTertiary : const Color(0xFFA1A1AA);
-    final divColor = isDark ? AppColor.darkBorder : const Color(0xFFF4F4F5);
-
+  Widget _buildList() {
     return Obx(() {
       if (controller.isLoading.value) {
         return const Center(
           child: CircularProgressIndicator(color: AppColor.primary, strokeWidth: 2),
         );
       }
-      final transactions = controller.filteredTransactions;
+      final transactions = controller.filteredTransactions.toList();
+      final sym = controller.homeController.currencySymbol.value;
+
       if (transactions.isEmpty) {
-        return Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              PhosphorIcon(PhosphorIconsLight.receipt,
-                  size: 40, color: textMuted.withValues(alpha: 0.3)),
-              const SizedBox(height: 10),
-              Text('No transactions found',
-                  style: TextStyle(color: textMuted, fontSize: 14)),
-            ],
-          ),
-        );
+        final filtering = controller.searchQuery.value.isNotEmpty ||
+            controller.selectedChip.value.isNotEmpty ||
+            controller.selectedDay.value != null ||
+            controller.typeFilter.value.isNotEmpty;
+        return _EmptyList(filtering: filtering);
       }
 
-      // Build grouped list: month headers + transaction rows
-      final items = <_ListItem>[];
-      String? lastMonthKey;
+      // Group by day: header (with the day's net) followed by one card of rows
+      final groups = <DateTime, List<Map<String, dynamic>>>{};
       for (final tx in transactions) {
-        final date = DateTime.parse(tx['date']);
-        final monthKey = DateFormat('MMMM yyyy').format(date);
-        if (monthKey != lastMonthKey) {
-          items.add(_ListItem.header(monthKey));
-          lastMonthKey = monthKey;
-        }
-        items.add(_ListItem.tx(tx));
+        final d = DateTime.tryParse(tx['date'] ?? '');
+        if (d == null) continue;
+        groups.putIfAbsent(DateTime(d.year, d.month, d.day), () => []).add(tx);
       }
-
+      final days = groups.keys.toList()..sort((a, b) => b.compareTo(a));
       final more = controller.hasMore.value;
-      final totalCount = items.length + (more ? 1 : 0);
 
       return ListView.builder(
         controller: _scrollController,
-        physics: const BouncingScrollPhysics(),
-        padding: const EdgeInsets.only(bottom: 80),
-        itemCount: totalCount,
+        physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+        padding: const EdgeInsets.only(bottom: 100),
+        itemCount: days.length + 1 + (more ? 1 : 0),
         itemBuilder: (_, i) {
-          // Footer loader
-          if (i == items.length) {
+          if (i == 0) return _SummaryCard(controller: controller, sym: sym);
+          final idx = i - 1;
+          if (idx == days.length) {
             return const Padding(
               padding: EdgeInsets.symmetric(vertical: 20),
               child: Center(
                 child: SizedBox(
                   width: 20,
                   height: 20,
-                  child: CircularProgressIndicator(
-                      color: AppColor.primary, strokeWidth: 2),
+                  child: CircularProgressIndicator(color: AppColor.primary, strokeWidth: 2),
                 ),
               ),
             );
           }
-          final item = items[i];
-          if (item.isHeader) {
-            return Padding(
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
-              child: Text(
-                item.header!,
-                style: TextStyle(
-                  color: textDim,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 0.3,
-                ),
-              ),
-            );
-          }
-          final showDivider = i > 0 && !items[i - 1].isHeader;
-          return Column(
-            children: [
-              if (showDivider)
-                Divider(height: 1, thickness: 0.5, color: divColor, indent: 72),
-              TransactionListItem(
-                transaction: [item.tx!],
-                index: 0,
-                categoryList: categoryList,
-              ),
-            ],
-          );
+          final day = days[idx];
+          return _DayGroup(day: day, txs: groups[day]!, sym: sym);
         },
       );
     });
   }
+}
+
+// ── Type switch (All · Expenses · Income) ────────────────────────────────────
+
+class _TypeSwitch extends StatelessWidget {
+  final AllTransactionsController controller;
+  const _TypeSwitch({required this.controller});
+
+  static const _options = [('', 'All'), ('expense', 'Expenses'), ('income', 'Income')];
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+        child: Container(
+          height: 42,
+          padding: const EdgeInsets.all(4),
+          decoration: BoxDecoration(
+            color: AppColor.surfaceVariant,
+            borderRadius: BorderRadius.circular(100),
+          ),
+          child: Obx(() {
+            final current = controller.typeFilter.value;
+            final idx = _options.indexWhere((o) => o.$1 == current).clamp(0, 2);
+            return LayoutBuilder(builder: (_, c) {
+              final w = c.maxWidth / _options.length;
+              return Stack(
+                children: [
+                  AnimatedPositioned(
+                    duration: const Duration(milliseconds: 260),
+                    curve: Curves.easeOutCubic,
+                    left: idx * w,
+                    top: 0,
+                    bottom: 0,
+                    width: w,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: AppColor.surface,
+                        borderRadius: BorderRadius.circular(100),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColor.primary.withValues(alpha: 0.12),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  Row(
+                    children: [
+                      for (var i = 0; i < _options.length; i++)
+                        Expanded(
+                          child: GestureDetector(
+                            behavior: HitTestBehavior.opaque,
+                            onTap: () {
+                              HapticFeedback.selectionClick();
+                              controller.setType(_options[i].$1);
+                            },
+                            child: Center(
+                              child: Text(
+                                _options[i].$2,
+                                style: GoogleFonts.urbanist(
+                                  fontSize: 14,
+                                  fontWeight: i == idx ? FontWeight.w700 : FontWeight.w500,
+                                  color: i == idx ? AppColor.textPrimary : AppColor.textSecondary,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ],
+              );
+            });
+          }),
+        ),
+      );
+}
+
+// ── Summary of everything that matches the filters ───────────────────────────
+
+class _SummaryCard extends StatelessWidget {
+  final AllTransactionsController controller;
+  final String sym;
+  const _SummaryCard({required this.controller, required this.sym});
+
+  @override
+  Widget build(BuildContext context) {
+    final fmt = NumberFormat('#,##0', 'en_IN');
+    return Obx(() {
+      final count = controller.matchCount.value;
+      final spent = controller.matchSpent.value;
+      final earned = controller.matchEarned.value;
+      final type = controller.typeFilter.value;
+      final net = earned - spent;
+
+      Widget stat(String label, String value, Color color, Object icon) => Expanded(
+            child: Row(
+              children: [
+                Container(
+                  width: 30,
+                  height: 30,
+                  decoration: BoxDecoration(
+                    color: AppColor.surface.withValues(alpha: 0.8),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Center(
+                    child: PhosphorIcon(icon, size: 15, color: color, duotoneSecondaryOpacity: 0.3),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(label, style: AppTypography.caption(AppColor.textSecondary)),
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          value,
+                          style: GoogleFonts.urbanist(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            color: AppColor.textPrimary,
+                            fontFeatures: const [FontFeature.tabularFigures()],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          );
+
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 4),
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
+          decoration: BoxDecoration(
+            color: AppColor.bannerBg,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Text(
+                    '$count ${count == 1 ? 'transaction' : 'transactions'}',
+                    style: AppTypography.captionSemiBold(AppColor.textSecondary),
+                  ),
+                  const Spacer(),
+                  if (type.isEmpty && count > 0)
+                    Text(
+                      'Net ${net >= 0 ? '+' : '−'}$sym${fmt.format(net.abs())}',
+                      style: AppTypography.captionSemiBold(
+                          net >= 0 ? AppColor.income : AppColor.expense),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  if (type != 'income')
+                    stat('Spent', '$sym${fmt.format(spent)}', AppColor.expense,
+                        PhosphorIconsDuotone.arrowUpRight),
+                  if (type.isEmpty) const SizedBox(width: 10),
+                  if (type != 'expense')
+                    stat('Earned', '$sym${fmt.format(earned)}', AppColor.income,
+                        PhosphorIconsDuotone.arrowDownLeft),
+                ],
+              ),
+            ],
+          ),
+        ),
+      );
+    });
+  }
+}
+
+// ── Day group ─────────────────────────────────────────────────────────────────
+
+class _DayGroup extends StatelessWidget {
+  final DateTime day;
+  final List<Map<String, dynamic>> txs;
+  final String sym;
+  const _DayGroup({required this.day, required this.txs, required this.sym});
+
+  String _label() {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final diff = today.difference(day).inDays;
+    if (diff == 0) return 'Today';
+    if (diff == 1) return 'Yesterday';
+    if (day.year == now.year) return DateFormat('EEE, d MMM').format(day);
+    return DateFormat('EEE, d MMM yyyy').format(day);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final fmt = NumberFormat('#,##0', 'en_IN');
+    final net = txs.fold(0.0, (s, t) {
+      final a = (t['amount'] as num?)?.toDouble() ?? 0;
+      return t['type'] == 'income' ? s + a : s - a;
+    });
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 18, 20, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(4, 0, 4, 8),
+            child: Row(
+              children: [
+                Text(
+                  _label(),
+                  style: GoogleFonts.urbanist(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: AppColor.heading,
+                  ),
+                ),
+                const Spacer(),
+                Text(
+                  '${net >= 0 ? '+' : '−'}$sym${fmt.format(net.abs())}',
+                  style: GoogleFonts.urbanist(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: net >= 0 ? AppColor.income : AppColor.textSecondary,
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            clipBehavior: Clip.antiAlias,
+            decoration: BoxDecoration(
+              color: AppColor.surface,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: AppColor.borderStrong),
+            ),
+            child: Column(
+              children: [
+                for (var i = 0; i < txs.length; i++) ...[
+                  if (i > 0)
+                    const Divider(height: 1, color: AppColor.border, indent: 64, endIndent: 14),
+                  TransactionListItem(
+                    key: ValueKey(txs[i]['id'] ?? txs[i]),
+                    transaction: [txs[i]],
+                    index: 0,
+                    categoryList: categoryList,
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Empty state ───────────────────────────────────────────────────────────────
+
+class _EmptyList extends StatelessWidget {
+  final bool filtering;
+  const _EmptyList({required this.filtering});
+
+  @override
+  Widget build(BuildContext context) => SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(40, 60, 40, 120),
+        child: Column(
+          children: [
+            Container(
+              width: 88,
+              height: 88,
+              decoration: BoxDecoration(
+                color: AppColor.primaryExtraSoft,
+                shape: BoxShape.circle,
+                border: Border.all(color: AppColor.borderStrong),
+              ),
+              child: Center(
+                child: PhosphorIcon(
+                  filtering ? PhosphorIconsDuotone.magnifyingGlass : PhosphorIconsDuotone.receipt,
+                  size: 40,
+                  color: AppColor.primary,
+                  duotoneSecondaryOpacity: 0.3,
+                ),
+              ),
+            ),
+            const SizedBox(height: 18),
+            Text(
+              filtering ? 'Nothing matches' : 'No transactions yet',
+              style: AppTypography.heading3(AppColor.textPrimary),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              filtering
+                  ? 'Try a different search, category or date.'
+                  : 'Log your first expense or income to see it here.',
+              textAlign: TextAlign.center,
+              style: AppTypography.body(AppColor.textSecondary),
+            ),
+            if (!filtering) ...[
+              const SizedBox(height: 20),
+              SizedBox(
+                height: 46,
+                child: ElevatedButton.icon(
+                  onPressed: () => Get.to(() => const AddTransactionScreen(initialType: 'expense')),
+                  icon: const PhosphorIcon(PhosphorIconsBold.plus, size: 15, color: Colors.white),
+                  label: const Text('Add a transaction'),
+                  style: ElevatedButton.styleFrom(
+                    minimumSize: const Size(0, 46),
+                    padding: const EdgeInsets.symmetric(horizontal: 22),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      );
 }
 
 // ── Week Strip Calendar ───────────────────────────────────────────────────────
@@ -340,14 +670,12 @@ class _WeekStrip extends StatefulWidget {
   final DateTime? selectedDay;
   final ValueChanged<DateTime> onDaySelected;
   final VoidCallback onClear;
-  final bool isDark;
 
   const _WeekStrip({
     required this.txDays,
     required this.selectedDay,
     required this.onDaySelected,
     required this.onClear,
-    required this.isDark,
   });
 
   @override
@@ -365,8 +693,7 @@ class _WeekStripState extends State<_WeekStrip> {
     return today.subtract(Duration(days: today.weekday - 1));
   }
 
-  // page _initPage = current week, page _initPage-1 = last week, etc.
-  // Higher page = more recent. itemCount = _initPage+1 caps at current week.
+  // page _initPage = current week; lower pages are earlier weeks.
   DateTime _weekStart(int page) =>
       _thisMonday.subtract(Duration(days: (_initPage - page) * 7));
 
@@ -394,47 +721,53 @@ class _WeekStripState extends State<_WeekStrip> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = widget.isDark;
-    final bg = isDark ? AppColor.darkBg : Colors.white;
-    final textPrimary = isDark ? AppColor.textPrimary : const Color(0xFF09090B);
-    final textMuted = isDark ? AppColor.textSecondary : const Color(0xFF71717A);
-    final divColor = isDark ? AppColor.darkBorder : const Color(0xFFF4F4F5);
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
 
     return Container(
-      color: bg,
+      padding: const EdgeInsets.fromLTRB(8, 10, 8, 8),
+      decoration: BoxDecoration(
+        color: AppColor.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColor.borderStrong),
+      ),
       child: Column(
         children: [
-          // Month label + clear button
           Padding(
-            padding: const EdgeInsets.fromLTRB(20, 10, 16, 4),
+            padding: const EdgeInsets.fromLTRB(8, 0, 8, 6),
             child: Row(
               children: [
-                Text(_monthLabel,
-                    style: TextStyle(
-                        color: textMuted,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500)),
+                const PhosphorIcon(PhosphorIconsLight.caretLeft,
+                    size: 12, color: AppColor.textTertiary),
+                const SizedBox(width: 6),
+                Text(
+                  _monthLabel,
+                  style: GoogleFonts.urbanist(
+                    color: AppColor.textPrimary,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
                 const Spacer(),
                 if (widget.selectedDay != null)
                   GestureDetector(
                     onTap: widget.onClear,
-                    child: const Text('Clear',
-                        style: TextStyle(
-                            color: AppColor.primary,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500)),
-                  ),
+                    child: Text(
+                      'Show all',
+                      style: AppTypography.captionSemiBold(AppColor.primary),
+                    ),
+                  )
+                else
+                  Text('Swipe for earlier weeks',
+                      style: AppTypography.caption(AppColor.textTertiary)),
               ],
             ),
           ),
-          // Week strip — swipe left = newer, swipe right = older
           SizedBox(
-            height: 68,
+            height: 64,
             child: PageView.builder(
               controller: _pc,
-              itemCount: _initPage + 1, // caps at current week, no future pages
+              itemCount: _initPage + 1, // no future weeks
               onPageChanged: _updateMonthLabel,
               itemBuilder: (_, page) {
                 final ws = _weekStart(page);
@@ -452,66 +785,67 @@ class _WeekStripState extends State<_WeekStrip> {
 
                     return Expanded(
                       child: GestureDetector(
-                        onTap: isFuture ? null : () => widget.onDaySelected(day),
+                        behavior: HitTestBehavior.opaque,
+                        onTap: isFuture
+                            ? null
+                            : () {
+                                HapticFeedback.selectionClick();
+                                widget.onDaySelected(day);
+                              },
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            // Day abbreviation
                             Text(
                               DateFormat('E').format(day)[0],
-                              style: TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w500,
+                              style: GoogleFonts.urbanist(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
                                 color: isFuture
-                                    ? textMuted.withValues(alpha: 0.25)
-                                    : textMuted,
+                                    ? AppColor.textTertiary.withValues(alpha: 0.4)
+                                    : AppColor.textTertiary,
                               ),
                             ),
                             const SizedBox(height: 4),
-                            // Date circle
                             AnimatedContainer(
                               duration: const Duration(milliseconds: 180),
-                              curve: Curves.easeInOut,
                               width: 34,
                               height: 34,
                               decoration: BoxDecoration(
                                 color: isSelected
                                     ? AppColor.primary
                                     : isToday
-                                        ? AppColor.primary.withValues(alpha: 0.1)
+                                        ? AppColor.primaryExtraSoft
                                         : Colors.transparent,
                                 shape: BoxShape.circle,
+                                border: isToday && !isSelected
+                                    ? Border.all(color: AppColor.primary, width: 1.2)
+                                    : null,
                               ),
                               child: Center(
                                 child: Text(
                                   '${day.day}',
-                                  style: TextStyle(
-                                    fontSize: 15,
+                                  style: GoogleFonts.urbanist(
+                                    fontSize: 14,
                                     fontWeight: isSelected || isToday
-                                        ? FontWeight.w600
-                                        : FontWeight.w400,
+                                        ? FontWeight.w700
+                                        : FontWeight.w500,
                                     color: isFuture
-                                        ? textMuted.withValues(alpha: 0.25)
+                                        ? AppColor.textTertiary.withValues(alpha: 0.4)
                                         : isSelected
                                             ? Colors.white
-                                            : isToday
-                                                ? AppColor.primary
-                                                : textPrimary,
+                                            : AppColor.textPrimary,
                                   ),
                                 ),
                               ),
                             ),
                             const SizedBox(height: 3),
-                            // Transaction dot
                             Container(
-                              width: 4,
-                              height: 4,
+                              width: 5,
+                              height: 5,
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
                                 color: hasTx && !isFuture
-                                    ? (isSelected
-                                        ? Colors.white.withValues(alpha: 0.6)
-                                        : AppColor.primary)
+                                    ? (isSelected ? AppColor.primary : AppColor.warning)
                                     : Colors.transparent,
                               ),
                             ),
@@ -524,35 +858,8 @@ class _WeekStripState extends State<_WeekStrip> {
               },
             ),
           ),
-          // Selected day label
-          if (widget.selectedDay != null)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 6, 20, 4),
-              child: Row(
-                children: [
-                  Text(
-                    DateFormat('EEEE, MMM d').format(widget.selectedDay!),
-                    style: const TextStyle(
-                        color: AppColor.primary,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500),
-                  ),
-                ],
-              ),
-            ),
-          Divider(height: 1, color: divColor),
         ],
       ),
     );
   }
 }
-
-class _ListItem {
-  final String? header;
-  final Map<String, dynamic>? tx;
-  bool get isHeader => header != null;
-
-  const _ListItem.header(this.header) : tx = null;
-  const _ListItem.tx(this.tx) : header = null;
-}
-

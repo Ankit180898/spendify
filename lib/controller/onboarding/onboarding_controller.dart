@@ -23,6 +23,9 @@
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
+import 'package:spendify/config/app_color.dart';
+import 'package:spendify/widgets/celebration.dart';
 import 'package:spendify/main.dart';
 import 'package:spendify/routes/app_pages.dart';
 import 'package:spendify/widgets/bottom_navigation.dart';
@@ -45,10 +48,19 @@ class OnboardingController extends GetxController {
   final RxDouble monthlyBudget = 0.0.obs;
   final TextEditingController budgetController = TextEditingController();
 
+  /// Mirrors [budgetController] so quick-pick chips can react to typing.
+  final RxString budgetText = ''.obs;
+
   // Step 4 — Categories
   final RxList<String> selectedCategories = <String>[].obs;
 
   final RxBool isSaving = false.obs;
+
+  @override
+  void onInit() {
+    super.onInit();
+    budgetController.addListener(() => budgetText.value = budgetController.text);
+  }
 
   @override
   void onClose() {
@@ -120,6 +132,15 @@ class OnboardingController extends GetxController {
       });
 
       Get.offAll(() => const BottomNav());
+      Future.delayed(const Duration(milliseconds: 700), () {
+        showCelebration(const CelebrationData(
+          title: 'You\'re all set!',
+          subtitle: 'Your space is ready',
+          icon: PhosphorIconsDuotone.rocketLaunch,
+          color: AppColor.primary,
+          footnote: 'Log your first expense to start a streak and earn your first badge.',
+        ));
+      });
     } catch (e) {
       debugPrint('Onboarding save error: $e');
       CustomToast.errorToast('Error', 'Could not save preferences. Try again.');
@@ -153,4 +174,5 @@ class OnboardingController extends GetxController {
       isSaving.value = false;
     }
   }
+
 }

@@ -1,123 +1,106 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:spendify/config/app_color.dart';
+import 'package:spendify/config/app_theme.dart';
 import 'package:spendify/controller/onboarding/onboarding_controller.dart';
 
 class OnboardingScreen extends StatelessWidget {
   const OnboardingScreen({super.key});
 
+  static const _ctaLabels = ['Continue', 'Continue', 'Continue', 'Finish setup'];
+
   @override
   Widget build(BuildContext context) {
     final ctrl = Get.put(OnboardingController());
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bottom = MediaQuery.of(context).padding.bottom;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle(
+      value: const SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
-        statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+        statusBarIconBrightness: Brightness.dark,
+        statusBarBrightness: Brightness.light,
       ),
       child: Scaffold(
-        backgroundColor: isDark ? AppColor.darkBg : Colors.white,
+        backgroundColor: AppColor.bg,
         resizeToAvoidBottomInset: false,
         body: SafeArea(
+          bottom: false,
           child: Column(
             children: [
-              // ── Top bar ────────────────────────────────────────────────
+              // ── Top bar: back · progress · skip ──────────────────────
               Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                child: Row(
-                  children: [
-                    Obx(() => ctrl.currentStep.value > 0
-                        ? GestureDetector(
-                            onTap: ctrl.previousStep,
-                            child: Container(
-                              width: 38,
-                              height: 38,
-                              decoration: BoxDecoration(
-                                color: isDark
-                                    ? AppColor.darkSurface
-                                    : AppColor.lightSurface,
-                                borderRadius: BorderRadius.circular(10),
-                                border: Border.all(
-                                    color: isDark
-                                        ? AppColor.darkBorder
-                                        : AppColor.lightBorder,
-                                    width: 1),
-                              ),
-                              child: PhosphorIcon(
-                                PhosphorIconsLight.arrowLeft,
-                                color: isDark
-                                    ? AppColor.textPrimary
-                                    : AppColor.lightTextPrimary,
-                                size: 18,
-                              ),
-                            ),
-                          )
-                        : const SizedBox(width: 38)),
-                    const Spacer(),
-                    GestureDetector(
-                      onTap: ctrl.skip,
-                      child: Text(
-                        'Skip',
-                        style: TextStyle(
-                          color: isDark
-                              ? AppColor.textSecondary
-                              : AppColor.lightTextSecondary,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
+                padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+                child: Obx(() {
+                  final step = ctrl.currentStep.value;
+                  return Row(
+                    children: [
+                      AnimatedOpacity(
+                        duration: const Duration(milliseconds: 200),
+                        opacity: step > 0 ? 1 : 0,
+                        child: IconButton(
+                          onPressed: step > 0 ? ctrl.previousStep : null,
+                          icon: const PhosphorIcon(PhosphorIconsBold.arrowLeft,
+                              size: 18, color: AppColor.textPrimary),
                         ),
                       ),
-                    ),
-                  ],
-                ),
+                      Expanded(child: _SegmentedProgress(step: step)),
+                      TextButton(
+                        onPressed: ctrl.isSaving.value ? null : ctrl.skip,
+                        child: Text('Skip',
+                            style: AppTypography.bodySemiBold(AppColor.textSecondary)),
+                      ),
+                    ],
+                  );
+                }),
               ),
 
-              // ── Progress dots ──────────────────────────────────────────
-              Obx(() => _ProgressDots(
-                    current: ctrl.currentStep.value,
-                    total: OnboardingController.totalSteps,
-                    isDark: isDark,
-                  )),
-
-              const SizedBox(height: 8),
-
-              // ── Pages ─────────────────────────────────────────────────
+              // ── Pages ────────────────────────────────────────────────
               Expanded(
                 child: PageView(
                   controller: ctrl.pageController,
                   physics: const NeverScrollableScrollPhysics(),
-                  children: [
-                    _CurrencyStep(isDark: isDark),
-                    _OccupationStep(isDark: isDark),
-                    _BudgetStep(isDark: isDark),
-                    _CategoriesStep(isDark: isDark),
+                  children: const [
+                    _CurrencyStep(),
+                    _OccupationStep(),
+                    _BudgetStep(),
+                    _CategoriesStep(),
                   ],
                 ),
               ),
 
-              // ── CTA button ────────────────────────────────────────────
-              Padding(
-                padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
+              // ── CTA ──────────────────────────────────────────────────
+              Container(
+                padding: EdgeInsets.fromLTRB(24, 12, 24, bottom + 20),
+                decoration: BoxDecoration(
+                  color: AppColor.bg,
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColor.bg.withValues(alpha: 0.9),
+                      blurRadius: 16,
+                      offset: const Offset(0, -12),
+                    ),
+                  ],
+                ),
                 child: Obx(() {
-                  final isLast = ctrl.currentStep.value ==
-                      OnboardingController.totalSteps - 1;
+                  final step = ctrl.currentStep.value;
                   return SizedBox(
                     width: double.infinity,
-                    height: 54,
+                    height: 56,
                     child: ElevatedButton(
-                      onPressed:
-                          ctrl.isSaving.value ? null : ctrl.nextStep,
+                      onPressed: ctrl.isSaving.value
+                          ? null
+                          : () {
+                              HapticFeedback.lightImpact();
+                              FocusScope.of(context).unfocus();
+                              ctrl.nextStep();
+                            },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColor.primary,
-                        foregroundColor: Colors.white,
-                        disabledBackgroundColor:
-                            AppColor.primary.withValues(alpha: 0.5),
-                        elevation: 0,
+                        disabledBackgroundColor: AppColor.primary.withValues(alpha: 0.5),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
+                          borderRadius: BorderRadius.circular(16),
                         ),
                       ),
                       child: ctrl.isSaving.value
@@ -125,16 +108,22 @@ class OnboardingScreen extends StatelessWidget {
                               width: 22,
                               height: 22,
                               child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
-                              ),
+                                  strokeWidth: 2, color: Colors.white),
                             )
-                          : Text(
-                              isLast ? 'Get Started' : 'Continue',
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                              ),
+                          : Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  _ctaLabels[step],
+                                  style: GoogleFonts.urbanist(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                const PhosphorIcon(PhosphorIconsBold.arrowRight,
+                                    size: 16, color: Colors.white),
+                              ],
                             ),
                     ),
                   );
@@ -148,99 +137,189 @@ class OnboardingScreen extends StatelessWidget {
   }
 }
 
-// ── Progress dots ─────────────────────────────────────────────────────────────
+// ── Progress ──────────────────────────────────────────────────────────────────
 
-class _ProgressDots extends StatelessWidget {
-  final int current;
-  final int total;
-  final bool isDark;
-
-  const _ProgressDots(
-      {required this.current, required this.total, required this.isDark});
+class _SegmentedProgress extends StatelessWidget {
+  final int step;
+  const _SegmentedProgress({required this.step});
 
   @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: List.generate(total, (i) {
-        final isActive = i == current;
-        return AnimatedContainer(
-          duration: const Duration(milliseconds: 280),
-          curve: Curves.easeInOut,
-          margin: const EdgeInsets.symmetric(horizontal: 4),
-          width: isActive ? 24 : 7,
-          height: 7,
-          decoration: BoxDecoration(
-            color: isActive
-                ? AppColor.primary
-                : (isDark ? AppColor.darkBorder : AppColor.lightBorder),
-            borderRadius: BorderRadius.circular(100),
+  Widget build(BuildContext context) => Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: List.generate(OnboardingController.totalSteps, (i) {
+              return Expanded(
+                child: Container(
+                  height: 6,
+                  margin: const EdgeInsets.symmetric(horizontal: 3),
+                  decoration: BoxDecoration(
+                    color: AppColor.border,
+                    borderRadius: BorderRadius.circular(100),
+                  ),
+                  alignment: Alignment.centerLeft,
+                  child: AnimatedFractionallySizedBox(
+                    duration: const Duration(milliseconds: 400),
+                    curve: Curves.easeOutCubic,
+                    widthFactor: i <= step ? 1 : 0,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: AppColor.primary,
+                        borderRadius: BorderRadius.circular(100),
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            }),
           ),
-        );
-      }),
-    );
-  }
+          const SizedBox(height: 6),
+          Text(
+            'Step ${step + 1} of ${OnboardingController.totalSteps}',
+            style: AppTypography.caption(AppColor.textTertiary),
+          ),
+        ],
+      );
 }
 
 // ── Step scaffold ─────────────────────────────────────────────────────────────
 
 class _StepScaffold extends StatelessWidget {
-  final String emoji;
+  final Object icon;
   final String title;
   final String subtitle;
   final Widget child;
-  final bool isDark;
 
   const _StepScaffold({
-    required this.emoji,
+    required this.icon,
     required this.title,
     required this.subtitle,
     required this.child,
-    required this.isDark,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const SizedBox(height: 28),
-          Text(emoji, style: const TextStyle(fontSize: 40)),
-          const SizedBox(height: 16),
-          Text(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
+          child: TweenAnimationBuilder<double>(
+            tween: Tween(begin: 0.7, end: 1),
+            duration: const Duration(milliseconds: 600),
+            curve: Curves.elasticOut,
+            builder: (_, s, c) => Transform.scale(scale: s, alignment: Alignment.centerLeft, child: c),
+            child: Container(
+              width: 60,
+              height: 60,
+              decoration: BoxDecoration(
+                color: AppColor.bannerBg,
+                shape: BoxShape.circle,
+                border: Border.all(color: AppColor.borderStrong),
+              ),
+              child: Center(
+                child: PhosphorIcon(icon,
+                    size: 28, color: AppColor.primary, duotoneSecondaryOpacity: 0.3),
+              ),
+            ),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(24, 16, 24, 6),
+          child: Text(
             title,
-            style: TextStyle(
-              color: isDark ? AppColor.textPrimary : AppColor.lightTextPrimary,
-              fontSize: 26,
-              fontWeight: FontWeight.w700,
-              letterSpacing: -0.5,
+            style: GoogleFonts.urbanist(
+              fontSize: 28,
+              fontWeight: FontWeight.w800,
+              color: AppColor.textPrimary,
+              letterSpacing: -0.8,
+              height: 1.15,
             ),
           ),
-          const SizedBox(height: 8),
-          Text(
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(24, 0, 24, 20),
+          child: Text(
             subtitle,
-            style: TextStyle(
-              color:
-                  isDark ? AppColor.textSecondary : AppColor.lightTextSecondary,
+            style: GoogleFonts.urbanist(
               fontSize: 15,
-              height: 1.5,
+              color: AppColor.textSecondary,
+              height: 1.4,
             ),
           ),
-          const SizedBox(height: 28),
-          Expanded(child: child),
-        ],
-      ),
+        ),
+        Expanded(child: child),
+      ],
     );
   }
+}
+
+/// Outlined option tile with a mocha selected state and a check pip.
+class _OptionTile extends StatelessWidget {
+  final bool selected;
+  final VoidCallback onTap;
+  final Widget child;
+  final EdgeInsets padding;
+
+  const _OptionTile({
+    required this.selected,
+    required this.onTap,
+    required this.child,
+    this.padding = const EdgeInsets.all(12),
+  });
+
+  @override
+  Widget build(BuildContext context) => GestureDetector(
+        onTap: () {
+          HapticFeedback.selectionClick();
+          onTap();
+        },
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOut,
+          padding: padding,
+          decoration: BoxDecoration(
+            color: selected ? AppColor.primaryExtraSoft : AppColor.surface,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: selected ? AppColor.primary : AppColor.borderStrong,
+              width: selected ? 1.6 : 1,
+            ),
+          ),
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              child,
+              Positioned(
+                top: -4,
+                right: -4,
+                child: AnimatedScale(
+                  scale: selected ? 1 : 0,
+                  duration: const Duration(milliseconds: 250),
+                  curve: Curves.easeOutBack,
+                  child: Container(
+                    width: 20,
+                    height: 20,
+                    decoration: const BoxDecoration(
+                      color: AppColor.primary,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Center(
+                      child: PhosphorIcon(PhosphorIconsBold.check, color: Colors.white, size: 11),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
 }
 
 // ── Step 1 — Currency ─────────────────────────────────────────────────────────
 
 class _CurrencyStep extends StatelessWidget {
-  final bool isDark;
-  const _CurrencyStep({required this.isDark});
+  const _CurrencyStep();
 
   static const _currencies = [
     ('INR', '₹', 'Indian Rupee', '🇮🇳'),
@@ -256,82 +335,62 @@ class _CurrencyStep extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ctrl = Get.find<OnboardingController>();
-    final surfaceColor =
-        isDark ? AppColor.darkSurface : AppColor.lightSurface;
-    final borderColor = isDark ? AppColor.darkBorder : AppColor.lightBorder;
-    final textColor =
-        isDark ? AppColor.textPrimary : AppColor.lightTextPrimary;
-    final subTextColor =
-        isDark ? AppColor.textSecondary : AppColor.lightTextSecondary;
 
     return _StepScaffold(
-      isDark: isDark,
-      emoji: '💱',
-      title: 'What currency\ndo you use?',
-      subtitle: 'We\'ll use this for all your\ntransactions and budgets.',
+      icon: PhosphorIconsDuotone.currencyCircleDollar,
+      title: 'Which currency\ndo you use?',
+      subtitle: 'Every amount, budget and goal will use it.',
       child: Obx(() {
-        final selectedCurrency = ctrl.currency.value;
+        final selected = ctrl.currency.value;
         return GridView.builder(
-          padding: EdgeInsets.zero,
+          padding: const EdgeInsets.fromLTRB(24, 4, 24, 24),
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 2,
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
-            childAspectRatio: 2.4,
+            crossAxisSpacing: 10,
+            mainAxisSpacing: 10,
+            childAspectRatio: 2.35,
           ),
           itemCount: _currencies.length,
           itemBuilder: (_, i) {
             final (code, symbol, name, flag) = _currencies[i];
-            final isSelected = selectedCurrency == code;
-            return GestureDetector(
-              onTap: () {
-                HapticFeedback.selectionClick();
-                ctrl.selectCurrency(code, symbol);
-              },
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 14, vertical: 12),
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? AppColor.primary.withValues(alpha: 0.15)
-                      : surfaceColor,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: isSelected ? AppColor.primary : borderColor,
-                    width: 1.5,
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Text(flag, style: const TextStyle(fontSize: 18)),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            '$code $symbol',
-                            style: TextStyle(
-                              color: isSelected ? AppColor.primary : textColor,
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          Text(
-                            name,
-                            style: TextStyle(
-                              color: subTextColor,
-                              fontSize: 10,
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
-                      ),
+            final isSelected = selected == code;
+            return _OptionTile(
+              selected: isSelected,
+              onTap: () => ctrl.selectCurrency(code, symbol),
+              child: Row(
+                children: [
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: AppColor.surfaceVariant,
+                      shape: BoxShape.circle,
                     ),
-                  ],
-                ),
+                    child: Center(child: Text(flag, style: const TextStyle(fontSize: 18))),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          '$symbol  $code',
+                          style: GoogleFonts.urbanist(
+                            color: AppColor.textPrimary,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        Text(
+                          name,
+                          style: AppTypography.caption(AppColor.textTertiary),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             );
           },
@@ -344,100 +403,76 @@ class _CurrencyStep extends StatelessWidget {
 // ── Step 2 — Occupation ───────────────────────────────────────────────────────
 
 class _OccupationStep extends StatelessWidget {
-  final bool isDark;
-  const _OccupationStep({required this.isDark});
+  const _OccupationStep();
 
   static const _occupations = [
-    ('Salaried Employee', PhosphorIconsLight.briefcase),
-    ('Self-employed', PhosphorIconsLight.buildings),
-    ('Freelancer', PhosphorIconsLight.laptop),
-    ('Student', PhosphorIconsLight.graduationCap),
-    ('Business Owner', PhosphorIconsLight.storefront),
-    ('Homemaker', PhosphorIconsLight.house),
-    ('Retired', PhosphorIconsLight.sunHorizon),
-    ('Other', PhosphorIconsLight.dotsThreeCircle),
+    ('Salaried Employee', PhosphorIconsDuotone.briefcase),
+    ('Self-employed', PhosphorIconsDuotone.buildings),
+    ('Freelancer', PhosphorIconsDuotone.laptop),
+    ('Student', PhosphorIconsDuotone.graduationCap),
+    ('Business Owner', PhosphorIconsDuotone.storefront),
+    ('Homemaker', PhosphorIconsDuotone.house),
+    ('Retired', PhosphorIconsDuotone.sunHorizon),
+    ('Other', PhosphorIconsDuotone.dotsThreeCircle),
   ];
 
   @override
   Widget build(BuildContext context) {
     final ctrl = Get.find<OnboardingController>();
-    final surfaceColor =
-        isDark ? AppColor.darkSurface : AppColor.lightSurface;
-    final borderColor = isDark ? AppColor.darkBorder : AppColor.lightBorder;
-    final textColor =
-        isDark ? AppColor.textPrimary : AppColor.lightTextPrimary;
-    final subTextColor =
-        isDark ? AppColor.textSecondary : AppColor.lightTextSecondary;
 
     return _StepScaffold(
-      isDark: isDark,
-      emoji: '💼',
+      icon: PhosphorIconsDuotone.userCircle,
       title: 'What do you\ndo for a living?',
-      subtitle: 'This helps us tailor budget\nsuggestions for you.',
+      subtitle: 'So budget tips fit how you actually earn.',
       child: Obx(() {
-        final selectedOccupation = ctrl.occupation.value;
-        return ListView.separated(
-          padding: EdgeInsets.zero,
+        final selected = ctrl.occupation.value;
+        return GridView.builder(
+          padding: const EdgeInsets.fromLTRB(24, 4, 24, 24),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            crossAxisSpacing: 10,
+            mainAxisSpacing: 10,
+            childAspectRatio: 1.55,
+          ),
           itemCount: _occupations.length,
-          separatorBuilder: (_, __) => const SizedBox(height: 10),
           itemBuilder: (_, i) {
             final (label, icon) = _occupations[i];
-            final isSelected = selectedOccupation == label;
-            return GestureDetector(
-              onTap: () {
-                HapticFeedback.selectionClick();
-                ctrl.selectOccupation(label);
-              },
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? AppColor.primary.withValues(alpha: 0.12)
-                      : surfaceColor,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: isSelected ? AppColor.primary : borderColor,
-                    width: 1.5,
+            final isSelected = selected == label;
+            return _OptionTile(
+              selected: isSelected,
+              onTap: () => ctrl.selectOccupation(label),
+              padding: const EdgeInsets.all(14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Container(
+                    width: 38,
+                    height: 38,
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? AppColor.primary.withValues(alpha: 0.12)
+                          : AppColor.surfaceVariant,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Center(
+                      child: PhosphorIcon(icon,
+                          size: 20,
+                          color: isSelected ? AppColor.primary : AppColor.textSecondary,
+                          duotoneSecondaryOpacity: 0.3),
+                    ),
                   ),
-                ),
-                child: Row(
-                  children: [
-                    PhosphorIcon(
-                      icon,
-                      color:
-                          isSelected ? AppColor.primary : subTextColor,
-                      size: 20,
+                  Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.urbanist(
+                      color: AppColor.textPrimary,
+                      fontSize: 14,
+                      fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
                     ),
-                    const SizedBox(width: 12),
-                    Text(
-                      label,
-                      style: TextStyle(
-                        color: isSelected ? textColor : subTextColor,
-                        fontSize: 15,
-                        fontWeight: isSelected
-                            ? FontWeight.w600
-                            : FontWeight.w400,
-                      ),
-                    ),
-                    const Spacer(),
-                    if (isSelected)
-                      Container(
-                        width: 20,
-                        height: 20,
-                        decoration: const BoxDecoration(
-                          color: AppColor.primary,
-                          shape: BoxShape.circle,
-                        ),
-                        child: const PhosphorIcon(
-                          PhosphorIconsLight.check,
-                          color: Colors.white,
-                          size: 12,
-                        ),
-                      ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             );
           },
@@ -447,22 +482,103 @@ class _OccupationStep extends StatelessWidget {
   }
 }
 
-// ── Budget amount field ────────────────────────────────────────────────────────
+// ── Step 3 — Monthly budget ───────────────────────────────────────────────────
+
+class _BudgetStep extends StatelessWidget {
+  const _BudgetStep();
+
+  static const _quickAmounts = [
+    '10,000', '20,000', '30,000',
+    '50,000', '75,000', '1,00,000',
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final ctrl = Get.find<OnboardingController>();
+
+    return _StepScaffold(
+      icon: PhosphorIconsDuotone.shieldCheck,
+      title: 'Set a monthly\nspending budget',
+      subtitle: 'A rough number is fine — you can change it anytime.',
+      child: ListView(
+        padding: const EdgeInsets.fromLTRB(24, 4, 24, 24),
+        children: [
+          _BudgetField(ctrl: ctrl),
+          const SizedBox(height: 18),
+          Text('Popular picks', style: AppTypography.captionSemiBold(AppColor.textTertiary)),
+          const SizedBox(height: 10),
+          Obx(() {
+            final current = ctrl.budgetText.value;
+            final sym = ctrl.currencySymbol.value;
+            return Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: _quickAmounts.map((amt) {
+                final isSelected = current == amt;
+                return GestureDetector(
+                  onTap: () {
+                    HapticFeedback.selectionClick();
+                    ctrl.budgetController.text = amt;
+                    ctrl.budgetController.selection =
+                        TextSelection.collapsed(offset: amt.length);
+                  },
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: isSelected ? AppColor.primary : AppColor.surface,
+                      borderRadius: BorderRadius.circular(100),
+                      border: Border.all(
+                        color: isSelected ? AppColor.primary : AppColor.borderStrong,
+                      ),
+                    ),
+                    child: Text(
+                      '$sym$amt',
+                      style: GoogleFonts.urbanist(
+                        color: isSelected ? Colors.white : AppColor.textPrimary,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            );
+          }),
+          const SizedBox(height: 22),
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: AppColor.bannerBg,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Row(
+              children: [
+                const PhosphorIcon(PhosphorIconsDuotone.bellRinging,
+                    size: 22, color: AppColor.primary, duotoneSecondaryOpacity: 0.3),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'We\'ll nudge you at 80% and show how much you can safely spend each day.',
+                    style: GoogleFonts.urbanist(
+                      fontSize: 13,
+                      color: AppColor.textSecondary,
+                      height: 1.4,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
 
 class _BudgetField extends StatefulWidget {
   final OnboardingController ctrl;
-  final Color surfaceColor;
-  final Color borderColor;
-  final Color textColor;
-  final Color hintColor;
-
-  const _BudgetField({
-    required this.ctrl,
-    required this.surfaceColor,
-    required this.borderColor,
-    required this.textColor,
-    required this.hintColor,
-  });
+  const _BudgetField({required this.ctrl});
 
   @override
   State<_BudgetField> createState() => _BudgetFieldState();
@@ -475,9 +591,7 @@ class _BudgetFieldState extends State<_BudgetField> {
   @override
   void initState() {
     super.initState();
-    _focusNode.addListener(() {
-      setState(() => _focused = _focusNode.hasFocus);
-    });
+    _focusNode.addListener(() => setState(() => _focused = _focusNode.hasFocus));
   }
 
   @override
@@ -487,290 +601,183 @@ class _BudgetFieldState extends State<_BudgetField> {
   }
 
   @override
-  Widget build(BuildContext context) => Obx(() => AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+  Widget build(BuildContext context) => AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
         decoration: BoxDecoration(
-          color: widget.surfaceColor,
-          borderRadius: BorderRadius.circular(14),
+          color: AppColor.surface,
+          borderRadius: BorderRadius.circular(18),
           border: Border.all(
-            color: _focused ? AppColor.primary : widget.borderColor,
-            width: _focused ? 1.5 : 1.0,
+            color: _focused ? AppColor.primary : AppColor.borderStrong,
+            width: _focused ? 1.6 : 1,
           ),
+          boxShadow: _focused
+              ? [
+                  BoxShadow(
+                    color: AppColor.primary.withValues(alpha: 0.12),
+                    blurRadius: 16,
+                    offset: const Offset(0, 6),
+                  ),
+                ]
+              : null,
         ),
         child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Text(
-              widget.ctrl.currencySymbol.value,
-              style: TextStyle(
-                color: _focused ? AppColor.primary : widget.textColor,
-                fontSize: 22,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(width: 8),
+            Obx(() => Text(
+                  widget.ctrl.currencySymbol.value,
+                  style: GoogleFonts.urbanist(
+                    color: _focused ? AppColor.primary : AppColor.textTertiary,
+                    fontSize: 30,
+                    fontWeight: FontWeight.w700,
+                  ),
+                )),
+            const SizedBox(width: 10),
             Expanded(
               child: TextField(
                 controller: widget.ctrl.budgetController,
                 focusNode: _focusNode,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                style: TextStyle(
-                  color: widget.textColor,
-                  fontSize: 22,
-                  fontWeight: FontWeight.w600,
+                style: GoogleFonts.urbanist(
+                  color: AppColor.textPrimary,
+                  fontSize: 30,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.8,
                 ),
                 decoration: InputDecoration(
                   hintText: '0',
-                  hintStyle: TextStyle(
-                    color: widget.hintColor,
-                    fontSize: 22,
-                    fontWeight: FontWeight.w400,
+                  hintStyle: GoogleFonts.urbanist(
+                    color: AppColor.textTertiary.withValues(alpha: 0.6),
+                    fontSize: 30,
+                    fontWeight: FontWeight.w700,
                   ),
                   border: InputBorder.none,
                   enabledBorder: InputBorder.none,
                   focusedBorder: InputBorder.none,
-                  disabledBorder: InputBorder.none,
-                  errorBorder: InputBorder.none,
-                  focusedErrorBorder: InputBorder.none,
                   filled: false,
-                  isDense: false,
-                  contentPadding: const EdgeInsets.symmetric(vertical: 14),
+                  contentPadding: const EdgeInsets.symmetric(vertical: 16),
                 ),
                 inputFormatters: [
                   FilteringTextInputFormatter.allow(RegExp(r'[\d,.]')),
                 ],
               ),
             ),
+            Text('/ month', style: AppTypography.caption(AppColor.textTertiary)),
           ],
         ),
-      ));
-}
-
-// ── Step 3 — Monthly budget ───────────────────────────────────────────────────
-
-class _BudgetStep extends StatelessWidget {
-  final bool isDark;
-  const _BudgetStep({required this.isDark});
-
-  static const _quickAmounts = [
-    '10,000',
-    '20,000',
-    '30,000',
-    '50,000',
-    '75,000',
-    '1,00,000',
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    final ctrl = Get.find<OnboardingController>();
-    final surfaceColor =
-        isDark ? AppColor.darkSurface : AppColor.lightSurface;
-    final borderColor = isDark ? AppColor.darkBorder : AppColor.lightBorder;
-    final textColor =
-        isDark ? AppColor.textPrimary : AppColor.lightTextPrimary;
-    final hintColor =
-        isDark ? AppColor.textTertiary : AppColor.lightTextTertiary;
-    final subTextColor =
-        isDark ? AppColor.textSecondary : AppColor.lightTextSecondary;
-
-    return _StepScaffold(
-      isDark: isDark,
-      emoji: '🎯',
-      title: 'Set your monthly\nspending budget',
-      subtitle: 'How much do you typically\nspend each month?',
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Amount input
-          _BudgetField(
-            ctrl: ctrl,
-            surfaceColor: surfaceColor,
-            borderColor: borderColor,
-            textColor: textColor,
-            hintColor: hintColor,
-          ),
-
-          const SizedBox(height: 20),
-
-          Text(
-            'Quick select',
-            style: TextStyle(
-              color: subTextColor,
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const SizedBox(height: 12),
-
-          // Quick amount chips
-          Wrap(
-            spacing: 10,
-            runSpacing: 10,
-            children: _quickAmounts.map((amt) {
-              return Obx(() {
-                final isSelected = ctrl.budgetController.text == amt;
-                return GestureDetector(
-                  onTap: () {
-                    HapticFeedback.selectionClick();
-                    ctrl.budgetController.text = amt;
-                  },
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 180),
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 10),
-                    decoration: BoxDecoration(
-                      color: isSelected
-                          ? AppColor.primary.withValues(alpha: 0.15)
-                          : surfaceColor,
-                      borderRadius: BorderRadius.circular(100),
-                      border: Border.all(
-                        color: isSelected ? AppColor.primary : borderColor,
-                        width: 1.5,
-                      ),
-                    ),
-                    child: Text(
-                      '${ctrl.currencySymbol.value}$amt',
-                      style: TextStyle(
-                        color: isSelected ? AppColor.primary : subTextColor,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                );
-              });
-            }).toList(),
-          ),
-        ],
-      ),
-    );
-  }
+      );
 }
 
 // ── Step 4 — Categories ───────────────────────────────────────────────────────
 
 class _CatItem {
   final String label;
-  final PhosphorIconData icon;
-  final Color color;
-
-  const _CatItem(this.label, this.icon, this.color);
+  final Object icon;
+  const _CatItem(this.label, this.icon);
 }
 
 class _CategoriesStep extends StatelessWidget {
-  final bool isDark;
-  const _CategoriesStep({required this.isDark});
+  const _CategoriesStep();
 
   static const _cats = [
-    _CatItem('Food & Drinks', PhosphorIconsLight.coffee, Color(0xFFEAB308)),
-    _CatItem(
-        'Groceries', PhosphorIconsLight.shoppingCart, Color(0xFF22C55E)),
-    _CatItem('Transport', PhosphorIconsLight.bus, Color(0xFF8B5CF6)),
-    _CatItem(
-        'Bills & Fees', PhosphorIconsLight.receipt, Color(0xFFF97316)),
-    _CatItem('Health', PhosphorIconsLight.heart, Color(0xFFEF4444)),
-    _CatItem('Car', PhosphorIconsLight.car, Color(0xFF6366F1)),
-    _CatItem(
-        'Shopping', PhosphorIconsLight.shoppingBag, Color(0xFFEC4899)),
-    _CatItem(
-        'Entertainment', PhosphorIconsLight.popcorn, Color(0xFF14B8A6)),
-    _CatItem(
-        'Investments', PhosphorIconsLight.chartBar, Color(0xFF3B82F6)),
-    _CatItem(
-        'Education', PhosphorIconsLight.graduationCap, Color(0xFF8B5CF6)),
-    _CatItem(
-        'Travel', PhosphorIconsLight.airplaneTakeoff, Color(0xFF06B6D4)),
-    _CatItem('Gifts', PhosphorIconsLight.gift, Color(0xFFFF7849)),
-    _CatItem(
-        'Subscriptions', PhosphorIconsLight.infinity, Color(0xFFA855F7)),
-    _CatItem('Others', PhosphorIconsLight.squaresFour, Color(0xFF71717A)),
+    _CatItem('Food & Drinks', PhosphorIconsDuotone.forkKnife),
+    _CatItem('Groceries', PhosphorIconsDuotone.shoppingCart),
+    _CatItem('Transport', PhosphorIconsDuotone.bus),
+    _CatItem('Bills & Fees', PhosphorIconsDuotone.receipt),
+    _CatItem('Health', PhosphorIconsDuotone.heartbeat),
+    _CatItem('Car', PhosphorIconsDuotone.car),
+    _CatItem('Shopping', PhosphorIconsDuotone.shoppingBag),
+    _CatItem('Entertainment', PhosphorIconsDuotone.popcorn),
+    _CatItem('Investments', PhosphorIconsDuotone.trendUp),
+    _CatItem('Education', PhosphorIconsDuotone.graduationCap),
+    _CatItem('Travel', PhosphorIconsDuotone.airplaneTilt),
+    _CatItem('Gifts', PhosphorIconsDuotone.gift),
+    _CatItem('Subscriptions', PhosphorIconsDuotone.repeat),
+    _CatItem('Others', PhosphorIconsDuotone.squaresFour),
   ];
 
   @override
   Widget build(BuildContext context) {
     final ctrl = Get.find<OnboardingController>();
-    final surfaceColor =
-        isDark ? AppColor.darkSurface : AppColor.lightSurface;
-    final borderColor = isDark ? AppColor.darkBorder : AppColor.lightBorder;
-    final textColor =
-        isDark ? AppColor.textPrimary : AppColor.lightTextPrimary;
-    final subTextColor =
-        isDark ? AppColor.textSecondary : AppColor.lightTextSecondary;
 
     return _StepScaffold(
-      isDark: isDark,
-      emoji: '🗂️',
-      title: 'Pick your\ntop categories',
-      subtitle: 'Select the ones you spend\non most. You can change later.',
+      icon: PhosphorIconsDuotone.squaresFour,
+      title: 'Where does your\nmoney usually go?',
+      subtitle: 'Pick a few — they\'ll show up first when you log.',
       child: Obx(() {
         final selected = ctrl.selectedCategories.toList();
-        return GridView.builder(
-          padding: EdgeInsets.zero,
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
-            childAspectRatio: 2.2,
-          ),
-          itemCount: _cats.length,
-          itemBuilder: (_, i) {
-            final cat = _cats[i];
-            final isSelected = selected.contains(cat.label);
-            return GestureDetector(
-              onTap: () {
-                HapticFeedback.selectionClick();
-                ctrl.toggleCategory(cat.label);
-              },
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 12, vertical: 10),
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? cat.color.withValues(alpha: 0.12)
-                      : surfaceColor,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: isSelected ? cat.color : borderColor,
-                    width: 1.5,
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 32,
-                      height: 32,
-                      decoration: BoxDecoration(
-                        color: cat.color.withValues(alpha: 0.18),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: PhosphorIcon(
-                        cat.icon,
-                        color: cat.color,
-                        size: 16,
+        return ListView(
+          padding: const EdgeInsets.fromLTRB(24, 4, 24, 24),
+          children: [
+            Wrap(
+              spacing: 8,
+              runSpacing: 10,
+              children: _cats.map((cat) {
+                final isSelected = selected.contains(cat.label);
+                final color = AppColor.categoryColor(cat.label);
+                return GestureDetector(
+                  onTap: () {
+                    HapticFeedback.selectionClick();
+                    ctrl.toggleCategory(cat.label);
+                  },
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    curve: Curves.easeOut,
+                    padding: const EdgeInsets.fromLTRB(6, 6, 14, 6),
+                    decoration: BoxDecoration(
+                      color: isSelected ? AppColor.primaryExtraSoft : AppColor.surface,
+                      borderRadius: BorderRadius.circular(100),
+                      border: Border.all(
+                        color: isSelected ? AppColor.primary : AppColor.borderStrong,
+                        width: isSelected ? 1.6 : 1,
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        cat.label,
-                        style: TextStyle(
-                          color: isSelected ? textColor : subTextColor,
-                          fontSize: 12,
-                          fontWeight: isSelected
-                              ? FontWeight.w600
-                              : FontWeight.w400,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          width: 30,
+                          height: 30,
+                          decoration: BoxDecoration(
+                            color: isSelected ? AppColor.primary : color.withValues(alpha: 0.12),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Center(
+                            child: isSelected
+                                ? const PhosphorIcon(PhosphorIconsBold.check,
+                                    size: 14, color: Colors.white)
+                                : PhosphorIcon(cat.icon,
+                                    size: 16, color: color, duotoneSecondaryOpacity: 0.3),
+                          ),
                         ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
+                        const SizedBox(width: 8),
+                        Text(
+                          cat.label,
+                          style: GoogleFonts.urbanist(
+                            color: AppColor.textPrimary,
+                            fontSize: 13.5,
+                            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
+                  ),
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 18),
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 200),
+              child: Text(
+                selected.isEmpty
+                    ? 'Tip: pick at least 3 for a quicker logging screen.'
+                    : '${selected.length} selected',
+                key: ValueKey(selected.length),
+                style: AppTypography.captionSemiBold(
+                    selected.isEmpty ? AppColor.textTertiary : AppColor.primary),
               ),
-            );
-          },
+            ),
+          ],
         );
       }),
     );

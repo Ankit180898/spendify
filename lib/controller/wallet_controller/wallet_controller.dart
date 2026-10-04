@@ -1,9 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:intl/intl.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
+import 'package:spendify/config/app_color.dart';
 import 'package:spendify/controller/goals_controller/goals_controller.dart';
 import 'package:spendify/controller/home_controller/home_controller.dart';
+import 'package:spendify/controller/recurring_bills_controller/recurring_bills_controller.dart';
 import 'package:spendify/main.dart';
 import 'package:spendify/services/notification_service.dart';
+import 'package:spendify/services/progress_service.dart';
+import 'package:spendify/widgets/celebration.dart';
 import 'package:spendify/widgets/toast/custom_toast.dart';
 
 class TransactionController extends GetxController {
@@ -61,6 +67,14 @@ class TransactionController extends GetxController {
         if (!silent) CustomToast.errorToast('Error', 'Not signed in');
         return;
       }
+      // Snapshot progress so the celebration can show what this entry earned
+      final progressBefore = ProgressService.compute(
+        transactions: homeC.allTransactions.toList(),
+        monthlyBudget: homeC.monthlyBudget.value,
+      );
+      final loggedType = selectedType.value;
+      final loggedTitle = titleController.text;
+
       await supabaseC.from('transactions').insert({
         'user_id': currentUser.id,
         'amount': amount,
@@ -124,6 +138,13 @@ class TransactionController extends GetxController {
         // Under-budget milestone (last 2 days of month)
         _checkUnderBudgetMilestone();
 
+        // Paying a tracked bill? Tick it off.
+        var paidBills = <String>[];
+        if (loggedType == 'expense' && Get.isRegistered<RecurringBillsController>()) {
+          final marked = await Get.find<RecurringBillsController>().autoMarkPaid(loggedTitle);
+          paidBills = marked.map((b) => b.merchantName).toList();
+        }
+
         // Clear form
         resetForm();
         selectedType.value = 'income'; // Reset to default
@@ -131,8 +152,13 @@ class TransactionController extends GetxController {
         // Close the current screen
         Get.back();
 
-        // Show success message
-        CustomToast.successToast('Success', 'Transaction submitted successfully');
+        _celebrate(
+          before: progressBefore,
+          type: loggedType,
+          title: loggedTitle,
+          amount: amount,
+          paidBills: paidBills,
+        );
       }
     } catch (e) {
       // Log the error for debugging
@@ -338,5 +364,55 @@ class TransactionController extends GetxController {
     } catch (e) {
       debugPrint('_checkUnderBudgetMilestone error: $e');
     }
+  }
+
+  void _celebrate({
+    required UserProgress before,
+    required String type,
+    required String title,
+    required double amount,
+    List<String> paidBills = const [],
+  }) {
+    final after = ProgressService.compute(
+      transactions: homeC.allTransactions.toList(),
+      monthlyBudget: homeC.monthlyBudget.value,
+    );
+    final sym = homeC.currencySymbol.value;
+    final fmt = NumberFormat('#,##0.##', 'en_IN');
+    final isExpense = type == 'expense';
+
+    String? footnote;
+    final budget = homeC.monthlyBudget.value;
+    if (isExpense && budget > 0) {
+      final now = DateTime.now();
+      final monthStart = DateTime(now.year, now.month, 1);
+      final spent = homeC.allTransactions
+          .where((t) {
+            final d = DateTime.tryParse(t['date'] ?? '');
+            return d != null && !d.isBefore(monthStart) && t['type'] == 'expense';
+          })
+          .fold(0.0, (s, t) => s + ((t['amount'] as num?)?.toDouble() ?? 0.0));
+      final left = budget - spent;
+      footnote = left >= 0
+          ? '$sym${NumberFormat('#,##0', 'en_IN').format(left)} left in this month\'s budget'
+          : '$sym${NumberFormat('#,##0', 'en_IN').format(-left)} over this month\'s budget';
+    } else if (!isExpense) {
+      footnote = 'Nice — your balance is now $sym${NumberFormat('#,##0', 'en_IN').format(homeC.totalBalance.value)}';
+    }
+
+    if (paidBills.isNotEmpty) {
+      final billNote = '${paidBills.join(', ')} marked as paid';
+      footnote = footnote == null ? billNote : '$billNote · $footnote';
+    }
+
+    showCelebration(CelebrationData(
+      title: isExpense ? 'Expense logged' : 'Income added',
+      subtitle: '$title · ${isExpense ? '−' : '+'}$sym${fmt.format(amount)}',
+      icon: isExpense ? PhosphorIconsDuotone.receipt : PhosphorIconsDuotone.handCoins,
+      color: isExpense ? AppColor.primary : AppColor.income,
+      before: before,
+      after: after,
+      footnote: footnote,
+    ));
   }
 }

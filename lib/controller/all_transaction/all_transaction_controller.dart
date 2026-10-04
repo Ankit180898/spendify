@@ -17,6 +17,13 @@ class AllTransactionsController extends GetxController {
   final List<Map<String, dynamic>> _allFiltered = [];
   var _displayCount = 0;
   var hasMore = false.obs;
+
+  /// Totals across *all* matches (not just the loaded page).
+  var matchCount = 0.obs;
+  var matchSpent = 0.0.obs;
+  var matchEarned = 0.0.obs;
+
+  Worker? _txWorker;
   var _loadingMore = false;
 
   List<String> get uniqueCategories {
@@ -32,6 +39,19 @@ class AllTransactionsController extends GetxController {
   void onInit() {
     super.onInit();
     loadTransactions();
+    // Edits/deletes elsewhere refresh this list in place
+    _txWorker = ever(homeController.allTransactions, (_) => _applyFilters(keepPage: true));
+  }
+
+  @override
+  void onClose() {
+    _txWorker?.dispose();
+    super.onClose();
+  }
+
+  void setType(String type) {
+    typeFilter.value = type;
+    _applyFilters();
   }
 
   void loadTransactions() {
@@ -40,6 +60,7 @@ class AllTransactionsController extends GetxController {
       ..clear()
       ..addAll(homeController.allTransactions);
     _displayCount = _pageSize;
+    _updateTotals();
     _commitPage();
     isLoading.value = false;
   }
@@ -84,7 +105,7 @@ class AllTransactionsController extends GetxController {
     _applyFilters();
   }
 
-  void _applyFilters() {
+  void _applyFilters({bool keepPage = false}) {
     final now = DateTime.now();
     final filter = selectedFilter.value;
     final month = specificMonth.value;
@@ -132,15 +153,32 @@ class AllTransactionsController extends GetxController {
       result = result.where((t) {
         final desc = (t['description'] as String? ?? '').toLowerCase();
         final cat = (t['category'] as String? ?? '').toLowerCase();
-        return desc.contains(q) || cat.contains(q);
+        final amt = (t['amount'] ?? '').toString();
+        return desc.contains(q) || cat.contains(q) || amt.startsWith(q);
       }).toList();
     }
 
     _allFiltered
       ..clear()
       ..addAll(result);
-    _displayCount = _pageSize;
+    if (!keepPage || _displayCount < _pageSize) _displayCount = _pageSize;
+    _updateTotals();
     _commitPage();
+  }
+
+  void _updateTotals() {
+    double spent = 0, earned = 0;
+    for (final t in _allFiltered) {
+      final a = (t['amount'] as num?)?.toDouble() ?? 0;
+      if (t['type'] == 'expense') {
+        spent += a;
+      } else if (t['type'] == 'income') {
+        earned += a;
+      }
+    }
+    matchCount.value = _allFiltered.length;
+    matchSpent.value = spent;
+    matchEarned.value = earned;
   }
 
   void _commitPage() {

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:spendify/config/app_color.dart';
 import 'package:spendify/controller/home_controller/home_controller.dart';
 import 'package:spendify/controller/wallet_controller/wallet_controller.dart';
@@ -81,7 +81,7 @@ class TransactionDetailsScreen extends StatelessWidget {
                   Container(
                     width: 56, height: 56,
                     decoration: BoxDecoration(color: iconBg, borderRadius: BorderRadius.circular(14)),
-                    child: Icon(ctrl.getCategoryIcon(category, categoryList), color: iconFg, size: 24),
+                    child: Icon(ctrl.getCategoryIcon(category, categoryList, isIncome: !isExpense), color: iconFg, size: 24),
                   ),
                   const SizedBox(height: 16),
                   if (description.isNotEmpty)

@@ -9,10 +9,59 @@ class GroupsController extends GetxController {
   var groups = <GroupModel>[].obs;
   var isLoading = false.obs;
 
+  // ── Aggregate balance (home-screen nudge) ────────────────────────────────────
+  var totalOwed = 0.0.obs;       // I owe others (sum)
+  var totalOwedToMe = 0.0.obs;   // Others owe me (sum)
+  var balanceGroupCount = 0.obs; // number of groups with non-zero net balance
+
   @override
   void onInit() {
     super.onInit();
     fetchGroups();
+    fetchBalanceSummary();
+  }
+
+  Future<void> fetchBalanceSummary() async {
+    try {
+      final uid = supabaseC.auth.currentUser?.id;
+      if (uid == null) return;
+
+      // Single query: all unsettled shares I'm involved in
+      final rows = await supabaseC
+          .from('split_shares')
+          .select('amount_owed, user_id, splits!inner(paid_by, group_id)')
+          .eq('is_settled', false);
+
+      double owed = 0;
+      double owedToMe = 0;
+      final groupsWithBalance = <String>{};
+
+      for (final row in rows) {
+        final shareUserId = row['user_id'] as String?;
+        final paidBy = row['splits']['paid_by'] as String?;
+        final groupId = row['splits']['group_id'] as String?;
+        final amount = (row['amount_owed'] as num?)?.toDouble() ?? 0.0;
+
+        if (amount <= 0 || paidBy == null || groupId == null) continue;
+        if (paidBy == shareUserId) continue; // payer's own share row
+
+        if (paidBy == uid && shareUserId != uid) {
+          // Someone else owes me
+          owedToMe += amount;
+          groupsWithBalance.add(groupId);
+        } else if (shareUserId == uid && paidBy != uid) {
+          // I owe someone
+          owed += amount;
+          groupsWithBalance.add(groupId);
+        }
+      }
+
+      totalOwed.value = owed;
+      totalOwedToMe.value = owedToMe;
+      balanceGroupCount.value = groupsWithBalance.length;
+    } catch (e) {
+      debugPrint('GroupsController.fetchBalanceSummary error: $e');
+    }
   }
 
   Future<void> fetchGroups() async {
@@ -55,6 +104,7 @@ class GroupsController extends GetxController {
       fetched.sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
       groups.value = fetched;
+      fetchBalanceSummary();
     } catch (e) {
       debugPrint('GroupsController.fetchGroups error: $e');
     } finally {
